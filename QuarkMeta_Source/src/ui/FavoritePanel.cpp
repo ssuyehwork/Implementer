@@ -242,6 +242,13 @@ FavoritePanel::FavoritePanel(QWidget* parent)
 bool FavoritePanel::eventFilter(QObject* watched, QEvent* event) {
     if (watched == m_favoriteView && event->type() == QEvent::KeyPress) {
         QKeyEvent* keyEv = static_cast<QKeyEvent*>(event);
+        if (keyEv->key() == Qt::Key_F2 && keyEv->modifiers() == Qt::NoModifier) {
+            QModelIndex curIdx = m_favoriteView->currentIndex();
+            if (curIdx.isValid()) {
+                m_favoriteView->edit(curIdx);
+                return true;
+            }
+        }
         if (keyEv->modifiers() & Qt::ControlModifier) {
             if (keyEv->key() == Qt::Key_Home) {
                 if (ContentKeyHandler::navigateViewFirstItem(m_favoriteView)) return true;
