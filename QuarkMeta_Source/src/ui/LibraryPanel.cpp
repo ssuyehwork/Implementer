@@ -801,6 +801,9 @@ void LibraryPanel::toggleSection() {
 }
 
 void LibraryPanel::onCategoryClicked(const QModelIndex& index) {
+    if (m_treeView) {
+        m_treeView->setFocus();
+    }
     if (!index.isValid()) return;
     int nodeId = index.data(Qt::UserRole + 1).toInt();
     if (nodeId == -10 || nodeId == -20 || nodeId == 0) {
@@ -1078,7 +1081,10 @@ void LibraryPanel::onCategoryContextMenu(const QPoint& pos) {
 
     QAction* renameAct = menu.addAction(UiHelper::getIcon("rename-1.svg", QColor("#EEEEEE")), "重命名");
     connect(renameAct, &QAction::triggered, this, [this, index]() {
-        if (m_treeView) m_treeView->edit(index);
+        if (m_treeView) {
+            m_treeView->setFocus();
+            m_treeView->edit(index);
+        }
     });
 
     QAction* removeAct = menu.addAction(UiHelper::getIcon("close", QColor("#EEEEEE")), "删除分类");
@@ -1287,16 +1293,15 @@ void LibraryPanel::loadLibrary() {
 
     if (m_pendingEditNodeId > 0 && m_treeView) {
         int targetNodeId = m_pendingEditNodeId;
-        QTimer::singleShot(0, this, [this, targetNodeId]() {
-            if (m_pendingEditNodeId != targetNodeId) return;
-            m_pendingEditNodeId = 0;
-
+        m_pendingEditNodeId = 0;
+        QTimer::singleShot(50, this, [this, targetNodeId]() {
             QStandardItem* targetItem = findItemByNodeId(m_model->invisibleRootItem(), targetNodeId);
             if (targetItem && m_treeView) {
                 QModelIndex parentIdx = targetItem->parent() ? targetItem->parent()->index() : QModelIndex();
                 if (parentIdx.isValid()) {
                     m_treeView->expand(parentIdx);
                 }
+                m_treeView->setFocus();
                 m_treeView->setCurrentIndex(targetItem->index());
                 m_treeView->edit(targetItem->index());
             }
@@ -1382,7 +1387,6 @@ void LibraryPanel::createAndEditCategory(int parentId) {
     int newId = LibraryService::instance().createCategory(defaultName, parentId);
     if (newId > 0) {
         m_pendingEditNodeId = newId;
-        loadLibrary();
     }
 }
 
