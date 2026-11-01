@@ -240,12 +240,14 @@ FavoritePanel::FavoritePanel(QWidget* parent)
 }
 
 bool FavoritePanel::eventFilter(QObject* watched, QEvent* event) {
-    if (watched == m_favoriteView && event->type() == QEvent::KeyPress) {
+    if ((watched == m_favoriteView || (m_favoriteView && watched == m_favoriteView->viewport()))
+        && event->type() == QEvent::KeyPress) {
         QKeyEvent* keyEv = static_cast<QKeyEvent*>(event);
         if (keyEv->key() == Qt::Key_F2 && keyEv->modifiers() == Qt::NoModifier) {
             QModelIndex curIdx = m_favoriteView->currentIndex();
             if (curIdx.isValid()) {
                 m_favoriteView->edit(curIdx);
+                keyEv->accept();
                 return true;
             }
         }
@@ -282,6 +284,9 @@ void FavoritePanel::initUi() {
     m_favoriteView->setDragDropMode(QAbstractItemView::DragDrop);
     m_favoriteView->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     m_favoriteView->installEventFilter(this);
+    if (m_favoriteView->viewport()) {
+        m_favoriteView->viewport()->installEventFilter(this);
+    }
     m_favoriteView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_favoriteView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 

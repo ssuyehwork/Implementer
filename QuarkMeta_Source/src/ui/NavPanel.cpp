@@ -249,6 +249,9 @@ void NavPanel::initUi() {
 
     m_treeView->setContextMenuPolicy(Qt::CustomContextMenu);
     m_treeView->installEventFilter(this);
+    if (m_treeView->viewport()) {
+        m_treeView->viewport()->installEventFilter(this);
+    }
     connect(m_treeView, &QTreeView::customContextMenuRequested, this, &NavPanel::onTreeContextMenu);
 
     connect(m_treeView, &QTreeView::expanded, this, &NavPanel::onItemExpanded);
@@ -446,7 +449,8 @@ void NavPanel::updateTreeHeight() {
 }
 
 bool NavPanel::eventFilter(QObject* watched, QEvent* event) {
-    if (watched == m_treeView && event->type() == QEvent::KeyPress) {
+    if ((watched == m_treeView || (m_treeView && watched == m_treeView->viewport()))
+        && event->type() == QEvent::KeyPress) {
         QKeyEvent* keyEv = static_cast<QKeyEvent*>(event);
         if (keyEv->modifiers() & Qt::ControlModifier) {
             if (keyEv->key() == Qt::Key_Home) {
