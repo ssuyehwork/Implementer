@@ -36,30 +36,23 @@ StarRatingValueWidget::StarRatingValueWidget(QWidget* parent) : ISmartFolderValu
     m_combo = new QComboBox(this);
     m_combo->setObjectName("SmartFolderComboBox");
 
-    // 0 Stars / Unrated
-    m_combo->addItem("无评级", 0);
+    m_combo->setIconSize(QSize(100, 18));
 
     const int starSize = 14;
-    const int spacing = 2;
+    const int spacing = 4;
     for (int stars = 1; stars <= 5; ++stars) {
-        int maxW = 5 * starSize + 4 * spacing;
+        int maxW = stars * starSize + (stars - 1) * spacing;
         QPixmap pixmap(maxW, starSize);
         pixmap.fill(Qt::transparent);
 
         QPainter painter(&pixmap);
         int x = 0;
         for (int i = 0; i < stars; ++i) {
-            QIcon icon = UiHelper::getIcon("star_filled", QColor("#FFB800"));
-            icon.paint(&painter, x, 0, starSize, starSize);
-            x += starSize + spacing;
-        }
-        for (int i = stars; i < 5; ++i) {
-            QIcon icon = UiHelper::getIcon("star_filled", QColor("#444444"));
+            QIcon icon = UiHelper::getIcon("star_filled", QColor("#C5D1DE"));
             icon.paint(&painter, x, 0, starSize, starSize);
             x += starSize + spacing;
         }
 
-        // 严格遵循 Memories.md 第 9 章：禁止使用“1星”等文字组合，仅显示纯矢量星级图标
         m_combo->addItem(QIcon(pixmap), "", stars);
     }
 

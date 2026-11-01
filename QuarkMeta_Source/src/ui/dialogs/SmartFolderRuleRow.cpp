@@ -19,7 +19,7 @@ void SmartFolderRuleRow::initUi() {
 
     m_typeCombo = new QComboBox(this);
     m_typeCombo->setObjectName("SmartFolderComboBox");
-    m_typeCombo->addItem("评分", static_cast<int>(SmartRuleType::Rating));
+    m_typeCombo->addItem("星级", static_cast<int>(SmartRuleType::Rating));
     m_typeCombo->addItem("名称", static_cast<int>(SmartRuleType::Name));
     m_typeCombo->addItem("扩展名", static_cast<int>(SmartRuleType::Extension));
     m_typeCombo->addItem("标签", static_cast<int>(SmartRuleType::Tag));
