@@ -138,7 +138,8 @@ void ContentContextMenu::showMenu(QAbstractItemView* view, const QPoint& pos) {
         if (isDriveRoot) {
             menu.addAction(UiHelper::getIcon("open", QColor("#EEEEEE"), 18), "打开")->setData(ContentPanel::ActionOpen);
             menu.addAction(UiHelper::getIcon("add", QColor("#EEEEEE"), 18), "在新标签页中打开")->setData(ContentPanel::ActionOpenInNewTab);
-            ContextMenuFactory::buildShowInExplorerAction(&menu, path, m_panel);
+            QAction* actShowInExpDrive = menu.addAction(UiHelper::getIcon("folder_search", QColor("#EEEEEE"), 18), ContextMenuFactory::kTextShowInExplorer);
+            actShowInExpDrive->setData(ContentPanel::ActionShowInExplorer);
 
             QString currentColorStr = currentIndex.data(ColorRole).toString();
             QWidgetAction* pickerAction = new QWidgetAction(&menu);
@@ -257,7 +258,8 @@ void ContentContextMenu::showMenu(QAbstractItemView* view, const QPoint& pos) {
                 }
                 ContextMenuFactory::buildOpenWithMenu(&menu, selPathsForOpen, m_panel);
             }
-            ContextMenuFactory::buildShowInExplorerAction(&menu, path, m_panel);
+            QAction* actShowInExp = menu.addAction(UiHelper::getIcon("folder_search", QColor("#EEEEEE"), 18), ContextMenuFactory::kTextShowInExplorer);
+            actShowInExp->setData(ContentPanel::ActionShowInExplorer);
 
             if (m_panel && (m_panel->isRecursive() || m_panel->getCurrentCategoryType() == "library")) {
                 menu.addAction(UiHelper::getIcon("folder_filled", QColor("#EEEEEE"), 18), "在 QuarkMeta 中显示")->setData(ContentPanel::ActionShowInQuarkMeta);
@@ -510,9 +512,9 @@ void ContentContextMenu::showMenu(QAbstractItemView* view, const QPoint& pos) {
 
             menu.addSeparator();
             bool isPhysicalPath = !currentPath.isEmpty() && !currentPath.contains("://") && QDir(currentPath).exists();
-            QAction* actShowInExp = ContextMenuFactory::buildShowInExplorerAction(&menu, currentPath, true, m_panel);
-            if (actShowInExp) {
-                actShowInExp->setEnabled(isPhysicalPath);
+            if (isPhysicalPath) {
+                QAction* actShowInExp = menu.addAction(UiHelper::getIcon("folder_search", QColor("#EEEEEE"), 18), ContextMenuFactory::kTextShowInExplorer);
+                actShowInExp->setData(ContentPanel::ActionOpenDirectoryInExplorer);
             }
 
             menu.addAction(UiHelper::getIcon("refresh", QColor("#EEEEEE"), 18), "刷新（F5）")->setData(ContentPanel::ActionRefresh);
@@ -629,15 +631,21 @@ void ContentContextMenu::showMenu(QAbstractItemView* view, const QPoint& pos) {
         }
         case ContentPanel::ActionShowInQuarkMeta: {
             QStringList selectedPaths = m_panel->getSelectedPaths();
-            if (!selectedPaths.isEmpty()) {
-                QString targetPath = selectedPaths.first();
+            QString targetPath = !selectedPaths.isEmpty() ? selectedPaths.first() : path;
+            if (!targetPath.isEmpty()) {
                 QFileInfo fi(targetPath);
-                m_panel->setPendingSelectName(fi.fileName(), fi.isDir());
-                NavigationService::instance().navigateTo(fi.absolutePath());
-            } else if (!path.isEmpty()) {
-                QFileInfo fi(path);
-                m_panel->setPendingSelectName(fi.fileName(), fi.isDir());
-                NavigationService::instance().navigateTo(fi.absolutePath());
+                QString targetDir = fi.absolutePath();
+                m_panel->setPendingSelectPath(targetPath, false);
+
+                QString currentNative = QDir::toNativeSeparators(QDir::cleanPath(currentPath));
+                QString targetNative = QDir::toNativeSeparators(QDir::cleanPath(targetDir));
+
+                if (QString::compare(currentNative, targetNative, Qt::CaseInsensitive) == 0 && !m_panel->isRecursive()) {
+                    // 目标就在当前目录且当前非递归视图：直接就地恢复选中并高亮滚动
+                    m_panel->restoreSelections();
+                } else {
+                    NavigationService::instance().navigateTo(targetDir);
+                }
             }
             break;
         }
@@ -646,9 +654,46 @@ void ContentContextMenu::showMenu(QAbstractItemView* view, const QPoint& pos) {
             break;
         }
         case ContentPanel::ActionShowInExplorer: {
-            QString targetPath = onItem ? path : currentPath;
-            if (!targetPath.isEmpty() && !targetPath.contains("://")) {
-                ShellHelper::openInExplorer(targetPath);
+            QStringList selectedPaths = m_panel->getSelectedPaths();
+            if (selectedPaths.isEmpty() && !path.isEmpty()) {
+                selectedPaths << path;
+            }
+
+            // 按所在文件夹分组
+            QMap<QString, QStringList> folderGroups;
+            for (const QString& itemPath : selectedPaths) {
+                if (itemPath.isEmpty() || itemPath.contains("://")) continue;
+                QFileInfo fi(itemPath);
+                // 文件取其所在目录；文件夹取其上级目录以在资源管理器中被高亮选中
+                QString parentDir = fi.isDir() ? fi.dir().absolutePath() : fi.absolutePath();
+                folderGroups[parentDir].append(itemPath);
+            }
+
+            if (folderGroups.size() > 5) {
+                FramelessConfirmDialog dlg(
+                    "打开资源管理器确认",
+                    QString("本次操作将同时打开 %1 个资源管理器窗口，是否继续？").arg(folderGroups.size()),
+                    FramelessConfirmDialog::OkCancel,
+                    "warning",
+                    QColor("#f1c40f"),
+                    m_panel
+                );
+                if (dlg.exec() != QDialog::Accepted) {
+                    break;
+                }
+            }
+
+            for (auto it = folderGroups.begin(); it != folderGroups.end(); ++it) {
+                // 打开该文件夹窗口并选中其中的项目（首个目标）
+                if (!it.value().isEmpty()) {
+                    ShellHelper::openInExplorer(it.value().first());
+                }
+            }
+            break;
+        }
+        case ContentPanel::ActionOpenDirectoryInExplorer: {
+            if (!currentPath.isEmpty() && !currentPath.contains("://") && QDir(currentPath).exists()) {
+                ShellHelper::openDirectoryInExplorer(currentPath);
             }
             break;
         }

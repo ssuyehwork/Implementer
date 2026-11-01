@@ -166,9 +166,10 @@ void ContentViewCoordinator::restoreSelections(const QSet<QString>& selectedPath
         }
 
         if (lastIdx.isValid()) {
+            view->setFocus();
             view->setCurrentIndex(lastIdx);
             view->selectionModel()->select(sel, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
-            view->scrollTo(lastIdx);
+            view->scrollTo(lastIdx, QAbstractItemView::EnsureVisible);
             if (m_panel) {
                 emit m_panel->selectionChanged(m_panel->getSelectedPaths());
             }

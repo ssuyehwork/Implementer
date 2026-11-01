@@ -282,7 +282,13 @@ void ContentPanel::initGridView() {
     if (jv->verticalScrollBar()) {
         connect(jv->verticalScrollBar(), &QScrollBar::valueChanged, this, &ContentPanel::startVisibleTimer);
     }
-    connect(jv, &JustifiedView::layoutFinished, this, &ContentPanel::startVisibleTimer);
+    connect(jv, &JustifiedView::layoutFinished, this, [this, jv]() {
+        startVisibleTimer();
+        QModelIndex curIdx = jv->currentIndex();
+        if (curIdx.isValid() && jv->selectionModel() && jv->selectionModel()->isSelected(curIdx)) {
+            jv->scrollTo(curIdx, QAbstractItemView::EnsureVisible);
+        }
+    });
 
     if (m_sectionModel) {
         connect(m_sectionModel, &QAbstractItemModel::modelReset, this, &ContentPanel::startVisibleTimer);

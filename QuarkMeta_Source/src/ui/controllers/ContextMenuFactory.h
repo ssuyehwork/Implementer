@@ -48,6 +48,7 @@ public:
      */
     static QAction* buildExtractContentAction(QMenu* menu, const QString& path, QObject* receiver = nullptr);
 
+    static inline const QString kTextShowInExplorer = QStringLiteral("在“资源管理器”中显示");
     static QAction* buildShowInExplorerAction(QMenu* menu, const QString& path, bool isBlankSpace = false, QObject* receiver = nullptr);
     static QAction* buildCopyPathAction(QMenu* menu, const QStringList& paths, QObject* receiver = nullptr);
     static QAction* buildCopyNameAction(QMenu* menu, const QStringList& paths, QObject* receiver = nullptr);

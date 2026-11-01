@@ -77,8 +77,7 @@ QAction* ContextMenuFactory::buildExtractContentAction(QMenu* menu, const QStrin
 QAction* ContextMenuFactory::buildShowInExplorerAction(QMenu* menu, const QString& path, bool isBlankSpace, QObject* receiver) {
     if (!menu || path.isEmpty()) return nullptr;
 
-    QString text = isBlankSpace ? "在“资源管理器”中打开" : "在“资源管理器”中显示";
-    QAction* action = menu->addAction(UiHelper::getIcon("folder_search", QColor("#EEEEEE"), 18), text);
+    QAction* action = menu->addAction(UiHelper::getIcon("folder_search", QColor("#EEEEEE"), 18), kTextShowInExplorer);
     QObject::connect(action, &QAction::triggered, receiver ? receiver : menu, [path, isBlankSpace]() {
         if (isBlankSpace) {
             ShellHelper::openDirectoryInExplorer(path);
