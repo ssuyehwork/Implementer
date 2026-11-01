@@ -30,6 +30,9 @@ private:
 class FavoritePanel : public QFrame {
     Q_OBJECT
 
+protected:
+    bool eventFilter(QObject* watched, QEvent* event) override;
+
 public:
     explicit FavoritePanel(QWidget* parent = nullptr);
     ~FavoritePanel() override = default;

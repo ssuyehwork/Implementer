@@ -38,6 +38,40 @@ ContentKeyHandler::ContentKeyHandler(ContentPanel* panel, QObject* parent)
     : QObject(parent), m_panel(panel) {
 }
 
+bool ContentKeyHandler::navigateViewFirstItem(QAbstractItemView* view) {
+    if (!view || !view->model()) return false;
+    QAbstractItemModel* model = view->model();
+    int rowCount = model->rowCount();
+    for (int r = 0; r < rowCount; ++r) {
+        QModelIndex idx = model->index(r, 0);
+        if (!idx.isValid() || idx.data(SectionHeaderRole).toBool()) continue;
+        view->setCurrentIndex(idx);
+        if (view->selectionModel()) {
+            view->selectionModel()->select(idx, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+        }
+        view->scrollTo(idx);
+        return true;
+    }
+    return false;
+}
+
+bool ContentKeyHandler::navigateViewLastItem(QAbstractItemView* view) {
+    if (!view || !view->model()) return false;
+    QAbstractItemModel* model = view->model();
+    int rowCount = model->rowCount();
+    for (int r = rowCount - 1; r >= 0; --r) {
+        QModelIndex idx = model->index(r, 0);
+        if (!idx.isValid() || idx.data(SectionHeaderRole).toBool()) continue;
+        view->setCurrentIndex(idx);
+        if (view->selectionModel()) {
+            view->selectionModel()->select(idx, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+        }
+        view->scrollTo(idx);
+        return true;
+    }
+    return false;
+}
+
 bool ContentKeyHandler::executeRepeatLastOp(ContentPanel* panel, QAbstractItemView* view) {
     if (!LastOperationManager::instance().hasOperation()) {
         ToolTipOverlay::instance()->showText(QCursor::pos(), "尚未记录任何可重复的操作", 1500, QColor("#e81123"));
@@ -536,6 +570,15 @@ bool ContentKeyHandler::handleKeyPress(QObject* obj, QEvent* event) {
         if (keyEvent->key() == Qt::Key_V) {
             ClipboardService::instance().executePasteTags(view);
             return true;
+        }
+    }
+
+    // 4b. Ctrl + Home / Ctrl + End: 视图首项与末项导航（避让 SectionHeader 并滚动）
+    if (keyEvent->modifiers() & Qt::ControlModifier) {
+        if (keyEvent->key() == Qt::Key_Home) {
+            if (navigateViewFirstItem(view)) return true;
+        } else if (keyEvent->key() == Qt::Key_End) {
+            if (navigateViewLastItem(view)) return true;
         }
     }
 

@@ -55,6 +55,9 @@ private:
 class LibraryPanel : public QFrame {
     Q_OBJECT
 
+protected:
+    bool eventFilter(QObject* watched, QEvent* event) override;
+
 public:
     explicit LibraryPanel(QWidget* parent = nullptr);
     ~LibraryPanel() override = default;

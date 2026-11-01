@@ -4,6 +4,7 @@
 #include "models/SectionProxyModel.h"
 #include "ColumnViewWidget.h"
 #include "ColumnItemDelegate.h"
+#include "controllers/ContentKeyHandler.h"
 #include "../core/DiskScanService.h"
 #include "../meta/MetaCacheDecorator.h"
 #include <QCoreApplication>
@@ -199,6 +200,15 @@ bool ColumnViewPane::eventFilter(QObject* obj, QEvent* event) {
     if (event && event->type() == QEvent::KeyPress && (obj == m_folderListView || obj == m_listView)) {
         QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
         int paneIdx = property("paneIndex").toInt();
+        if (keyEvent->modifiers() & Qt::ControlModifier) {
+            if (keyEvent->key() == Qt::Key_Home) {
+                DropListView* view = qobject_cast<DropListView*>(obj);
+                if (view && ContentKeyHandler::navigateViewFirstItem(view)) return true;
+            } else if (keyEvent->key() == Qt::Key_End) {
+                DropListView* view = qobject_cast<DropListView*>(obj);
+                if (view && ContentKeyHandler::navigateViewLastItem(view)) return true;
+            }
+        }
         if (keyEvent->key() == Qt::Key_Right || keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter) {
             DropListView* view = qobject_cast<DropListView*>(obj);
             if (view && view->currentIndex().isValid()) {
