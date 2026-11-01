@@ -2003,7 +2003,7 @@ QTreeWidget#HistoryTreeWidget::item:hover, QTreeWidget#MarkedTreeWidget::item:ho
     background-color: #2A2D2E;
 }
 QTreeWidget#HistoryTreeWidget::item:selected, QTreeWidget#MarkedTreeWidget::item:selected {
-    background-color: #094771;
+    background-color: rgba(55, 138, 221, 0.15);
     color: #FFFFFF;
 }
 
