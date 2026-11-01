@@ -433,6 +433,8 @@ set(SOURCES
     src/util/DeepThumbnailExtractor.cpp
     src/util/ShellHelper.cpp
     src/util/ShellHelper.h
+    src/util/HardwareInfoHelper.cpp
+    src/util/HardwareInfoHelper.h
     QuarkMeta.rc
     resources/resources.qrc
 )
