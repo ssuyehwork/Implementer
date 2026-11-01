@@ -1,9 +1,14 @@
 #include "HistoryPanel.h"
 #include "UiHelper.h"
 #include "ToolTipOverlay.h"
+#include "controllers/ContextMenuFactory.h"
+#include "../core/ClipboardService.h"
+#include "../meta/FavoriteService.h"
 #include "../meta/HistoryService.h"
+#include "../meta/LibraryService.h"
 #include "../util/ThumbnailPipelineService.h"
 #include "../util/ColorPaletteEngine.h"
+#include <QDesktopServices>
 #include <QFileInfo>
 #include <QDir>
 #include <QFileIconProvider>
@@ -94,28 +99,82 @@ void HistoryPanel::updateItemThumbnail(QTreeWidgetItem* item, const QString& pat
 }
 
 void HistoryPanel::onItemClicked(QTreeWidgetItem* item, int column) {
+    Q_UNUSED(item);
     Q_UNUSED(column);
-    if (!item) return;
-    QString path = item->data(0, Qt::UserRole).toString();
-    if (!path.isEmpty()) {
-        emit requestLocateFile(path);
-    }
+    // 单击仅由 QTreeWidget 处理选中高亮，不发射定位信号以彻底杜绝额外目录载入与缩略图解析开销
 }
 
 void HistoryPanel::onContextMenuRequested(const QPoint& pos) {
     QTreeWidgetItem* item = m_treeWidget->itemAt(pos);
     QMenu menu(this);
+    UiHelper::applyMenuStyle(&menu);
 
     if (item) {
         QString path = item->data(0, Qt::UserRole).toString();
-        QAction* removeAct = menu.addAction("从历史中移除");
-        connect(removeAct, &QAction::triggered, this, [path]() {
-            HistoryService::instance().removeHistory(path);
-        });
-        menu.addSeparator();
+        if (!path.isEmpty()) {
+            // 1. 用系统默认程序打开
+            QAction* actOpenDefault = menu.addAction(UiHelper::getIcon("launch", QColor("#EEEEEE"), 18), "用系统默认程序打开");
+            connect(actOpenDefault, &QAction::triggered, this, [path]() {
+                if (QFileInfo::exists(path)) {
+                    HistoryService::instance().recordFileAccess(path);
+                    QDesktopServices::openUrl(QUrl::fromLocalFile(path));
+                }
+            });
+
+            // 2. 在“资源管理器”中显示
+            ContextMenuFactory::buildShowInExplorerAction(&menu, path, false, this);
+
+            // 3. 在 QuarkMeta 中显示
+            QAction* actShowInApp = menu.addAction(UiHelper::getIcon("folder_filled", QColor("#EEEEEE"), 18), "在 QuarkMeta 中显示");
+            connect(actShowInApp, &QAction::triggered, this, [this, path]() {
+                emit requestLocateFile(path);
+            });
+
+            // 4. 打开方式 (级联子菜单)
+            ContextMenuFactory::buildOpenWithMenu(&menu, QStringList{path}, this);
+
+            menu.addSeparator();
+
+            // 5. 添加至收藏夹
+            FavoriteService::instance().buildFavoriteAction(&menu, path, this);
+
+            // 6. 添加至“库”
+            LibraryService::instance().buildLibraryAction(&menu, QStringList{path}, this);
+
+            menu.addSeparator();
+
+            // 7. 复制（Ctrl+C）
+            QAction* actCopy = menu.addAction(UiHelper::getIcon("copy", QColor("#EEEEEE"), 18), "复制（Ctrl+C）");
+            connect(actCopy, &QAction::triggered, this, [path]() {
+                ClipboardService::instance().copyItems({path});
+            });
+
+            // 8. 剪切（Ctrl+X）
+            QAction* actCut = menu.addAction(UiHelper::getIcon("cut", QColor("#EEEEEE"), 18), "剪切（Ctrl+X）");
+            connect(actCut, &QAction::triggered, this, [path]() {
+                ClipboardService::instance().cutItems({path});
+            });
+
+            // 9. 复制名称
+            ContextMenuFactory::buildCopyNameAction(&menu, {path}, this);
+
+            // 10. 复制完整路径
+            ContextMenuFactory::buildCopyPathAction(&menu, {path}, this);
+
+            menu.addSeparator();
+
+            // 11. 从历史中移除
+            QAction* removeAct = menu.addAction(UiHelper::getIcon("trash", QColor("#EEEEEE"), 18), "从历史中移除");
+            connect(removeAct, &QAction::triggered, this, [path]() {
+                HistoryService::instance().removeHistory(path);
+            });
+
+            menu.addSeparator();
+        }
     }
 
-    QAction* clearAct = menu.addAction("清空历史");
+    // 12. 清空历史 (项菜单末尾或空白处菜单)
+    QAction* clearAct = menu.addAction(UiHelper::getIcon("trash", QColor("#EEEEEE"), 18), "清空历史");
     connect(clearAct, &QAction::triggered, this, []() {
         HistoryService::instance().clearAllHistory();
     });
