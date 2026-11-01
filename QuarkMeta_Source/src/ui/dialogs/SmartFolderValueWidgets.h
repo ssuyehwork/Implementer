@@ -6,6 +6,7 @@
 #include <QSpinBox>
 #include <QDateEdit>
 #include <QSlider>
+#include <QPushButton>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QDate>

@@ -6,6 +6,7 @@
 #include <QPainter>
 #include <QPixmap>
 #include <QCalendarWidget>
+#include <QPoint>
 #include "../ColorPicker.h"
 
 namespace QuarkMeta {
