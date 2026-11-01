@@ -1,6 +1,7 @@
 #include "QuarkApplication.h"
 #include "UiHelper.h"
 #include "LocalShortcutInterceptor.h"
+#include "Logger.h"
 #include <QEvent>
 #include <QWidget>
 #include <QLineEdit>
@@ -83,6 +84,16 @@ bool QuarkApplication::notify(QObject* receiver, QEvent* event) {
         // 2. 全局 Ctrl+W 按键拦截：响应活动窗口/对话框关闭
         if (type == QEvent::KeyPress) {
             QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
+            if (keyEvent->key() == Qt::Key_F2) {
+                QWidget* focusW = QApplication::focusWidget();
+                QString rClass = receiver->metaObject()->className();
+                QString rName = receiver->objectName();
+                QString fClass = focusW ? focusW->metaObject()->className() : "null";
+                QString fName = focusW ? focusW->objectName() : "null";
+                QString msg = QString("[GLOBAL_KEY_DEBUG] F2 KeyPress in QuarkApplication::notify: receiver=%1 (%2), focusWidget=%3 (%4)")
+                              .arg(rClass, rName, fClass, fName);
+                Logger::log(msg);
+            }
             if (keyEvent->key() == Qt::Key_W && (keyEvent->modifiers() & Qt::ControlModifier)) {
                 QWidget* activeWin = QGuiApplication::focusWindow() ? QWidget::find(QGuiApplication::focusWindow()->winId()) : nullptr;
                 if (!activeWin && receiver->isWidgetType()) {
