@@ -32,7 +32,7 @@
 #include "core/CoreController.h"
 #include "core/DirectoryWatchService.h"
 #include "util/HardwareInfoHelper.h"
-#include <QMessageBox>
+#include "ui/dialogs/FramelessMessageBox.h"
 
 /**
  * @brief 自定义日志重定向。极速格式化日志内容后投递到异步缓冲区，杜绝同步磁盘等待。
@@ -142,11 +142,11 @@ int main(int argc, char *argv[]) {
     // 硬件指纹多条件 OR 授权通行证校验（支持移动硬盘随插随用）
     // -------------------------------------------------------------
     if (!QuarkMeta::HardwareInfoHelper::isHardwareAuthorized()) {
-        QMessageBox::critical(
+        QuarkMeta::FramelessMessageBox::critical(
             nullptr,
             "授权提示",
-            "<b>[安全拦截] 检测到硬件指纹不匹配。</b><br><br>"
-            "当前运行环境未检测到合法的硬件授权特征（CPU / 主板 / BIOS / 授权移动硬盘）。<br><br>"
+            "[安全拦截] 检测到硬件指纹不匹配。\n\n"
+            "当前运行环境未检测到合法的硬件授权特征（CPU / 主板 / BIOS / 授权移动硬盘）。\n\n"
             "程序将立即退出。"
         );
         return 0;
