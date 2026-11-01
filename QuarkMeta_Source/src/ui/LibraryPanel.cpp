@@ -536,7 +536,14 @@ void LibraryPanel::initUi() {
     connect(m_model, &QStandardItemModel::itemChanged, this, [this](QStandardItem* item) {
         if (!item || m_isLoading) return;
         int nodeId = item->data(Qt::UserRole + 1).toInt();
-        if (nodeId > 0) {
+        QString type = item->data(TypeRole).toString();
+        if (type == "smart_folder" && nodeId > 0) {
+            SmartFolderRecord rec = SmartFolderDao::getSmartFolderById(nodeId);
+            if (rec.id > 0 && rec.name != item->text()) {
+                rec.name = item->text();
+                SmartFolderDao::updateSmartFolder(rec);
+            }
+        } else if (nodeId > 0) {
             QString name = item->text();
             QString iconKey = item->data(Qt::UserRole + 2).toString();
             QString colorHex = item->data(Qt::UserRole + 3).toString();
@@ -1219,7 +1226,7 @@ void LibraryPanel::loadLibrary() {
         sfItem->setData(sfIconKey, Qt::UserRole + 2);
         sfItem->setData(sfRec.colorHex, Qt::UserRole + 3);
         sfItem->setData(countVal, Qt::UserRole + 9);
-        sfItem->setEditable(false);
+        sfItem->setEditable(true);
         smartFolderHeader->appendRow(sfItem);
     }
 
