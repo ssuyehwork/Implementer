@@ -1,6 +1,8 @@
 #include "NavigationService.h"
 #include "NavigationHistoryService.h"
 #include "DeviceWatcher.h"
+#include "../meta/LibraryDao.h"
+#include "../meta/SmartFolderDao.h"
 #include <QDir>
 #include <QFileInfo>
 
@@ -41,6 +43,21 @@ QString NavigationService::normalizeUrl(const QString& rawUrl) const {
 QString NavigationService::currentDisplayPath() const {
     if (m_currentUrl == "computer://") return "此电脑";
     if (m_currentUrl == "trash://") return "回收站";
+
+    if (m_currentUrl.startsWith("library://")) {
+        int catId = m_currentUrl.mid(10).toInt();
+        if (catId == -1) return "库 → 全部数据";
+        if (catId == -2) return "库 → 未分类";
+        LibraryCategoryRecord rec = LibraryDao::getCategoryById(catId);
+        return rec.name.isEmpty() ? "库" : ("库 → " + rec.name);
+    }
+
+    if (m_currentUrl.startsWith("smartfolder://")) {
+        int sfId = m_currentUrl.mid(14).toInt();
+        SmartFolderRecord rec = SmartFolderDao::getSmartFolderById(sfId);
+        return rec.name.isEmpty() ? "库" : ("库 → " + rec.name);
+    }
+
     if (m_currentUrl.contains("://")) return m_currentUrl;
     return QDir::toNativeSeparators(m_currentUrl);
 }

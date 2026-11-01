@@ -255,6 +255,9 @@ void TabBarWidget::resizeEvent(QResizeEvent* event) {
 static QString cleanNameForTab(const QString& path) {
     if (path.isEmpty() || path == "computer://") return "此电脑";
     if (path == "trash://") return "回收站";
+    if (path.startsWith("library://") || path.startsWith("smartfolder://")) {
+        return "库";
+    }
     QString cleanP = QDir::cleanPath(path);
     QFileInfo fi(cleanP);
     if (fi.isRoot() || cleanP.endsWith(":\\") || cleanP.endsWith(":/") || (cleanP.length() == 2 && cleanP.endsWith(':'))) {
@@ -739,9 +742,12 @@ void TabBarWidget::updateCurrentTabTitle(const QString& title, const QString& ur
         currentTab.url = url;
     } else {
         QString folderName = title;
+        if (folderName.startsWith("库 → ")) {
+            folderName = folderName.mid(4);
+        }
         if (url == "computer://" || url.isEmpty()) {
             folderName = "此电脑";
-        } else if (title.contains("/") || title.contains("\\")) {
+        } else if (!url.startsWith("library://") && !url.startsWith("smartfolder://") && (title.contains("/") || title.contains("\\"))) {
             folderName = cleanNameForTab(url);
         }
         currentTab.title = folderName.isEmpty() ? "此电脑" : folderName;

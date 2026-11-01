@@ -66,9 +66,15 @@ void ContentDataLoader::loadDirectory(const QString& path, bool recursive) {
 
     if (path.startsWith("library://")) {
         int catId = path.mid(10).toInt();
-        LibraryCategoryRecord rec = LibraryDao::getCategoryById(catId);
+        QString categoryName;
+        if (catId == -1) categoryName = "全部数据";
+        else if (catId == -2) categoryName = "未分类";
+        else {
+            LibraryCategoryRecord rec = LibraryDao::getCategoryById(catId);
+            categoryName = rec.name;
+        }
         QStringList pList = LibraryService::instance().getCategoryPaths(catId);
-        m_panel->applyViewTarget(path, "library", rec.name, catId, false);
+        m_panel->applyViewTarget(path, "library", categoryName, catId, false);
         m_panel->loadLibraryPaths(pList);
         return;
     }
