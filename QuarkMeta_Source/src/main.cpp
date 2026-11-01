@@ -32,7 +32,7 @@
 #include "core/CoreController.h"
 #include "core/DirectoryWatchService.h"
 #include "util/HardwareInfoHelper.h"
-#include "ui/dialogs/FramelessMessageBox.h"
+#include "ui/dialogs/FramelessConfirmDialog.h"
 
 /**
  * @brief 自定义日志重定向。极速格式化日志内容后投递到异步缓冲区，杜绝同步磁盘等待。
@@ -139,16 +139,31 @@ int main(int argc, char *argv[]) {
 #endif
 
     // -------------------------------------------------------------
+    // 提前注入全局样式表，确保启动拦截弹窗具备沉浸式暗黑风格
+    // -------------------------------------------------------------
+    QuarkMeta::ThemeManager::instance().initialize(&a);
+
+    // -------------------------------------------------------------
     // 硬件指纹多条件 OR 授权通行证校验（支持移动硬盘随插随用）
     // -------------------------------------------------------------
     if (!QuarkMeta::HardwareInfoHelper::isHardwareAuthorized()) {
-        QuarkMeta::FramelessMessageBox::critical(
+        QString messageText =
+            "<span style='font-size: 14px; font-weight: bold; color: #f1c40f;'>当前硬件运行环境不兼容</span><br><br>"
+            "检测到当前计算机的主板总线架构、芯片组指令集或存储子系统未达到本应用的底层初始化要求。<br><br>"
+            "本应用依赖专有的硬件底层加速与隔离调度指令，当前设备环境不适宜运行该程序。<br><br>"
+            "<span style='color: #888888;'>程序初始化失败，即将安全退出。</span>";
+
+        QuarkMeta::FramelessConfirmDialog dlg(
+            "环境初始化提示",
+            messageText,
+            QuarkMeta::FramelessConfirmDialog::OkOnly,
+            "warning",
+            QColor("#f1c40f"),
             nullptr,
-            "授权提示",
-            "[安全拦截] 检测到硬件指纹不匹配。\n\n"
-            "当前运行环境未检测到合法的硬件授权特征（CPU / 主板 / BIOS / 授权移动硬盘）。\n\n"
-            "程序将立即退出。"
+            "确认并退出"
         );
+        dlg.resize(460, 220);
+        dlg.exec();
         return 0;
     }
 
@@ -156,8 +171,6 @@ int main(int argc, char *argv[]) {
     // 重构 3：生命期。引入 AppCoreController 统一拓扑预热
     // -------------------------------------------------------------
     QuarkMeta::CoreController::initializeCoreComponents();
-
-    QuarkMeta::ThemeManager::instance().initialize(&a);
 
     QuarkMeta::MainWindow w;
     

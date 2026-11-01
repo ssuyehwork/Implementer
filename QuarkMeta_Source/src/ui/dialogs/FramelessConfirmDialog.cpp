@@ -9,7 +9,8 @@ namespace QuarkMeta {
 
 FramelessConfirmDialog::FramelessConfirmDialog(const QString& title, const QString& message, 
                                                ButtonType type, const QString& iconName, 
-                                               const QColor& iconColor, QWidget* parent)
+                                               const QColor& iconColor, QWidget* parent,
+                                               const QString& okText)
     : FramelessDialog(title, parent)
 {
     setVisibleButtons(Close);
@@ -50,8 +51,9 @@ FramelessConfirmDialog::FramelessConfirmDialog(const QString& title, const QStri
         btnLayout->addWidget(btnCancel);
     }
 
-    auto* btnOk = new QPushButton("确定");
-    btnOk->setFixedSize(85, 30);
+    auto* btnOk = new QPushButton(okText.isEmpty() ? "确定" : okText);
+    int okBtnWidth = (btnOk->text().length() > 2) ? 95 : 85;
+    btnOk->setFixedSize(okBtnWidth, 30);
     btnOk->setCursor(Qt::PointingHandCursor);
     btnOk->setObjectName("FramelessBtnOk");
     connect(btnOk, &QPushButton::clicked, this, &QDialog::accept);
