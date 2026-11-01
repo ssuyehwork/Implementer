@@ -5,6 +5,7 @@
 #include "../../ui/UiHelper.h"
 #include <QPainter>
 #include <QPixmap>
+#include <QCalendarWidget>
 
 namespace QuarkMeta {
 
@@ -35,7 +36,7 @@ StarRatingValueWidget::StarRatingValueWidget(QWidget* parent) : ISmartFolderValu
     m_combo->setObjectName("SmartFolderComboBox");
 
     // 0 Stars / Unrated
-    m_combo->addItem("无 (0星)", 0);
+    m_combo->addItem("无评级", 0);
 
     const int starSize = 14;
     const int spacing = 2;
@@ -57,7 +58,8 @@ StarRatingValueWidget::StarRatingValueWidget(QWidget* parent) : ISmartFolderValu
             x += starSize + spacing;
         }
 
-        m_combo->addItem(QIcon(pixmap), QString("%1 星").arg(stars), stars);
+        // 严格遵循 Memories.md 第 9 章：禁止使用“1星”等文字组合，仅显示纯矢量星级图标
+        m_combo->addItem(QIcon(pixmap), "", stars);
     }
 
     layout->addWidget(m_combo);
@@ -84,6 +86,9 @@ SingleDateValueWidget::SingleDateValueWidget(QWidget* parent) : ISmartFolderValu
     m_dateEdit->setObjectName("SmartFolderDateEdit");
     m_dateEdit->setCalendarPopup(true);
     m_dateEdit->setDisplayFormat("yyyy-MM-dd");
+    if (m_dateEdit->calendarWidget()) {
+        m_dateEdit->calendarWidget()->setMinimumWidth(260);
+    }
     layout->addWidget(m_dateEdit);
     connect(m_dateEdit, &QDateEdit::dateChanged, this, &ISmartFolderValueWidget::valueChanged);
 }
@@ -111,11 +116,17 @@ DateRangeValueWidget::DateRangeValueWidget(QWidget* parent) : ISmartFolderValueW
     m_date1Edit->setObjectName("SmartFolderDateEdit");
     m_date1Edit->setCalendarPopup(true);
     m_date1Edit->setDisplayFormat("yyyy-MM-dd");
+    if (m_date1Edit->calendarWidget()) {
+        m_date1Edit->calendarWidget()->setMinimumWidth(260);
+    }
 
     m_date2Edit = new QDateEdit(QDate::currentDate(), this);
     m_date2Edit->setObjectName("SmartFolderDateEdit");
     m_date2Edit->setCalendarPopup(true);
     m_date2Edit->setDisplayFormat("yyyy-MM-dd");
+    if (m_date2Edit->calendarWidget()) {
+        m_date2Edit->calendarWidget()->setMinimumWidth(260);
+    }
 
     layout->addWidget(m_date1Edit);
     QLabel* label = new QLabel("至", this);

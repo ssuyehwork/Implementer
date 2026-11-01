@@ -2305,6 +2305,24 @@ QSpinBox#SmartFolderSpinBox {
     min-height: 24px;
 }
 
+QCalendarWidget {
+    background-color: #1E1E1E;
+    color: #EEEEEE;
+}
+
+QCalendarWidget QWidget#qt_calendar_navigationbar {
+    background-color: #252526;
+    min-height: 28px;
+}
+
+QCalendarWidget QAbstractItemView {
+    background-color: #1E1E1E;
+    color: #EEEEEE;
+    selection-background-color: rgba(55, 138, 221, 0.35);
+    selection-color: #FFFFFF;
+    outline: none;
+}
+
 QDateEdit#SmartFolderDateEdit {
     background-color: #252526;
     color: #EEEEEE;
