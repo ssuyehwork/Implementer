@@ -607,9 +607,15 @@ void FavoritePanel::onInternalMoveRequested(const QList<QPersistentModelIndex>& 
 }
 
 void FavoritePanel::onFavoriteClicked(const QModelIndex& index) {
-    if (m_favoriteView) {
-        m_favoriteView->setFocus();
-    }
+    if (!index.isValid()) return;
+
+    // 🚀【防抢焦机制】：联动导航后，延迟夺回键盘焦点给收藏栏
+    QTimer::singleShot(0, this, [this, index]() {
+        if (m_favoriteView) {
+            m_favoriteView->setFocus(Qt::MouseFocusReason);
+            m_favoriteView->setCurrentIndex(index);
+        }
+    });
 
     bool isVirtual = index.data(Qt::UserRole + 7).toBool();
     if (isVirtual) {

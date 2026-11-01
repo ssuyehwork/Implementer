@@ -11,6 +11,7 @@
 #include <QWindow>
 #include <QGuiApplication>
 #include <QCursor>
+#include <QTreeView>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -81,18 +82,50 @@ bool QuarkApplication::notify(QObject* receiver, QEvent* event) {
             }
         }
 
-        // 2. 全局 Ctrl+W 按键拦截：响应活动窗口/对话框关闭
+        // 2. 全局 F2 与 Ctrl+W 按键拦截
         if (type == QEvent::KeyPress) {
             QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
-            if (keyEvent->key() == Qt::Key_F2) {
+            if (keyEvent->key() == Qt::Key_F2 && keyEvent->modifiers() == Qt::NoModifier) {
                 QWidget* focusW = QApplication::focusWidget();
-                QString rClass = receiver->metaObject()->className();
-                QString rName = receiver->objectName();
-                QString fClass = focusW ? focusW->metaObject()->className() : "null";
-                QString fName = focusW ? focusW->objectName() : "null";
-                QString msg = QString("[GLOBAL_KEY_DEBUG] F2 KeyPress in QuarkApplication::notify: receiver=%1 (%2), focusWidget=%3 (%4)")
-                              .arg(rClass, rName, fClass, fName);
-                Logger::log(msg);
+
+                // 如果焦点在树控件本身，或者因为焦点被偷走但鼠标悬停/选中的是 LibraryTreeView 或 FavoriteTreeView
+                QWidget* candidateTree = focusW;
+                if (!candidateTree || candidateTree->objectName() == "NavTreeView") {
+                    // 尝试在主窗口下寻找当前可见且有选中项的 FavoriteTreeView 或 LibraryTreeView
+                    QWidget* activeWin = QApplication::activeWindow();
+                    if (activeWin) {
+                        auto* libTree = activeWin->findChild<QTreeView*>("LibraryTreeView");
+                        auto* favTree = activeWin->findChild<QTreeView*>("FavoriteTreeView");
+                        if (libTree && libTree->isVisible() && libTree->currentIndex().isValid() && libTree->underMouse()) {
+                            candidateTree = libTree;
+                        } else if (favTree && favTree->isVisible() && favTree->currentIndex().isValid() && favTree->underMouse()) {
+                            candidateTree = favTree;
+                        }
+                    }
+                }
+
+                if (candidateTree) {
+                    if (candidateTree->objectName() == "LibraryTreeView") {
+                        QTreeView* tv = qobject_cast<QTreeView*>(candidateTree);
+                        if (tv && tv->currentIndex().isValid()) {
+                            int nodeId = tv->currentIndex().data(Qt::UserRole + 1).toInt();
+                            if (nodeId > 0) { // 仅自定义分类与智能文件夹
+                                tv->setFocus();
+                                tv->edit(tv->currentIndex());
+                                event->accept();
+                                return true;
+                            }
+                        }
+                    } else if (candidateTree->objectName() == "FavoriteTreeView") {
+                        QTreeView* tv = qobject_cast<QTreeView*>(candidateTree);
+                        if (tv && tv->currentIndex().isValid()) {
+                            tv->setFocus();
+                            tv->edit(tv->currentIndex());
+                            event->accept();
+                            return true;
+                        }
+                    }
+                }
             }
             if (keyEvent->key() == Qt::Key_W && (keyEvent->modifiers() & Qt::ControlModifier)) {
                 QWidget* activeWin = QGuiApplication::focusWindow() ? QWidget::find(QGuiApplication::focusWindow()->winId()) : nullptr;

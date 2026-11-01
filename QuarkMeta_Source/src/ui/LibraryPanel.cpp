@@ -805,17 +805,17 @@ void LibraryPanel::toggleSection() {
 }
 
 void LibraryPanel::onCategoryClicked(const QModelIndex& index) {
-    if (m_treeView) {
-        m_treeView->setFocus();
-    }
     if (!index.isValid()) return;
+
+    // 🚀【防抢焦机制】：在信号分发导致的后台联动（NavPanel/ContentPanel）完成后，将焦点稳稳锁定在自己身上
+    QTimer::singleShot(0, this, [this, index]() {
+        if (m_treeView) {
+            m_treeView->setFocus(Qt::MouseFocusReason);
+            m_treeView->setCurrentIndex(index);
+        }
+    });
+
     int nodeId = index.data(Qt::UserRole + 1).toInt();
-    QString clickLog = QString("[F2_DEBUG] onCategoryClicked: nodeId=%1, name=%2, hasFocus=%3")
-                       .arg(nodeId)
-                       .arg(index.data(Qt::DisplayRole).toString())
-                       .arg(m_treeView ? m_treeView->hasFocus() : false);
-    Logger::log(clickLog);
-    qDebug() << clickLog;
     if (nodeId == -10 || nodeId == -20 || nodeId == 0) {
         return;
     }
