@@ -25,6 +25,16 @@ public:
     bool handleEvent(QObject* obj, QEvent* event);
 
     /**
+     * @brief 视图首项导航 (Ctrl+Home 选中并滚动，跳过分组头)
+     */
+    static bool navigateViewFirstItem(QAbstractItemView* view);
+
+    /**
+     * @brief 视图末项导航 (Ctrl+End 选中并滚动，跳过分组头)
+     */
+    static bool navigateViewLastItem(QAbstractItemView* view);
+
+    /**
      * @brief 执行快捷移入/重复移入到目标文件夹
      */
     static bool executeMoveToFolder(ContentPanel* panel, const QString& targetDir);

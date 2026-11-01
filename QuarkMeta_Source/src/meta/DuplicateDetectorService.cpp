@@ -57,7 +57,7 @@ QString DuplicateDetectorService::computeFullSha256(const QString& filePath, con
         }
         qint64 bytesRead = file.read(buffer.data(), kBufferSize);
         if (bytesRead <= 0) break;
-        hash.addData(buffer.constData(), bytesRead);
+        hash.addData(QByteArrayView(buffer.constData(), bytesRead));
     }
     file.close();
 

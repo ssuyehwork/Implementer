@@ -24,9 +24,17 @@ void FileNameLineEdit::focusInEvent(QFocusEvent* event) {
  
 void FileNameLineEdit::keyPressEvent(QKeyEvent* event) { 
     int key = event->key(); 
-    if (key == Qt::Key_Up || key == Qt::Key_Down) { 
+    if (key == Qt::Key_Up) {
+        setCursorPosition(0);
+        deselect();
         event->accept(); 
-        return; // Consume Up/Down to prevent item view row shifting 
+        return; // Consume Up to prevent item view row shifting and jump to start
+    }
+    if (key == Qt::Key_Down) {
+        setCursorPosition(text().length());
+        deselect();
+        event->accept();
+        return; // Consume Down to prevent item view row shifting and jump to end
     } 
     if (key == Qt::Key_Left || key == Qt::Key_Right) { 
         if (hasSelectedText()) { 

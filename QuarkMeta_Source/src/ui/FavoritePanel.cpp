@@ -1,4 +1,6 @@
 #include "FavoritePanel.h"
+#include "controllers/ContentKeyHandler.h"
+#include <QKeyEvent>
 #include "UiHelper.h"
 #include "ShellIconManager.h"
 #include "WindowsShellThumbnailProvider.h"
@@ -237,6 +239,27 @@ FavoritePanel::FavoritePanel(QWidget* parent)
     loadFavorites();
 }
 
+bool FavoritePanel::eventFilter(QObject* watched, QEvent* event) {
+    if (watched == m_favoriteView && event->type() == QEvent::KeyPress) {
+        QKeyEvent* keyEv = static_cast<QKeyEvent*>(event);
+        if (keyEv->key() == Qt::Key_F2 && keyEv->modifiers() == Qt::NoModifier) {
+            QModelIndex curIdx = m_favoriteView->currentIndex();
+            if (curIdx.isValid()) {
+                m_favoriteView->edit(curIdx);
+                return true;
+            }
+        }
+        if (keyEv->modifiers() & Qt::ControlModifier) {
+            if (keyEv->key() == Qt::Key_Home) {
+                if (ContentKeyHandler::navigateViewFirstItem(m_favoriteView)) return true;
+            } else if (keyEv->key() == Qt::Key_End) {
+                if (ContentKeyHandler::navigateViewLastItem(m_favoriteView)) return true;
+            }
+        }
+    }
+    return QFrame::eventFilter(watched, event);
+}
+
 void FavoritePanel::setFocusHighlight(bool visible) {
     Q_UNUSED(visible);
 }
@@ -258,6 +281,7 @@ void FavoritePanel::initUi() {
     m_favoriteView->setDefaultDropAction(Qt::MoveAction);
     m_favoriteView->setDragDropMode(QAbstractItemView::DragDrop);
     m_favoriteView->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    m_favoriteView->installEventFilter(this);
     m_favoriteView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_favoriteView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 

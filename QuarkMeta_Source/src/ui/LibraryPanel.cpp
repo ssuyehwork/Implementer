@@ -1,4 +1,6 @@
 #include "LibraryPanel.h"
+#include "controllers/ContentKeyHandler.h"
+#include <QKeyEvent>
 #include "UiHelper.h"
 #include "ToolTipOverlay.h"
 #include "PresetTagsDialog.h"
@@ -385,6 +387,7 @@ void LibraryPanel::initUi() {
     m_treeView->setDragDropMode(QAbstractItemView::DragDrop);
     m_treeView->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     m_treeView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_treeView->installEventFilter(this);
 
     m_model = new QStandardItemModel(this);
     m_treeView->setModel(m_model);
@@ -761,6 +764,31 @@ void LibraryPanel::toggleSectionByNodeId(int nodeId) {
     else configKey = "Library/CustomSectionCollapsed";
 
     AppConfig::instance().setValue(configKey, isExpanded);
+}
+
+bool LibraryPanel::eventFilter(QObject* watched, QEvent* event) {
+    if (watched == m_treeView && event->type() == QEvent::KeyPress) {
+        QKeyEvent* keyEv = static_cast<QKeyEvent*>(event);
+        if (keyEv->key() == Qt::Key_F2 && keyEv->modifiers() == Qt::NoModifier) {
+            QModelIndex curIdx = m_treeView->currentIndex();
+            if (curIdx.isValid()) {
+                int nodeId = curIdx.data(Qt::UserRole + 1).toInt();
+                // 阻断内置保护项（ID: -1 全部数据, -2 未分类, -10 分组等）及智能文件夹
+                if (nodeId > 0 && curIdx.data(TypeRole).toString() != "smart_folder") {
+                    m_treeView->edit(curIdx);
+                    return true;
+                }
+            }
+        }
+        if (keyEv->modifiers() & Qt::ControlModifier) {
+            if (keyEv->key() == Qt::Key_Home) {
+                if (ContentKeyHandler::navigateViewFirstItem(m_treeView)) return true;
+            } else if (keyEv->key() == Qt::Key_End) {
+                if (ContentKeyHandler::navigateViewLastItem(m_treeView)) return true;
+            }
+        }
+    }
+    return QFrame::eventFilter(watched, event);
 }
 
 void LibraryPanel::toggleSection() {
