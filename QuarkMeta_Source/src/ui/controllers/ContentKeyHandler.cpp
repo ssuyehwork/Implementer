@@ -1,6 +1,5 @@
 #include "ContentKeyHandler.h"
 #include "../ContentPanel.h"
-#include "../Logger.h"
 #include "../CardLayoutEngine.h"
 #include "../RatingBarLayout.h"
 #include "../ToolTipOverlay.h"
@@ -591,7 +590,6 @@ bool ContentKeyHandler::handleKeyPress(QObject* obj, QEvent* event) {
 
     // 6. 基础文件操作键
     if (keyEvent->key() == Qt::Key_F2) {
-        Logger::log("[CONTENT_KEY_DEBUG] F2 intercepted in ContentKeyHandler::handleKeyPress!");
         QStringList selectedPaths = m_panel->getSelectedPaths();
         if (selectedPaths.size() > 1) {
             m_panel->performBatchRename();
