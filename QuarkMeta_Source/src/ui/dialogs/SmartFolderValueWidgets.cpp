@@ -6,6 +6,7 @@
 #include <QPainter>
 #include <QPixmap>
 #include <QCalendarWidget>
+#include "../ColorPicker.h"
 
 namespace QuarkMeta {
 
@@ -351,15 +352,13 @@ AutoColorValueWidget::AutoColorValueWidget(QWidget* parent) : ISmartFolderValueW
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(8);
 
-    m_combo = new QComboBox(this);
-    m_combo->setObjectName("SmartFolderComboBox");
-
-    auto palette = Style::getColorPalette();
-    for (const auto& item : palette) {
-        QPixmap pm(14, 14);
-        pm.fill(item.color);
-        m_combo->addItem(QIcon(pm), item.name, item.hex);
-    }
+    m_colorBtn = new QPushButton(this);
+    m_colorBtn->setObjectName("SmartFolderAutoColorBtn");
+    m_colorBtn->setFixedSize(28, 24);
+    m_colorBtn->setCursor(Qt::PointingHandCursor);
+    updateBtnStyle();
+    connect(m_colorBtn, &QPushButton::clicked, this, &AutoColorValueWidget::openColorPicker);
+    layout->addWidget(m_colorBtn);
 
     m_toleranceSpin = new QSpinBox(this);
     m_toleranceSpin->setObjectName("SmartFolderSpinBox");
@@ -367,29 +366,54 @@ AutoColorValueWidget::AutoColorValueWidget(QWidget* parent) : ISmartFolderValueW
     m_toleranceSpin->setValue(50);
     m_toleranceSpin->setPrefix("容差: ");
 
-    layout->addWidget(m_combo, 1);
-    layout->addWidget(m_toleranceSpin);
+    layout->addWidget(m_toleranceSpin, 1);
 
-    connect(m_combo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ISmartFolderValueWidget::valueChanged);
     connect(m_toleranceSpin, QOverload<int>::of(&QSpinBox::valueChanged), this, &ISmartFolderValueWidget::valueChanged);
 }
 
+void AutoColorValueWidget::updateBtnStyle() {
+    m_colorBtn->setStyleSheet(QString(
+        "QPushButton#SmartFolderAutoColorBtn { "
+        "  background-color: %1; "
+        "  border: 1px solid #444444; "
+        "  border-radius: 4px; "
+        "} "
+        "QPushButton#SmartFolderAutoColorBtn:hover { "
+        "  border: 1px solid #378ADD; "
+        "}"
+    ).arg(m_colorHex));
+    m_colorBtn->setToolTip(m_colorHex);
+}
+
+void AutoColorValueWidget::openColorPicker() {
+    auto* picker = new ColorPicker(this);
+    picker->setCurrentColor(QColor(m_colorHex));
+    picker->setTolerance(m_toleranceSpin->value());
+
+    QPoint globalPos = m_colorBtn->mapToGlobal(QPoint(0, m_colorBtn->height() + 2));
+    picker->move(globalPos);
+
+    connect(picker, &ColorPicker::colorSelected, this, [this](const QColor& c, int tol) {
+        m_colorHex = c.name(QColor::HexRgb).toUpper();
+        m_toleranceSpin->setValue(tol);
+        updateBtnStyle();
+        emit valueChanged();
+    });
+
+    picker->show();
+}
+
 void AutoColorValueWidget::getRuleValues(SmartFolderRule& rule) const {
-    rule.value = m_combo->currentData().toString();
+    rule.value = m_colorHex;
     rule.tolerance = m_toleranceSpin->value();
 }
 
 void AutoColorValueWidget::setRuleValues(const SmartFolderRule& rule) {
-    int idx = m_combo->findData(rule.value);
-    if (idx >= 0) {
-        m_combo->setCurrentIndex(idx);
-    } else if (!rule.value.isEmpty()) {
-        QPixmap pm(14, 14);
-        pm.fill(QColor(rule.value));
-        m_combo->addItem(QIcon(pm), rule.value, rule.value);
-        m_combo->setCurrentIndex(m_combo->count() - 1);
+    if (!rule.value.isEmpty()) {
+        m_colorHex = rule.value.toUpper();
     }
     m_toleranceSpin->setValue(rule.tolerance > 0 ? rule.tolerance : 50);
+    updateBtnStyle();
 }
 
 // --- TagPillValueWidget ---

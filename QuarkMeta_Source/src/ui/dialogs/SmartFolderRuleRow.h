@@ -22,6 +22,7 @@ public:
 signals:
     void removeRequested(SmartFolderRuleRow* row);
     void rowHeightChanged();
+    void ruleChanged();
 
 private slots:
     void onTypeChanged();

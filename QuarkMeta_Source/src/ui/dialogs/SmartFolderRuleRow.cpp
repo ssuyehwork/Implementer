@@ -49,8 +49,14 @@ void SmartFolderRuleRow::initUi() {
 
     m_layout->addWidget(m_btnDelete);
 
-    connect(m_typeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &SmartFolderRuleRow::onTypeChanged);
-    connect(m_opCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &SmartFolderRuleRow::onOpChanged);
+    connect(m_typeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this]() {
+        onTypeChanged();
+        emit ruleChanged();
+    });
+    connect(m_opCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this]() {
+        onOpChanged();
+        emit ruleChanged();
+    });
     connect(m_btnDelete, &QPushButton::clicked, this, [this]() {
         emit removeRequested(this);
     });
@@ -206,6 +212,7 @@ void SmartFolderRuleRow::updateValueWidget() {
         }
         updateGeometry();
         emit rowHeightChanged();
+        emit ruleChanged();
     });
 
     updateGeometry();

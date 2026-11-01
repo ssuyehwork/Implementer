@@ -57,6 +57,7 @@ public:
     // 2026-05-17 按照用户要求：新增 currentTolerance() 以暴露准确度滑条当前值
     int    currentTolerance() const;
     void setCurrentColor(const QColor& c);
+    void setTolerance(int val);
 
 signals:
     // 2026-05-17 按照用户要求：信号增加 tolerance 参数，让接收方直接获取准确度值

@@ -444,6 +444,28 @@ void PanelMediator::setupConnections() {
                     titleBar->tabBar()->updateCurrentTabTitle(record.name, "smartfolder://" + QString::number(record.id));
                 }
             });
+
+            connect(libraryPanel, &LibraryPanel::smartFolderPreviewRequested, this, [this, contentPanel, filterPanel, addressBar, titleBar](const SmartFolderRecord& record) {
+                QStringList matchingPaths = SmartFolderDao::getMatchingPaths(record);
+                ContentPanel* target = m_activeContentPanel ? m_activeContentPanel.data() : contentPanel;
+                if (target) {
+                    QString displayName = record.name.isEmpty() ? "智能文件夹预览" : record.name;
+                    target->applyViewTarget(QString("smartfolder://%1").arg(record.id), "smart_folder", displayName, -20, false);
+                    target->setLastLoadedLibraryPaths(matchingPaths);
+                    target->loadLibraryPaths(matchingPaths);
+                }
+                if (addressBar) {
+                    QString displayName = record.name.isEmpty() ? "智能文件夹预览" : record.name;
+                    addressBar->setPath("库 → " + displayName);
+                }
+                if (filterPanel) {
+                    filterPanel->clearAllFilters(false);
+                }
+                if (titleBar && titleBar->tabBar()) {
+                    QString displayName = record.name.isEmpty() ? "智能文件夹预览" : record.name;
+                    titleBar->tabBar()->updateCurrentTabTitle(displayName, "smartfolder://" + QString::number(record.id));
+                }
+            });
         }
 
     if (contentPanel) {

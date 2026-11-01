@@ -404,6 +404,7 @@ void LibraryPanel::initUi() {
         if (nodeId == -20) {
             // 触发智能文件夹规则配置对话框
             SmartFolderDialog dlg(this);
+            connect(&dlg, &SmartFolderDialog::rulesPreviewRequested, this, &LibraryPanel::smartFolderPreviewRequested);
             if (dlg.exec() == QDialog::Accepted) {
                 SmartFolderRecord rec = dlg.getRecord();
                 int id = SmartFolderDao::addSmartFolder(rec);
@@ -928,6 +929,7 @@ void LibraryPanel::onCategoryContextMenu(const QPoint& pos) {
         connect(editRuleAct, &QAction::triggered, this, [this, smartFolderId]() {
             SmartFolderRecord rec = SmartFolderDao::getSmartFolderById(smartFolderId);
             SmartFolderDialog dlg(rec, this);
+            connect(&dlg, &SmartFolderDialog::rulesPreviewRequested, this, &LibraryPanel::smartFolderPreviewRequested);
             if (dlg.exec() == QDialog::Accepted) {
                 SmartFolderRecord updatedRec = dlg.getRecord();
                 if (SmartFolderDao::updateSmartFolder(updatedRec)) {
@@ -994,6 +996,7 @@ void LibraryPanel::onCategoryContextMenu(const QPoint& pos) {
         QAction* newSmartAct = menu.addAction(UiHelper::getIcon("smart-folder-1.svg", QColor("#EEEEEE")), "新建智能文件夹");
         connect(newSmartAct, &QAction::triggered, this, [this]() {
             SmartFolderDialog dlg(this);
+            connect(&dlg, &SmartFolderDialog::rulesPreviewRequested, this, &LibraryPanel::smartFolderPreviewRequested);
             if (dlg.exec() == QDialog::Accepted) {
                 SmartFolderRecord rec = dlg.getRecord();
                 int id = SmartFolderDao::addSmartFolder(rec);

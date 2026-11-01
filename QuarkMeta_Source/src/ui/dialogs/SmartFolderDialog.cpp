@@ -57,6 +57,9 @@ void SmartFolderDialog::setupUi() {
     topLayout->addWidget(modeLabel);
     topLayout->addWidget(m_matchModeCombo);
 
+    connect(m_nameEdit, &QLineEdit::textChanged, this, [this]() { schedulePreview(); });
+    connect(m_matchModeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this]() { schedulePreview(); });
+
     bodyLayout->addLayout(topLayout);
 
     // 分割线
@@ -137,6 +140,7 @@ void SmartFolderDialog::setupUi() {
             SmartFolderRuleRow* row = new SmartFolderRuleRow(rule, scrollContent);
             connect(row, &SmartFolderRuleRow::removeRequested, this, &SmartFolderDialog::onRemoveRule);
             connect(row, &SmartFolderRuleRow::rowHeightChanged, this, &SmartFolderDialog::adjustAdaptiveSize);
+            connect(row, &SmartFolderRuleRow::ruleChanged, this, &SmartFolderDialog::schedulePreview);
             m_rulesLayout->insertWidget(m_rulesLayout->count() - 1, row);
             m_ruleRows.append(row);
         }
@@ -203,14 +207,27 @@ bool SmartFolderDialog::event(QEvent* event) {
     return result;
 }
 
+void SmartFolderDialog::schedulePreview() {
+    if (!m_previewTimer) {
+        m_previewTimer = new QTimer(this);
+        m_previewTimer->setSingleShot(true);
+        connect(m_previewTimer, &QTimer::timeout, this, [this]() {
+            emit rulesPreviewRequested(getRecord());
+        });
+    }
+    m_previewTimer->start(150);
+}
+
 void SmartFolderDialog::onAddRule() {
     QWidget* scrollContent = m_rulesLayout->parentWidget();
     SmartFolderRuleRow* row = new SmartFolderRuleRow(scrollContent);
     connect(row, &SmartFolderRuleRow::removeRequested, this, &SmartFolderDialog::onRemoveRule);
     connect(row, &SmartFolderRuleRow::rowHeightChanged, this, &SmartFolderDialog::adjustAdaptiveSize);
+    connect(row, &SmartFolderRuleRow::ruleChanged, this, &SmartFolderDialog::schedulePreview);
     m_rulesLayout->insertWidget(m_rulesLayout->count() - 1, row);
     m_ruleRows.append(row);
     adjustAdaptiveSize();
+    schedulePreview();
 }
 
 void SmartFolderDialog::onRemoveRule(SmartFolderRuleRow* row) {
@@ -219,6 +236,7 @@ void SmartFolderDialog::onRemoveRule(SmartFolderRuleRow* row) {
     m_rulesLayout->removeWidget(row);
     row->deleteLater();
     adjustAdaptiveSize();
+    schedulePreview();
 }
 
 void SmartFolderDialog::onSaveAndAccept() {

@@ -12,6 +12,7 @@
 #include <QPointer>
 #include <QEvent>
 #include <QScrollArea>
+#include <QTimer>
 
 namespace QuarkMeta {
 
@@ -23,6 +24,9 @@ public:
     ~SmartFolderDialog() override = default;
 
     SmartFolderRecord getRecord() const;
+
+signals:
+    void rulesPreviewRequested(const SmartFolderRecord& record);
 
 private slots:
     void onAddRule();
@@ -44,6 +48,8 @@ private:
     QPushButton* m_btnCancel{nullptr};
     QPushButton* m_btnSave{nullptr};
 
+    QTimer* m_previewTimer{nullptr};
+    void schedulePreview();
     void adjustAdaptiveSize();
 
 protected:

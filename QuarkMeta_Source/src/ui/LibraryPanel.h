@@ -76,6 +76,7 @@ signals:
     void categoryPathsSelected(const QStringList& paths, const QString& name = QString(), int categoryId = 0);
     void smartFolderSelected(const SmartFolderRecord& record);
     void requestLocateFile(const QString& path);
+    void smartFolderPreviewRequested(const SmartFolderRecord& record);
 
 private slots:
     void onCategoryClicked(const QModelIndex& index);

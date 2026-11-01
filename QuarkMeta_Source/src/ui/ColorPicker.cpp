@@ -328,6 +328,12 @@ int ColorPicker::currentTolerance() const {
     return m_toleranceSlider ? m_toleranceSlider->value() : 30;
 }
 
+void ColorPicker::setTolerance(int val) {
+    if (m_toleranceSlider) {
+        m_toleranceSlider->setValue(qBound(0, val, 100));
+    }
+}
+
 
 // --- ColorStripPicker 实现 ---
 ColorStripPicker::ColorStripPicker(const QString& currentColorHex, QWidget* parent)
