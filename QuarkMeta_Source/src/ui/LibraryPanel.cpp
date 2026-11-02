@@ -74,8 +74,27 @@ bool LibraryItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* model, 
                         return true;
                     }
                 }
-                emit requestToggleSection(nodeId);
-                return true;
+
+                // 严格收窄 Hit-test 判定：仅当精准点击紧随标题右侧的折叠箭头时才触发折叠/展开
+                int countVal = index.data(Qt::UserRole + 9).toInt();
+                QString sectionText;
+                if (nodeId == -10) sectionText = QString("快速访问(%1)").arg(countVal);
+                else if (nodeId == -20) sectionText = QString("智能文件夹(%1)").arg(countVal);
+                else sectionText = QString("文件夹(%1)").arg(countVal);
+
+                QFont hdrFont = option.font;
+                hdrFont.setPointSize(10);
+                hdrFont.setBold(true);
+                QFontMetrics fm(hdrFont);
+                int textWidth = fm.horizontalAdvance(sectionText);
+                int arrowLeft = option.rect.left() + 10 + textWidth + 4;
+                QRect arrowClickRect(arrowLeft - 2, option.rect.top() + (option.rect.height() - 14) / 2 - 2, 18, 18);
+
+                if (arrowClickRect.contains(mouseEv->pos())) {
+                    emit requestToggleSection(nodeId);
+                    return true;
+                }
+                return true; // 消费点击事件，防止误触或漂移
             }
         }
     } else if (nodeId > 0 && model && model->hasChildren(index)) {
@@ -428,17 +447,43 @@ void LibraryPanel::initUi() {
     m_treeView->setInternalDragValidator([](const QModelIndex& index) {
         if (!index.isValid()) return false;
         int nodeId = index.data(Qt::UserRole + 1).toInt();
-        return nodeId > 0;
+        QString type = index.data(TypeRole).toString();
+        // 允许普通分类(nodeId > 0 且 type != "smart_folder")与智能文件夹(nodeId > 0 且 type == "smart_folder")拖拽
+        return nodeId > 0 && (type == "smart_folder" || type != "section");
     });
 
     m_treeView->setInternalDropValidator([this](const QList<QPersistentModelIndex>& sources, const QModelIndex& target, InternalDropZone zone) -> bool {
         if (sources.isEmpty()) return false;
 
-        // 校验 sources 节点：全为 nodeId > 0
+        bool isSmartFolderDrag = false;
         for (const QPersistentModelIndex& psrc : sources) {
             if (!psrc.isValid()) return false;
             int srcId = psrc.data(Qt::UserRole + 1).toInt();
             if (srcId <= 0) return false;
+            if (psrc.data(TypeRole).toString() == "smart_folder") {
+                isSmartFolderDrag = true;
+            }
+        }
+
+        // 智能文件夹同组隔离守卫
+        if (isSmartFolderDrag) {
+            QStandardItem* sfHeader = findItemByNodeId(m_model->invisibleRootItem(), -20);
+            if (!sfHeader) return false;
+
+            if (zone == InternalDropZone::OnItem) {
+                if (!target.isValid()) return false;
+                // 仅允许直接拖到智能文件夹 Header (-20)
+                return target.data(Qt::UserRole + 1).toInt() == -20;
+            } else if (zone == InternalDropZone::Above || zone == InternalDropZone::Below) {
+                if (!target.isValid()) return false;
+                // 目标必须为智能文件夹子项
+                if (target.data(TypeRole).toString() != "smart_folder") return false;
+                for (const QPersistentModelIndex& psrc : sources) {
+                    if (psrc.isValid() && psrc == target) return false;
+                }
+                return true;
+            }
+            return false;
         }
 
         auto isSourceOrDescendant = [](const QModelIndex& idx, const QList<QPersistentModelIndex>& srcList) -> bool {
@@ -569,6 +614,59 @@ void LibraryPanel::flushOrder() {
 
 void LibraryPanel::onInternalMoveRequested(const QList<QPersistentModelIndex>& sources, const QModelIndex& target, InternalDropZone zone) {
     if (sources.isEmpty() || !m_model) return;
+
+    bool isSmartFolderMove = false;
+    for (const auto& psrc : sources) {
+        if (psrc.isValid() && psrc.data(TypeRole).toString() == "smart_folder") {
+            isSmartFolderMove = true;
+            break;
+        }
+    }
+
+    if (isSmartFolderMove) {
+        QStandardItem* sfHeader = findItemByNodeId(m_model->invisibleRootItem(), -20);
+        if (!sfHeader) return;
+
+        int destRow = sfHeader->rowCount();
+        if (zone == InternalDropZone::Above && target.isValid()) {
+            destRow = target.row();
+        } else if (zone == InternalDropZone::Below && target.isValid()) {
+            destRow = target.row() + 1;
+        }
+
+        QList<QStandardItem*> itemsToMove;
+        for (const auto& psrc : sources) {
+            if (psrc.isValid()) {
+                QStandardItem* item = m_model->itemFromIndex(psrc);
+                if (item) itemsToMove.append(item);
+            }
+        }
+        if (itemsToMove.isEmpty()) return;
+
+        QList<QStandardItem*> movedItemsList;
+        for (QStandardItem* item : itemsToMove) {
+            int srcRow = item->row();
+            QList<QStandardItem*> rowItems = sfHeader->takeRow(srcRow);
+            if (rowItems.isEmpty()) continue;
+
+            int insertRow = destRow;
+            if (srcRow < insertRow) insertRow--;
+            sfHeader->insertRow(insertRow, rowItems);
+            destRow = insertRow + 1;
+            movedItemsList.append(rowItems.first());
+        }
+
+        if (m_treeView && m_treeView->selectionModel()) {
+            m_treeView->selectionModel()->clearSelection();
+            for (QStandardItem* movedItem : movedItemsList) {
+                m_treeView->selectionModel()->select(movedItem->index(), QItemSelectionModel::Select | QItemSelectionModel::Rows);
+            }
+        }
+
+        saveLibraryOrder();
+        m_orderDirty = false;
+        return;
+    }
 
     QStandardItem* sectionItem = findItemByNodeId(m_model->invisibleRootItem(), 0);
     if (!sectionItem) return;
@@ -730,6 +828,24 @@ void LibraryPanel::saveLibraryOrder() {
 
     if (!entries.isEmpty()) {
         LibraryDao::updateNodesParentAndOrder(entries);
+    }
+
+    // 持久化智能文件夹自定义排序
+    QStandardItem* sfHeader = findItemByNodeId(m_model->invisibleRootItem(), -20);
+    if (sfHeader) {
+        QList<QPair<int, int>> sfOrderList;
+        int sfOrder = 1;
+        for (int i = 0; i < sfHeader->rowCount(); ++i) {
+            QStandardItem* sfChild = sfHeader->child(i);
+            if (!sfChild) continue;
+            int sfId = sfChild->data(Qt::UserRole + 1).toInt();
+            if (sfId > 0) {
+                sfOrderList.append(qMakePair(sfId, sfOrder++));
+            }
+        }
+        if (!sfOrderList.isEmpty()) {
+            SmartFolderDao::updateSmartFolderOrder(sfOrderList);
+        }
     }
 }
 

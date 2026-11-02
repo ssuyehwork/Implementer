@@ -7,7 +7,9 @@
 #include <QPixmap>
 #include <QCalendarWidget>
 #include <QPoint>
-#include "../ColorPicker.h"
+#include "../components/ColorWheel.h"
+#include <QLabel>
+#include <QSlider>
 
 namespace QuarkMeta {
 
@@ -344,6 +346,105 @@ void ManualColorValueWidget::setRuleValues(const SmartFolderRule& rule) {
     }
 }
 
+// --- SmartFolderColorWheelPopup ---
+class SmartFolderColorWheelPopup : public QWidget {
+public:
+    SmartFolderColorWheelPopup(const QString& initialHex, int initialTol, QWidget* parent = nullptr)
+        : QWidget(parent, Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint)
+    {
+        setAttribute(Qt::WA_StyledBackground, true);
+        setStyleSheet(
+            "QWidget { background-color: #1E1E1E; border: 1px solid #3E3E42; border-radius: 6px; }"
+            "QLabel { color: #CCCCCC; font-size: 12px; border: none; }"
+            "QLineEdit { background: #252526; color: #FFFFFF; border: 1px solid #3E3E42; border-radius: 3px; padding: 2px 4px; }"
+            "QSlider::groove:horizontal { height: 4px; background: #3E3E42; border-radius: 2px; }"
+            "QSlider::sub-page:horizontal { background: #007ACC; border-radius: 2px; }"
+            "QSlider::handle:horizontal { width: 12px; margin-top: -4px; margin-bottom: -4px; border-radius: 6px; background: #FFFFFF; }"
+        );
+
+        auto* layout = new QVBoxLayout(this);
+        layout->setContentsMargins(12, 12, 12, 12);
+        layout->setSpacing(8);
+
+        // 1. 复用 ColorWheel 色轮组件
+        m_wheel = new ColorWheel(this);
+        layout->addWidget(m_wheel, 0, Qt::AlignCenter);
+
+        // 2. Hex 文本显示与输入行
+        auto* hexRow = new QHBoxLayout();
+        hexRow->setContentsMargins(0, 0, 0, 0);
+        hexRow->setSpacing(6);
+        auto* hexLabel = new QLabel("颜色:", this);
+        m_hexEdit = new QLineEdit(this);
+        m_hexEdit->setText(initialHex);
+        m_hexEdit->setFixedWidth(90);
+        hexRow->addWidget(hexLabel);
+        hexRow->addWidget(m_hexEdit);
+        hexRow->addStretch();
+        layout->addLayout(hexRow);
+
+        // 3. 容差滑块调节行
+        auto* tolRow = new QHBoxLayout();
+        tolRow->setContentsMargins(0, 0, 0, 0);
+        tolRow->setSpacing(6);
+        auto* tolLabel = new QLabel("容差:", this);
+        m_tolSlider = new QSlider(Qt::Horizontal, this);
+        m_tolSlider->setRange(0, 100);
+        m_tolSlider->setValue(initialTol);
+        m_tolValLabel = new QLabel(QString::number(initialTol), this);
+        m_tolValLabel->setFixedWidth(28);
+        tolRow->addWidget(tolLabel);
+        tolRow->addWidget(m_tolSlider, 1);
+        tolRow->addWidget(m_tolValLabel);
+        layout->addLayout(tolRow);
+
+        // 初始化色轮值
+        QColor initCol(initialHex);
+        int hue = initCol.isValid() ? qMax(0, initCol.hsvHue()) : 0;
+        m_wheel->setValues(hue, initialTol);
+
+        // 色轮变动响应
+        connect(m_wheel, &ColorWheel::changed, this, [this](int h, int p) {
+            QColor col = QColor::fromHsv(h, 255, 255);
+            QString hex = col.name().toUpper();
+            m_hexEdit->setText(hex);
+            m_tolSlider->setValue(p);
+            m_tolValLabel->setText(QString::number(p));
+            if (m_callback) m_callback(hex, p);
+        });
+
+        // 容差变动响应
+        connect(m_tolSlider, &QSlider::valueChanged, this, [this](int val) {
+            m_tolValLabel->setText(QString::number(val));
+            m_wheel->setValues(m_wheel->hue(), val);
+            if (m_callback) m_callback(m_hexEdit->text().trimmed().toUpper(), val);
+        });
+
+        // Hex 输入回车响应
+        connect(m_hexEdit, &QLineEdit::returnPressed, this, [this]() {
+            QString txt = m_hexEdit->text().trimmed();
+            if (!txt.startsWith('#')) txt.prepend('#');
+            QColor c(txt);
+            if (c.isValid()) {
+                int h = qMax(0, c.hsvHue());
+                m_wheel->setValues(h, m_tolSlider->value());
+                if (m_callback) m_callback(c.name().toUpper(), m_tolSlider->value());
+            }
+        });
+    }
+
+    void setOnColorChanged(std::function<void(const QString&, int)> cb) {
+        m_callback = std::move(cb);
+    }
+
+private:
+    ColorWheel* m_wheel = nullptr;
+    QLineEdit* m_hexEdit = nullptr;
+    QSlider* m_tolSlider = nullptr;
+    QLabel* m_tolValLabel = nullptr;
+    std::function<void(const QString&, int)> m_callback;
+};
+
 // --- AutoColorValueWidget ---
 AutoColorValueWidget::AutoColorValueWidget(QWidget* parent) : ISmartFolderValueWidget(parent) {
     auto* layout = new QHBoxLayout(this);
@@ -355,7 +456,7 @@ AutoColorValueWidget::AutoColorValueWidget(QWidget* parent) : ISmartFolderValueW
     m_colorBtn->setFixedSize(28, 24);
     m_colorBtn->setCursor(Qt::PointingHandCursor);
     updateBtnStyle();
-    connect(m_colorBtn, &QPushButton::clicked, this, &AutoColorValueWidget::openColorPicker);
+    connect(m_colorBtn, &QPushButton::clicked, this, &AutoColorValueWidget::openColorWheelPopup);
     layout->addWidget(m_colorBtn);
 
     m_toleranceSpin = new QSpinBox(this);
@@ -383,22 +484,21 @@ void AutoColorValueWidget::updateBtnStyle() {
     m_colorBtn->setToolTip(m_colorHex);
 }
 
-void AutoColorValueWidget::openColorPicker() {
-    auto* picker = new ColorPicker(this);
-    picker->setCurrentColor(QColor(m_colorHex));
-    picker->setTolerance(m_toleranceSpin->value());
+void AutoColorValueWidget::openColorWheelPopup() {
+    auto* popup = new SmartFolderColorWheelPopup(m_colorHex, m_toleranceSpin->value(), this);
+    popup->setAttribute(Qt::WA_DeleteOnClose);
 
     QPoint globalPos = m_colorBtn->mapToGlobal(QPoint(0, m_colorBtn->height() + 2));
-    picker->move(globalPos);
+    popup->move(globalPos);
 
-    connect(picker, &ColorPicker::colorSelected, this, [this](const QColor& c, int tol) {
-        m_colorHex = c.name(QColor::HexRgb).toUpper();
+    popup->setOnColorChanged([this](const QString& hex, int tol) {
+        m_colorHex = hex;
         m_toleranceSpin->setValue(tol);
         updateBtnStyle();
         emit valueChanged();
     });
 
-    picker->show();
+    popup->show();
 }
 
 void AutoColorValueWidget::getRuleValues(SmartFolderRule& rule) const {

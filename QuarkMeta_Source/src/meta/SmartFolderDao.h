@@ -80,6 +80,7 @@ public:
     static SmartFolderRecord getSmartFolderById(int id);
     static int addSmartFolder(const SmartFolderRecord& rec);
     static bool updateSmartFolder(const SmartFolderRecord& rec);
+    static bool updateSmartFolderOrder(const QList<QPair<int, int>>& idOrderList);
     static bool removeSmartFolderById(int id);
     static int countMatchingItems(const SmartFolderRecord& rec);
     static QMap<int, int> countMatchingItemsBatchReadOnly(const QString& dbPath, const QList<SmartFolderRecord>& records);

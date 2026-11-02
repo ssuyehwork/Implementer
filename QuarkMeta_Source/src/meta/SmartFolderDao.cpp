@@ -278,6 +278,51 @@ bool SmartFolderDao::updateSmartFolder(const SmartFolderRecord& rec) {
     return success;
 }
 
+bool SmartFolderDao::updateSmartFolderOrder(const QList<QPair<int, int>>& idOrderList) {
+    if (idOrderList.isEmpty()) return true;
+
+    sqlite3* db = DatabaseManager::instance().getGlobalDb();
+    if (!db) return false;
+
+    std::lock_guard<std::mutex> lock(DatabaseManager::instance().getGlobalMutex());
+
+    char* errMsg = nullptr;
+    if (sqlite3_exec(db, "BEGIN TRANSACTION;", nullptr, nullptr, &errMsg) != SQLITE_OK) {
+        if (errMsg) sqlite3_free(errMsg);
+        return false;
+    }
+
+    const char* sql = "UPDATE smart_folders SET sort_order = ? WHERE id = ?;";
+    sqlite3_stmt* stmt = nullptr;
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        DatabaseManager::logSqlError("SmartFolderDao::updateSmartFolderOrder prepare", db, sql);
+        sqlite3_exec(db, "ROLLBACK;", nullptr, nullptr, nullptr);
+        return false;
+    }
+
+    bool allOk = true;
+    for (const auto& pair : idOrderList) {
+        sqlite3_reset(stmt);
+        sqlite3_bind_int(stmt, 1, pair.second);
+        sqlite3_bind_int(stmt, 2, pair.first);
+        if (sqlite3_step(stmt) != SQLITE_DONE) {
+            allOk = false;
+            break;
+        }
+    }
+
+    sqlite3_finalize(stmt);
+
+    if (allOk) {
+        sqlite3_exec(db, "COMMIT;", nullptr, nullptr, nullptr);
+        sqlite3_wal_checkpoint_v2(db, nullptr, SQLITE_CHECKPOINT_PASSIVE, nullptr, nullptr);
+        return true;
+    } else {
+        sqlite3_exec(db, "ROLLBACK;", nullptr, nullptr, nullptr);
+        return false;
+    }
+}
+
 QString SmartFolderDao::buildRatingCondition(const SmartFolderRule& rule) {
     int r = rule.num1 > 0 ? static_cast<int>(rule.num1) : rule.value.toInt();
     if (r == 0) {

@@ -153,7 +153,7 @@ public:
 
 private:
     void updateBtnStyle();
-    void openColorPicker();
+    void openColorWheelPopup();
 
     QPushButton* m_colorBtn = nullptr;
     QSpinBox* m_toleranceSpin = nullptr;
