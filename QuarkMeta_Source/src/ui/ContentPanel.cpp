@@ -24,6 +24,7 @@
 #include "UiHelper.h"
 #include "ToolTipOverlay.h"
 #include "../meta/LibraryService.h"
+#include "../meta/LibrarySyncService.h"
 
 #include "../core/AppConfig.h"
 #include "../core/CoreEngine.h"
@@ -1081,6 +1082,11 @@ void ContentPanel::updateItemMetadata(QString path) {
     if (m_gridView && m_gridView->viewport()) m_gridView->viewport()->update();
     if (m_treeView && m_treeView->viewport()) m_treeView->viewport()->update();
     if (m_currentViewMode == ColumnView && m_columnView) m_columnView->updateMetadataForPath(path);
+
+    if (m_currentCategoryType == "smart_folder") {
+        LibrarySyncService::instance().syncPaths({path});
+        refreshSmartFolderIfShowing();
+    }
 }
 
 void ContentPanel::updateItemsMetadata(const QStringList& paths) {
@@ -1090,6 +1096,11 @@ void ContentPanel::updateItemsMetadata(const QStringList& paths) {
     if (m_treeView && m_treeView->viewport()) m_treeView->viewport()->update();
     if (m_currentViewMode == ColumnView && m_columnView) {
         for (const QString& p : paths) m_columnView->updateMetadataForPath(p);
+    }
+
+    if (m_currentCategoryType == "smart_folder") {
+        LibrarySyncService::instance().syncPaths(paths);
+        refreshSmartFolderIfShowing();
     }
 }
 void ContentPanel::migrateModelCache(const QString& oldPath, const QString& newPath) { if (m_model) m_model->migrateCache(oldPath, newPath); }

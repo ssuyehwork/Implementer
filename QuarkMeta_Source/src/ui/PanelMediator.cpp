@@ -1269,15 +1269,24 @@ void PanelMediator::setupConnections() {
                         }
                     }
                 }
+                if (m_libraryPanel) {
+                    m_libraryPanel->refreshSmartFolderCounts();
+                }
             } else if (!event.paths.isEmpty()) {
                 activeOrRoot->updateItemsMetadata(event.paths);
                 if (contentPanel && contentPanel != activeOrRoot) {
                     contentPanel->updateItemsMetadata(event.paths);
                 }
+                if (m_libraryPanel) {
+                    m_libraryPanel->refreshSmartFolderCounts();
+                }
             } else {
                 activeOrRoot->refreshAll();
                 if (contentPanel && contentPanel != activeOrRoot) {
                     contentPanel->refreshAll();
+                }
+                if (m_libraryPanel) {
+                    m_libraryPanel->refreshSmartFolderCounts();
                 }
             }
             // 🚀 拔除直调：统计重算统一由模型的 dataChanged Roles 门禁经 50ms 定时器防抖触发
