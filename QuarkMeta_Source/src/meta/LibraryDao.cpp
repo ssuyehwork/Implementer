@@ -298,6 +298,30 @@ bool LibraryDao::updateNodesParentAndOrder(const QList<NodeOrderEntry>& entries)
     return true;
 }
 
+bool LibraryDao::removePathsFromLibrary(const QStringList& paths) {
+    sqlite3* db = DatabaseManager::instance().getGlobalDb();
+    if (!db || paths.isEmpty()) return false;
+
+    std::lock_guard<std::mutex> lock(DatabaseManager::instance().getGlobalMutex());
+    SqlTransaction trans(db);
+
+    const char* sql = "DELETE FROM library_category_paths WHERE path = ?;";
+    sqlite3_stmt* stmt = nullptr;
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) return false;
+
+    for (const QString& p : paths) {
+        std::string pStd = QDir::toNativeSeparators(QDir::cleanPath(p)).toStdString();
+        sqlite3_bind_text(stmt, 1, pStd.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_step(stmt);
+        sqlite3_reset(stmt);
+    }
+
+    sqlite3_finalize(stmt);
+    bool ok = trans.commit();
+    sqlite3_wal_checkpoint_v2(db, nullptr, SQLITE_CHECKPOINT_PASSIVE, nullptr, nullptr);
+    return ok;
+}
+
 bool LibraryDao::removeCategoryById(int id) {
     sqlite3* db = DatabaseManager::instance().getGlobalDb();
     if (!db || id <= 0) return false;

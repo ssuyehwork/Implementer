@@ -41,7 +41,6 @@
 #include <QDebug>
 #include <QFileInfo>
 #include <QFile>
-#include <QTimer>
 #include <QDesktopServices>
 #include <QStandardPaths>
 #include <QCursor>

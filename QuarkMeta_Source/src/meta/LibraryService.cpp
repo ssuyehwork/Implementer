@@ -59,7 +59,7 @@ bool LibraryService::removePathsFromCategory(int id, const QStringList& paths) {
 
 bool LibraryService::removePathsFromLibrary(const QStringList& paths) {
     if (paths.isEmpty()) return false;
-    bool ok = LibraryDao::addPathsToCategory(0, paths); // category_id = 0 清除归属与索引
+    bool ok = LibraryDao::removePathsFromLibrary(paths);
     if (ok) {
         LibrarySyncService::instance().removePaths(paths);
         emit libraryChanged();

@@ -805,9 +805,9 @@ QuarkMeta 采用“侧车文件持久化 + 中心数据库索引”的读写分�
    - `PanelMediator::setupConnections` 中将 `LibrarySyncService::libraryItemsSynced` 信号连接至 `LibraryPanel::refreshSmartFolderCounts()` 以及主窗格及所有副窗格（`rootPane()->panes()`）的 `refreshSmartFolderIfShowing()`；
    - 严格物理隔离：刷新逻辑仅在面板当前处于智能文件夹时生效，绝对不干扰磁盘目录视图、库分类视图与回收站视图。
 
-## 30. 历史面板多选批量操作与侧边栏“移出/脱管”交互语义规范 (History Batch Operations & Sidebar Drag-to-Remove Contract)
+## 30. 历史面板多选与批量操作规范 (History Panel Multi-Selection & Batch Operations Contract)
 
-> 本章节整理自用户的核心设计理念指导与明确共识，作为 QuarkMeta 侧边栏历史选项卡多选与侧边栏项目拖拽移出交互的唯一真理源 (SSOT)。
+> 本章节整理自用户的核心设计理念指导与明确共识，作为 QuarkMeta 侧边栏历史选项卡多选与批量操作的唯一真理源 (SSOT)。
 
 ### 30.1 历史面板 (HistoryPanel) 多选与批量操作一致性规范
 1. **多选模式 (ExtendedSelection)**：
@@ -825,16 +825,49 @@ QuarkMeta 采用“侧车文件持久化 + 中心数据库索引”的读写分�
    - **复制名称 / 复制完整路径**：调用 `ContextMenuFactory::buildCopyNameAction(&menu, selectedPaths, this)` 与 `buildCopyPathAction(&menu, selectedPaths, this)`；
    - **从历史中移除**：批量遍历选中的路径，调用 `HistoryService::instance().removeHistory(p)`，并从树控件中批量移除条目。
 
-### 30.2 侧边栏项目拖拽至内容面板/目录导航面板“移出/脱管”语义规范 (Drag-to-Remove Semantics)
-1. **拖拽源标识与脱管意图识别**：
-   - 当用户从侧边栏（收藏夹 `FavoritePanel`、库 `LibraryPanel`、标记 `MarkedPanel`）拖拽项目开始时，在 `QMimeData` 中注入自定义标识：
-     - 收藏夹拖出：`application/x-quarkmeta-source-favorite`；
-     - 库分类拖出：`application/x-quarkmeta-source-library`，附带源分类 ID；
-     - 标记拖出：`application/x-quarkmeta-source-marked`；
-   - 同时保留 `urls()` 以保证兼容系统级拖出。
-2. **目标面板接收脱管处理**：
-   - 当主内容面板 (`ContentPanel`) 或目录导航面板 (`NavPanel`) 接收到带有上述源标识的拖放事件时，识别用户的真实意图为**“从源头栏目中移出/解绑”**，而不是将磁盘文件执行物理复制/移动：
-     - 源自收藏夹：调用 `FavoriteService::instance().removeFavorite(path)` 移出收藏，弹出 Toast 提示“已从收藏夹中移出”；
-     - 源自库分类：调用 `LibraryService::instance().removePathsFromCategory(srcCatId, paths)` 解除归类，弹出 Toast 提示；
-     - 源自标记：调用 `MarkedFolderService::instance().removeMarked(path)` 取消标记，弹出 Toast 提示；
-   - 绝不执行磁盘底层物理文件的复制、移动或删除操作，确保数据安全与逻辑纯粹。
+
+## 31. Ctrl+N 快捷键全局绑定新建 Markdown 文件规范 (Ctrl+N Create Markdown Contract)
+
+> 本章节整理自用户的核心设计理念指导与明确共识，作为 QuarkMeta 新建 Markdown 文件快捷键的唯一真理源 (SSOT)。
+
+### 31.1 快捷键触发与焦点隔离
+1. **全局快捷键注册**：
+   - 在 `AppShortcutController` 中注册 `Ctrl+N`（`QKeySequence(Qt::CTRL | Qt::Key_N)`）；
+   - 严格进行输入焦点隔离校验：只有在非文本编辑焦点（`!isEditingFocus()`）时才响应并发出 `createNewMdRequested()` 信号；
+2. **中枢单向调度 (SSOT)**：
+   - `PanelMediator` 监听 `createNewMdRequested`，并获取当前主窗格活跃的内容面板 `target`；
+   - 调用标准既有接口 `target->createNewItem("md")`，无缝创建 Markdown 文件并在视图中进入行内重命名模式。
+
+## 32. QuickLookWindow 无条件双击关闭与删除后回环跳转规范 (QuickLook Double Click & Cyclic Navigation Contract)
+
+> 本章节整理自用户的核心设计理念指导与明确共识，作为 QuarkMeta 快速预览窗口交互修复的唯一真理源 (SSOT)。
+
+### 32.1 无条件双击关闭机制
+1. **不受内容状态干预**：
+   - 双击关闭 `QuickLookWindow` 是顶层交互哲学，严禁受到文件是否存在内容、是否为空白文件或当前处于何种视图（图片、文本、空文件提示标签 `m_lblEmptyPrompt`）的干预；
+   - 为 `m_lblEmptyPrompt`、`m_container` 以及窗口自身安装事件过滤器（`installEventFilter(this)`）；
+   - 在 `QuickLookWindow::eventFilter` 中统一捕获左键双击事件（`QEvent::MouseButtonDblClick`），只要双击落在预览窗口内容区域，无条件触发 `closePreview()` 并消费事件。
+
+### 32.2 删除项目后回环跳转机制
+1. **优先跳转下一个项目**：
+   - 当在 `QuickLookWindow` 中触发删除当前项目（`deleteRequested`）时，`PanelMediator` 驱动将其移入回收站后，首先向下寻找下一个相邻有效文件并进行预览；
+2. **末项回环至首项并 Toast 提示**：
+   - 若被删除的项目已经是当前目录视图中的最后一个有效可预览项目，则必须回环跳转到视图中的**第一个可预览项目**；
+   - 回环跳转至第一个项目时，必须通过 `ToolTipOverlay::instance()->showToast("当前处于第一个项目", 2000, QColor("#3498db"))` 给予用户明确且友好的视觉反馈；
+   - 仅当整个目录下所有项目均已被删除或不存在任何可预览文件时，才关闭 QuickLook 窗口。
+
+## 33. 从“库”中彻底移除项目 DAO 事务与元数据同步闭环规范 (Remove from Library SSOT Contract)
+
+> 本章节整理自用户的核心设计理念指导与明确共识，作为 QuarkMeta 将项目彻底从“库”中注销移除的唯一真理源 (SSOT)。
+
+### 33.1 缺陷根因与架构修复原则
+1. **废弃企图使用 `addPathsToCategory(0, paths)` 的错误实现**：
+   - `LibraryDao::addPathsToCategory` 内部校验为 `if (!db || id == 0 || paths.isEmpty()) return false;`，传入 `id = 0` 会直接被守卫拦截返回 `false`，导致操作直接失败；
+2. **构建独立的 `removePathsFromLibrary` SSOT 通道**：
+   - 在 `LibraryDao` 中显式提供 `removePathsFromLibrary(const QStringList& paths)` 接口；
+   - 内部在全局互斥锁保护下开启 SQLite 事务，执行 `DELETE FROM library_category_paths WHERE path = ?;`，彻底清除所有分类关联；
+3. **两级数据与缓存同步闭环**：
+   - `LibraryService::removePathsFromLibrary` 调用 `LibraryDao::removePathsFromLibrary` 成功后：
+     - 驱动 `LibrarySyncService::instance().removePaths(paths)` 从 `library_items` 表彻底清除项目元数据记录；
+     - 发射 `libraryChanged()` 广播全局视图变动与计数刷新；
+     - 通过 `ToolTipOverlay::showText` 给予用户绿色成功提示。
