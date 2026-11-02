@@ -456,7 +456,6 @@ void PanelMediator::setupConnections() {
                     filterPanel->clearAllFilters(false);
                 }
                 if (titleBar && titleBar->tabBar()) {
-                    QString displayName = record.name.isEmpty() ? "智能文件夹预览" : record.name;
                     titleBar->tabBar()->updateCurrentTabTitle(displayName, "smartfolder://" + QString::number(record.id));
                 }
             });
