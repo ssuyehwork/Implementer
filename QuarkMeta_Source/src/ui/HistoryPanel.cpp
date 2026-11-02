@@ -234,12 +234,9 @@ void HistoryPanel::onContextMenuRequested(const QPoint& pos) {
 
         // 11. 从历史中移除 (批量)
         QAction* removeAct = menu.addAction(UiHelper::getIcon("trash", QColor("#EEEEEE"), 18), "从历史中移除");
-        connect(removeAct, &QAction::triggered, this, [this, selectedPaths, selItems]() {
+        connect(removeAct, &QAction::triggered, this, [selectedPaths]() {
             for (const QString& path : selectedPaths) {
                 HistoryService::instance().removeHistory(path);
-            }
-            for (QTreeWidgetItem* itm : selItems) {
-                delete itm;
             }
         });
 
