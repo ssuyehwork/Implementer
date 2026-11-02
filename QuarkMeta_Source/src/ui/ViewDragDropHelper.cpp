@@ -40,9 +40,18 @@ void DragDropEventFilter::clearDropHighlight() {
 bool DragDropEventFilter::eventFilter(QObject* watched, QEvent* event) {
     if (!m_targetView) return QObject::eventFilter(watched, event);
 
+    // 检查是否仅为纯内部同视图节点排序（如果拖拽来自侧边栏脱管源且包含 URLs，必须放行）
+    auto isPureInternalReorder = [](const QMimeData* mime) -> bool {
+        if (!mime || !mime->hasFormat("application/x-quarkmeta-tree-nodes")) return false;
+        if (mime->hasUrls() && ViewDragDropHelper::lastDragSourcePanel() != ViewDragDropHelper::DragSourcePanel::None) {
+            return false;
+        }
+        return true;
+    };
+
     if (event->type() == QEvent::DragEnter) {
         auto* dragEvent = static_cast<QDragEnterEvent*>(event);
-        if (dragEvent->mimeData() && dragEvent->mimeData()->hasFormat("application/x-quarkmeta-tree-nodes")) {
+        if (isPureInternalReorder(dragEvent->mimeData())) {
             return false;
         }
         if (ViewDragDropHelper::handleDragEnter(m_targetView, dragEvent)) {
@@ -50,7 +59,7 @@ bool DragDropEventFilter::eventFilter(QObject* watched, QEvent* event) {
         }
     } else if (event->type() == QEvent::DragMove) {
         auto* moveEvent = static_cast<QDragMoveEvent*>(event);
-        if (moveEvent->mimeData() && moveEvent->mimeData()->hasFormat("application/x-quarkmeta-tree-nodes")) {
+        if (isPureInternalReorder(moveEvent->mimeData())) {
             return false;
         }
         QModelIndex hoverIdx = m_targetView->indexAt(moveEvent->position().toPoint());
@@ -79,7 +88,7 @@ bool DragDropEventFilter::eventFilter(QObject* watched, QEvent* event) {
     } else if (event->type() == QEvent::Drop) {
         clearDropHighlight();
         auto* dropEv = static_cast<QDropEvent*>(event);
-        if (dropEv->mimeData() && dropEv->mimeData()->hasFormat("application/x-quarkmeta-tree-nodes")) {
+        if (isPureInternalReorder(dropEv->mimeData())) {
             return false;
         }
         QStringList paths;
