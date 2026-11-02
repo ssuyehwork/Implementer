@@ -1167,6 +1167,13 @@ void LibraryPanel::onPathsDroppedToCategory(const QStringList& paths, const QMod
 
 void LibraryPanel::loadLibrary() {
     if (!m_model) return;
+
+    // 记录刷新前选中的分类或智能文件夹节点 ID，刷新后精准恢复高亮选中
+    int savedSelectedNodeId = 0;
+    if (m_treeView && m_treeView->currentIndex().isValid()) {
+        savedSelectedNodeId = m_treeView->currentIndex().data(Qt::UserRole + 1).toInt();
+    }
+
     m_isLoading = true;
     m_model->clear();
 
@@ -1310,6 +1317,14 @@ void LibraryPanel::loadLibrary() {
     if (!smartFolders.isEmpty()) {
         m_currentCountReqId++;
         updateSmartFolderCountsAsync(m_currentCountReqId, smartFolders);
+    }
+
+    // 恢复树节点的选中高亮状态，确保持续显示高亮
+    if (savedSelectedNodeId != 0 && m_treeView) {
+        QStandardItem* targetItem = findItemByNodeId(m_model->invisibleRootItem(), savedSelectedNodeId);
+        if (targetItem) {
+            m_treeView->setCurrentIndex(targetItem->index());
+        }
     }
 
     if (m_pendingEditNodeId > 0 && m_treeView) {

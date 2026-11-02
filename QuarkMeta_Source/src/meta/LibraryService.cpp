@@ -88,9 +88,9 @@ QAction* LibraryService::buildLibraryAction(QMenu* parentMenu, const QStringList
 
         connect(action, &QAction::triggered, receiver ? receiver : parentMenu, [this, targetPaths]() {
             if (removePathsFromLibrary(targetPaths)) {
-                ToolTipOverlay::instance()->showText(QCursor::pos(), QString("已将 %1 个项目从库中移除").arg(targetPaths.size()), 1500, QColor("#2ecc71"));
+                ToolTipOverlay::instance()->showToast(QString("已将 %1 个项目从库中移除").arg(targetPaths.size()), 1500, QColor("#2ecc71"));
             } else {
-                ToolTipOverlay::instance()->showText(QCursor::pos(), "移除失败", 1500, QColor("#e81123"));
+                ToolTipOverlay::instance()->showToast("移除失败", 1500, QColor("#e81123"));
             }
         });
 
@@ -101,9 +101,9 @@ QAction* LibraryService::buildLibraryAction(QMenu* parentMenu, const QStringList
 
         connect(action, &QAction::triggered, receiver ? receiver : parentMenu, [this, targetPaths]() {
             if (addPathsToCategory(-2, targetPaths)) {
-                ToolTipOverlay::instance()->showText(QCursor::pos(), QString("已将 %1 个项目归入未分类").arg(targetPaths.size()), 1500, QColor("#2ecc71"));
+                ToolTipOverlay::instance()->showToast(QString("已将 %1 个项目归入未分类").arg(targetPaths.size()), 1500, QColor("#2ecc71"));
             } else {
-                ToolTipOverlay::instance()->showText(QCursor::pos(), "归入失败", 1500, QColor("#e81123"));
+                ToolTipOverlay::instance()->showToast("归入失败", 1500, QColor("#e81123"));
             }
         });
 
