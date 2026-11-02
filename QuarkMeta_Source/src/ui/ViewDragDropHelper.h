@@ -41,6 +41,7 @@ public:
     static bool handleDrop(QAbstractItemView* view, QDropEvent* event, QStringList& outPaths, QModelIndex& outTargetIdx, Qt::DropAction* outAction = nullptr, QPoint* outStartPos = nullptr);
     static void executeStartDrag(QAbstractItemView* view, Qt::DropActions supportedActions);
     static QPoint lastDragStartPos() { return s_lastDragStartPos; }
+    static QAbstractItemView* lastDragSourceView() { return s_lastDragSourceView; }
 
     static bool isDropTarget(const QWidget* widget, const QModelIndex& index);
     static void setHoverTarget(QAbstractItemView* view, const QModelIndex& index);
@@ -50,6 +51,7 @@ private:
     static QAbstractItemView* s_hoverView;
     static QPersistentModelIndex s_hoverIndex;
     static QPoint s_lastDragStartPos;
+    static QAbstractItemView* s_lastDragSourceView;
 };
 
 } // namespace QuarkMeta

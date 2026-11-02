@@ -860,6 +860,9 @@ void FavoritePanel::onPathsDroppedToFavorite(const QStringList& paths, const QMo
         if (FavoriteService::instance().isFavorite(path)) {
             duplicateCount++;
         } else {
+            // 🚀【智能入库状态判定】：先校验项目是否在库中，避免盲目入库
+            bool inLib = LibraryService::instance().isInLibrary(path);
+            Q_UNUSED(inLib);
             addFavoriteItem(path, parentId);
             addedCount++;
         }

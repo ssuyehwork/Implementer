@@ -99,6 +99,21 @@ bool ContentFileOpsHandler::resolvePasteDestination() {
 void ContentFileOpsHandler::onPathsDropped(const QStringList& paths, const QModelIndex& targetIndex, const QString& targetDirOverride, Qt::DropAction action) {
     if (!m_panel || paths.isEmpty()) return;
 
+    // 🚀【自拖拽拦截门禁】：若拖拽来源于当前面板内部且释放在空白处或非文件夹项，则视为无效微移，杜绝误触发入库
+    QAbstractItemView* sourceView = ViewDragDropHelper::lastDragSourceView();
+    if (sourceView && m_panel->isAncestorOf(sourceView)) {
+        bool targetIsFolder = false;
+        if (targetIndex.isValid()) {
+            QString targetPath = targetIndex.data(PathRole).toString();
+            if (!targetPath.isEmpty() && QFileInfo(targetPath).isDir()) {
+                targetIsFolder = true;
+            }
+        }
+        if (!targetIsFolder) {
+            return;
+        }
+    }
+
     // 1. 目标窗格分类视图拖放重定向逻辑
     QString catType = m_panel->getCurrentCategoryType();
     int catId = m_panel->currentCategoryId();

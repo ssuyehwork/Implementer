@@ -96,6 +96,7 @@ bool DragDropEventFilter::eventFilter(QObject* watched, QEvent* event) {
 QAbstractItemView* ViewDragDropHelper::s_hoverView = nullptr;
 QPersistentModelIndex ViewDragDropHelper::s_hoverIndex;
 QPoint ViewDragDropHelper::s_lastDragStartPos;
+QAbstractItemView* ViewDragDropHelper::s_lastDragSourceView = nullptr;
 
 bool ViewDragDropHelper::isDropTarget(const QWidget* widget, const QModelIndex& index) {
     if (!widget || !s_hoverView || !s_hoverIndex.isValid()) return false;
@@ -169,6 +170,7 @@ bool ViewDragDropHelper::handleDrop(QAbstractItemView* view, QDropEvent* event, 
 
 void ViewDragDropHelper::executeStartDrag(QAbstractItemView* view, Qt::DropActions supportedActions) {
     s_lastDragStartPos = QCursor::pos();
+    s_lastDragSourceView = view;
     if (!view || !view->selectionModel()) return;
     QModelIndexList indexes = view->selectionModel()->selectedIndexes();
     if (indexes.isEmpty()) return;
@@ -205,6 +207,7 @@ void ViewDragDropHelper::executeStartDrag(QAbstractItemView* view, Qt::DropActio
 
     drag->exec(supportedActions | Qt::CopyAction | Qt::MoveAction, defaultAction);
     s_lastDragStartPos = QPoint();
+    s_lastDragSourceView = nullptr;
 }
 
 } // namespace QuarkMeta
