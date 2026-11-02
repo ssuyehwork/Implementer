@@ -99,11 +99,6 @@ bool ContentFileOpsHandler::resolvePasteDestination() {
 void ContentFileOpsHandler::onPathsDropped(const QStringList& paths, const QModelIndex& targetIndex, const QString& targetDirOverride, Qt::DropAction action) {
     if (!m_panel || paths.isEmpty()) return;
 
-    // 侧边栏拖来的路径是真实磁盘路径，若放行会被后面的逻辑当作磁盘移动，导致真实文件被移动到当前目录，必须拦截
-    if (ViewDragDropHelper::lastDragSourcePanel() != ViewDragDropHelper::DragSourcePanel::None) {
-        return;
-    }
-
     // 1. 目标窗格分类视图拖放重定向逻辑
     QString catType = m_panel->getCurrentCategoryType();
     int catId = m_panel->currentCategoryId();

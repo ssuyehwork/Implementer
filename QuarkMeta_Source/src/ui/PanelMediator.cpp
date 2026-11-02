@@ -1028,10 +1028,9 @@ void PanelMediator::setupConnections() {
         ContentPanel* target = m_activeContentPanel ? m_activeContentPanel.data() : contentPanel;
         if (!target) return;
 
-        // 🚀【核心修复 1】：在删除执行前，提前计算出“下一个有效文件”或“备选的上一个文件”
+        // 提前计算下一个有效文件（若末项则计算备选的上一个有效文件），防止物理删除后寻址失败
         QString nextTarget;
 
-        // 先向后找下一个可预览文件
         int delta = 1;
         while (true) {
             QString candidate = target->getAdjacentFilePath(path, delta);
@@ -1043,7 +1042,6 @@ void PanelMediator::setupConnections() {
             delta++;
         }
 
-        // 如果后面没有了（当前是末尾项），则向前找上一个可预览文件
         if (nextTarget.isEmpty()) {
             delta = -1;
             while (true) {
@@ -1057,27 +1055,22 @@ void PanelMediator::setupConnections() {
             }
         }
 
-        // 🚀【核心修复 2】：锁死 QuickLook 失焦关闭门禁，防止弹窗或模型刷新杀死预览窗口
+        // 锁定 QuickLook 失焦关闭门禁，防止刷新与对话框导致预览被误关
         QuickLookWindow::instance().setIgnoreDeactivate(true);
 
-        // 🚀【核心修复 3】：执行删除操作
         bool deleteOk = TrashService::instance().moveToTrash({path}, target);
 
         if (deleteOk) {
-            // 同步刷新主内容面板视图
             target->refreshAll();
 
             if (!nextTarget.isEmpty() && QFile::exists(nextTarget)) {
-                // 自动跳转到预先锁定的下一个（或末尾时的上一个）项目
                 QuickLookWindow::instance().preview(nextTarget);
                 target->selectAndScrollToPath(nextTarget);
             } else {
-                // 当前目录已没有任何可预览文件，安全关闭
                 QuickLookWindow::instance().closePreview();
             }
         }
 
-        // 恢复失焦保护
         QTimer::singleShot(200, &QuickLookWindow::instance(), []() {
             QuickLookWindow::instance().setIgnoreDeactivate(false);
         });

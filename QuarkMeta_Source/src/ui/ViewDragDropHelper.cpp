@@ -40,18 +40,9 @@ void DragDropEventFilter::clearDropHighlight() {
 bool DragDropEventFilter::eventFilter(QObject* watched, QEvent* event) {
     if (!m_targetView) return QObject::eventFilter(watched, event);
 
-    // 检查是否仅为纯内部同视图节点排序（如果拖拽来自侧边栏脱管源且包含 URLs，必须放行）
-    auto isPureInternalReorder = [](const QMimeData* mime) -> bool {
-        if (!mime || !mime->hasFormat("application/x-quarkmeta-tree-nodes")) return false;
-        if (mime->hasUrls() && ViewDragDropHelper::lastDragSourcePanel() != ViewDragDropHelper::DragSourcePanel::None) {
-            return false;
-        }
-        return true;
-    };
-
     if (event->type() == QEvent::DragEnter) {
         auto* dragEvent = static_cast<QDragEnterEvent*>(event);
-        if (isPureInternalReorder(dragEvent->mimeData())) {
+        if (dragEvent->mimeData() && dragEvent->mimeData()->hasFormat("application/x-quarkmeta-tree-nodes")) {
             return false;
         }
         if (ViewDragDropHelper::handleDragEnter(m_targetView, dragEvent)) {
@@ -59,7 +50,7 @@ bool DragDropEventFilter::eventFilter(QObject* watched, QEvent* event) {
         }
     } else if (event->type() == QEvent::DragMove) {
         auto* moveEvent = static_cast<QDragMoveEvent*>(event);
-        if (isPureInternalReorder(moveEvent->mimeData())) {
+        if (moveEvent->mimeData() && moveEvent->mimeData()->hasFormat("application/x-quarkmeta-tree-nodes")) {
             return false;
         }
         QModelIndex hoverIdx = m_targetView->indexAt(moveEvent->position().toPoint());
@@ -88,7 +79,7 @@ bool DragDropEventFilter::eventFilter(QObject* watched, QEvent* event) {
     } else if (event->type() == QEvent::Drop) {
         clearDropHighlight();
         auto* dropEv = static_cast<QDropEvent*>(event);
-        if (isPureInternalReorder(dropEv->mimeData())) {
+        if (dropEv->mimeData() && dropEv->mimeData()->hasFormat("application/x-quarkmeta-tree-nodes")) {
             return false;
         }
         QStringList paths;
@@ -102,21 +93,9 @@ bool DragDropEventFilter::eventFilter(QObject* watched, QEvent* event) {
     return QObject::eventFilter(watched, event);
 }
 
-ViewDragDropHelper::DragSourcePanel ViewDragDropHelper::s_lastDragSourcePanel = ViewDragDropHelper::DragSourcePanel::None;
-int ViewDragDropHelper::s_lastDragSourceCategoryId = 0;
 QAbstractItemView* ViewDragDropHelper::s_hoverView = nullptr;
 QPersistentModelIndex ViewDragDropHelper::s_hoverIndex;
 QPoint ViewDragDropHelper::s_lastDragStartPos;
-
-void ViewDragDropHelper::setLastDragSource(DragSourcePanel source, int categoryId) {
-    s_lastDragSourcePanel = source;
-    s_lastDragSourceCategoryId = categoryId;
-}
-
-void ViewDragDropHelper::clearLastDragSource() {
-    s_lastDragSourcePanel = DragSourcePanel::None;
-    s_lastDragSourceCategoryId = 0;
-}
 
 bool ViewDragDropHelper::isDropTarget(const QWidget* widget, const QModelIndex& index) {
     if (!widget || !s_hoverView || !s_hoverIndex.isValid()) return false;

@@ -36,7 +36,6 @@ void MarkedPanel::initUi() {
     m_treeWidget->setIconSize(QSize(16, 16));
     m_treeWidget->setContextMenuPolicy(Qt::CustomContextMenu);
     m_treeWidget->setSelectionMode(QAbstractItemView::SingleSelection);
-    m_treeWidget->setDragEnabled(false);
     m_treeWidget->setAcceptDrops(true);
     if (m_treeWidget->viewport()) {
         m_treeWidget->viewport()->setAcceptDrops(true);

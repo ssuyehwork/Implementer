@@ -8,8 +8,6 @@
 #include "../meta/LibraryService.h"
 #include "../util/ThumbnailPipelineService.h"
 #include "../util/ColorPaletteEngine.h"
-#include "../util/ShellHelper.h"
-#include "dialogs/FramelessConfirmDialog.h"
 #include <QDesktopServices>
 #include <QFileInfo>
 #include <QDir>
@@ -41,7 +39,7 @@ void HistoryPanel::initUi() {
     m_treeWidget->setIndentation(0);
     m_treeWidget->setIconSize(QSize(16, 16));
     m_treeWidget->setContextMenuPolicy(Qt::CustomContextMenu);
-    m_treeWidget->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    m_treeWidget->setSelectionMode(QAbstractItemView::SingleSelection);
     m_treeWidget->setDragEnabled(true);
     m_treeWidget->setMouseTracking(true);
 
@@ -107,143 +105,75 @@ void HistoryPanel::onItemClicked(QTreeWidgetItem* item, int column) {
 }
 
 void HistoryPanel::onContextMenuRequested(const QPoint& pos) {
-    QTreeWidgetItem* clickedItem = m_treeWidget->itemAt(pos);
+    QTreeWidgetItem* item = m_treeWidget->itemAt(pos);
     QMenu menu(this);
     UiHelper::applyMenuStyle(&menu);
 
-    QList<QTreeWidgetItem*> selItems = m_treeWidget->selectedItems();
-    if (clickedItem && !selItems.contains(clickedItem)) {
-        m_treeWidget->setCurrentItem(clickedItem);
-        selItems = m_treeWidget->selectedItems();
-        if (selItems.isEmpty()) {
-            selItems.append(clickedItem);
-        }
-    }
-
-    QStringList selectedPaths;
-    for (QTreeWidgetItem* item : selItems) {
-        if (!item) continue;
-        QString p = item->data(0, Qt::UserRole).toString();
-        if (!p.isEmpty() && !selectedPaths.contains(p)) {
-            selectedPaths.append(p);
-        }
-    }
-
-    if (!selectedPaths.isEmpty()) {
-        // 1. 用系统默认程序打开 (批量)
-        QAction* actOpenDefault = menu.addAction(UiHelper::getIcon("launch", QColor("#EEEEEE"), 18), "用系统默认程序打开");
-        connect(actOpenDefault, &QAction::triggered, this, [selectedPaths]() {
-            for (const QString& path : selectedPaths) {
+    if (item) {
+        QString path = item->data(0, Qt::UserRole).toString();
+        if (!path.isEmpty()) {
+            // 1. 用系统默认程序打开
+            QAction* actOpenDefault = menu.addAction(UiHelper::getIcon("launch", QColor("#EEEEEE"), 18), "用系统默认程序打开");
+            connect(actOpenDefault, &QAction::triggered, this, [path]() {
                 if (QFileInfo::exists(path)) {
                     HistoryService::instance().recordFileAccess(path);
                     QDesktopServices::openUrl(QUrl::fromLocalFile(path));
                 }
-            }
-        });
-
-        // 2. 在“资源管理器”中显示 (按目录分组批量打开，严格遵守分组确认规则)
-        QAction* actShowInExp = menu.addAction(UiHelper::getIcon("folder_search", QColor("#EEEEEE"), 18), ContextMenuFactory::kTextShowInExplorer);
-        connect(actShowInExp, &QAction::triggered, this, [this, selectedPaths]() {
-            QMap<QString, QStringList> folderGroups;
-            for (const QString& itemPath : selectedPaths) {
-                if (itemPath.isEmpty()) continue;
-                QFileInfo fi(itemPath);
-                QString parentDir = fi.isDir() ? fi.dir().absolutePath() : fi.absolutePath();
-                folderGroups[parentDir].append(itemPath);
-            }
-
-            if (folderGroups.size() > 5) {
-                FramelessConfirmDialog dlg(
-                    "打开资源管理器确认",
-                    QString("本次操作将同时打开 %1 个资源管理器窗口，是否继续？").arg(folderGroups.size()),
-                    FramelessConfirmDialog::OkCancel,
-                    "warning",
-                    QColor("#f1c40f"),
-                    this
-                );
-                if (dlg.exec() != QDialog::Accepted) {
-                    return;
-                }
-            }
-
-            for (auto it = folderGroups.begin(); it != folderGroups.end(); ++it) {
-                if (!it.value().isEmpty()) {
-                    ShellHelper::openInExplorer(it.value().first());
-                }
-            }
-        });
-
-        // 3. 在 QuarkMeta 中显示 (单选可用，多选时置灰禁用)
-        QAction* actShowInApp = menu.addAction(UiHelper::getIcon("folder_filled", QColor("#EEEEEE"), 18), "在 QuarkMeta 中显示");
-        if (selectedPaths.size() == 1) {
-            QString singlePath = selectedPaths.first();
-            connect(actShowInApp, &QAction::triggered, this, [this, singlePath]() {
-                emit requestLocateFile(singlePath);
             });
-        } else {
-            actShowInApp->setEnabled(false);
-        }
 
-        // 4. 打开方式 (级联子菜单，支持多选路径集合)
-        ContextMenuFactory::buildOpenWithMenu(&menu, selectedPaths, this);
+            // 2. 在“资源管理器”中显示
+            ContextMenuFactory::buildShowInExplorerAction(&menu, path, false, this);
 
-        menu.addSeparator();
+            // 3. 在 QuarkMeta 中显示
+            QAction* actShowInApp = menu.addAction(UiHelper::getIcon("folder_filled", QColor("#EEEEEE"), 18), "在 QuarkMeta 中显示");
+            connect(actShowInApp, &QAction::triggered, this, [this, path]() {
+                emit requestLocateFile(path);
+            });
 
-        // 5. 添加至收藏夹 (批量添加)
-        QAction* actAddFav = menu.addAction(UiHelper::getIcon("Favorites.svg", QColor("#EEEEEE"), 18), "添加至收藏夹");
-        connect(actAddFav, &QAction::triggered, this, [this, selectedPaths]() {
-            int addedCount = 0;
-            for (const QString& path : selectedPaths) {
-                if (!FavoriteService::instance().isFavorite(path)) {
-                    if (FavoriteService::instance().addFavorite(path)) {
-                        addedCount++;
-                    }
-                }
-            }
-            if (addedCount > 0) {
-                ToolTipOverlay::instance()->showToast(QString("已将 %1 个项目添加至收藏夹").arg(addedCount), 1500, QColor("#2ecc71"));
-            } else {
-                ToolTipOverlay::instance()->showToast("所选项目已全部在收藏夹中", 1500, QColor("#3498db"));
-            }
-        });
+            // 4. 打开方式 (级联子菜单)
+            ContextMenuFactory::buildOpenWithMenu(&menu, QStringList{path}, this);
 
-        // 6. 添加至“库” (批量)
-        LibraryService::instance().buildLibraryAction(&menu, selectedPaths, this);
+            menu.addSeparator();
 
-        menu.addSeparator();
+            // 5. 添加至收藏夹
+            FavoriteService::instance().buildFavoriteAction(&menu, path, this);
 
-        // 7. 复制（Ctrl+C）
-        QAction* actCopy = menu.addAction(UiHelper::getIcon("copy", QColor("#EEEEEE"), 18), "复制（Ctrl+C）");
-        connect(actCopy, &QAction::triggered, this, [selectedPaths]() {
-            ClipboardService::instance().copyItems(selectedPaths);
-        });
+            // 6. 添加至“库”
+            LibraryService::instance().buildLibraryAction(&menu, QStringList{path}, this);
 
-        // 8. 剪切（Ctrl+X）
-        QAction* actCut = menu.addAction(UiHelper::getIcon("cut", QColor("#EEEEEE"), 18), "剪切（Ctrl+X）");
-        connect(actCut, &QAction::triggered, this, [selectedPaths]() {
-            ClipboardService::instance().cutItems(selectedPaths);
-        });
+            menu.addSeparator();
 
-        // 9. 复制名称 (批量)
-        ContextMenuFactory::buildCopyNameAction(&menu, selectedPaths, this);
+            // 7. 复制（Ctrl+C）
+            QAction* actCopy = menu.addAction(UiHelper::getIcon("copy", QColor("#EEEEEE"), 18), "复制（Ctrl+C）");
+            connect(actCopy, &QAction::triggered, this, [path]() {
+                ClipboardService::instance().copyItems({path});
+            });
 
-        // 10. 复制完整路径 (批量)
-        ContextMenuFactory::buildCopyPathAction(&menu, selectedPaths, this);
+            // 8. 剪切（Ctrl+X）
+            QAction* actCut = menu.addAction(UiHelper::getIcon("cut", QColor("#EEEEEE"), 18), "剪切（Ctrl+X）");
+            connect(actCut, &QAction::triggered, this, [path]() {
+                ClipboardService::instance().cutItems({path});
+            });
 
-        menu.addSeparator();
+            // 9. 复制名称
+            ContextMenuFactory::buildCopyNameAction(&menu, {path}, this);
 
-        // 11. 从历史中移除 (批量)
-        QAction* removeAct = menu.addAction(UiHelper::getIcon("trash", QColor("#EEEEEE"), 18), "从历史中移除");
-        connect(removeAct, &QAction::triggered, this, [selectedPaths]() {
-            for (const QString& path : selectedPaths) {
+            // 10. 复制完整路径
+            ContextMenuFactory::buildCopyPathAction(&menu, {path}, this);
+
+            menu.addSeparator();
+
+            // 11. 从历史中移除
+            QAction* removeAct = menu.addAction(UiHelper::getIcon("trash", QColor("#EEEEEE"), 18), "从历史中移除");
+            connect(removeAct, &QAction::triggered, this, [path]() {
                 HistoryService::instance().removeHistory(path);
-            }
-        });
+            });
 
-        menu.addSeparator();
+            menu.addSeparator();
+        }
     }
 
-    // 12. 清空历史
+    // 12. 清空历史 (项菜单末尾或空白处菜单)
     QAction* clearAct = menu.addAction(UiHelper::getIcon("trash", QColor("#EEEEEE"), 18), "清空历史");
     connect(clearAct, &QAction::triggered, this, []() {
         HistoryService::instance().clearAllHistory();
@@ -311,24 +241,14 @@ bool HistoryPanel::eventFilter(QObject* watched, QEvent* event) {
         if (event->type() == QEvent::MouseMove) {
             QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
             if (mouseEvent->buttons() & Qt::LeftButton) {
-                QTreeWidgetItem* hitItem = m_treeWidget->itemAt(mouseEvent->pos());
-                if (hitItem) {
-                    QList<QTreeWidgetItem*> selList = m_treeWidget->selectedItems();
-                    if (!selList.contains(hitItem)) {
-                        selList = {hitItem};
-                    }
-                    QList<QUrl> urls;
-                    for (QTreeWidgetItem* itm : selList) {
-                        QString p = itm->data(0, Qt::UserRole).toString();
-                        if (!p.isEmpty() && QFileInfo::exists(p)) {
-                            urls.append(QUrl::fromLocalFile(p));
-                        }
-                    }
-                    if (!urls.isEmpty()) {
+                QTreeWidgetItem* item = m_treeWidget->itemAt(mouseEvent->pos());
+                if (item) {
+                    QString path = item->data(0, Qt::UserRole).toString();
+                    if (!path.isEmpty()) {
                         ToolTipOverlay::hideTip();
                         QDrag* drag = new QDrag(m_treeWidget);
                         QMimeData* mimeData = new QMimeData();
-                        mimeData->setUrls(urls);
+                        mimeData->setUrls({QUrl::fromLocalFile(path)});
                         drag->setMimeData(mimeData);
                         drag->exec(Qt::CopyAction);
                         return true;
