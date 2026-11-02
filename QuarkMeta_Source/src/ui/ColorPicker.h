@@ -76,10 +76,10 @@ private:
     QColor m_color = Qt::red;
     int m_h = 0, m_s = 255, m_v = 255;
 
-    SvPicker*  m_svPicker;
-    HueSlider* m_hueSlider;
-    QWidget*   m_previewBlock;
-    QLineEdit* m_hexEdit;
+    SvPicker*  m_svPicker = nullptr;
+    HueSlider* m_hueSlider = nullptr;
+    QWidget*   m_previewBlock = nullptr;
+    QLineEdit* m_hexEdit = nullptr;
     QSlider*   m_toleranceSlider = nullptr; // 2026-05-17 按照用户要求：准确度（容差）滑条
 };
 

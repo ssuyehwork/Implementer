@@ -215,7 +215,6 @@ ColorPicker::ColorPicker(QWidget* parent) : QWidget(parent, Qt::Popup | Qt::Fram
     m_previewBlock = new QWidget(bottomContainer);
     m_previewBlock->setFixedSize(16, 16);
     m_previewBlock->setObjectName("ColorPickerPreviewBlock");
-    updatePreview();
     bottomLayout->addWidget(m_previewBlock);
 
     m_hexEdit = new QLineEdit(bottomContainer);
@@ -231,6 +230,8 @@ ColorPicker::ColorPicker(QWidget* parent) : QWidget(parent, Qt::Popup | Qt::Fram
         }
     });
     bottomLayout->addWidget(m_hexEdit);
+
+    updatePreview();
 
     QPushButton* btnConfirm = new QPushButton(bottomContainer);
     btnConfirm->setFixedSize(20, 20);
@@ -301,11 +302,15 @@ void ColorPicker::updateColorFromHsv() {
 }
 
 void ColorPicker::updatePreview() {
-    QPalette pal = m_previewBlock->palette();
-    pal.setColor(QPalette::Window, m_color);
-    m_previewBlock->setAutoFillBackground(true);
-    m_previewBlock->setPalette(pal);
-    m_hexEdit->setText(m_color.name().toUpper());
+    if (m_previewBlock) {
+        QPalette pal = m_previewBlock->palette();
+        pal.setColor(QPalette::Window, m_color);
+        m_previewBlock->setAutoFillBackground(true);
+        m_previewBlock->setPalette(pal);
+    }
+    if (m_hexEdit) {
+        m_hexEdit->setText(m_color.name().toUpper());
+    }
 }
 
 void ColorPicker::syncHsvFromColor() {
