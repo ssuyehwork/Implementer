@@ -215,6 +215,13 @@ void AppShortcutController::initShortcuts() {
         }
     });
 
+    // 9.1 Ctrl+N: 新建 Markdown 文件
+    registerShortcut(QKeySequence(Qt::CTRL | Qt::Key_N), [this]() {
+        if (!isEditingFocus()) {
+            emit createNewMdRequested();
+        }
+    });
+
     // 10. Ctrl+Shift+E: 提取文件文本内容至剪贴板
     registerShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_E), [this]() {
         if (!isEditingFocus()) {

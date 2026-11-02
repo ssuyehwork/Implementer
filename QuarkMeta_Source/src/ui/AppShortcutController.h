@@ -41,6 +41,11 @@ signals:
     void createNewFolderRequested();
 
     /**
+     * @brief Ctrl+N 触发新建 Markdown 文件
+     */
+    void createNewMdRequested();
+
+    /**
      * @brief Ctrl+Shift+E 触发提取文本内容至剪贴板
      */
     void extractContentRequested();

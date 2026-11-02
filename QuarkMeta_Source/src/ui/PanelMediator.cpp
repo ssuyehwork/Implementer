@@ -41,6 +41,7 @@
 #include <QDebug>
 #include <QFileInfo>
 #include <QFile>
+#include <QTimer>
 #include <QDesktopServices>
 #include <QStandardPaths>
 #include <QCursor>
@@ -240,6 +241,13 @@ void PanelMediator::setupConnections() {
             ContentPanel* target = m_activeContentPanel ? m_activeContentPanel.data() : contentPanel;
             if (target) {
                 target->createNewItem("folder");
+            }
+        });
+
+        connect(shortcutController, &AppShortcutController::createNewMdRequested, this, [this, contentPanel]() {
+            ContentPanel* target = m_activeContentPanel ? m_activeContentPanel.data() : contentPanel;
+            if (target) {
+                target->createNewItem("md");
             }
         });
 
@@ -1019,44 +1027,54 @@ void PanelMediator::setupConnections() {
     connect(&QuickLookWindow::instance(), &QuickLookWindow::deleteRequested, this, [this, contentPanel](const QString& path) {
         if (path.isEmpty()) return;
         ContentPanel* target = m_activeContentPanel ? m_activeContentPanel.data() : contentPanel;
+        if (!target) return;
 
-        if (TrashService::instance().moveToTrash({path}, target)) {
-            if (target) {
-                int delta = 1;
-                QString nextValid;
-                while (true) {
-                    QString candidate = target->getAdjacentFilePath(path, delta);
-                    if (candidate.isEmpty()) break;
-                    if (!QFileInfo(candidate).isDir() && UiHelper::canPreviewFile(candidate)) {
-                        nextValid = candidate;
-                        break;
-                    }
-                    delta++;
-                }
+        // 提前计算下一个有效文件（若末项则计算备选的上一个有效文件），防止物理删除后寻址失败
+        QString nextTarget;
 
-                if (!nextValid.isEmpty()) {
-                    QuickLookWindow::instance().preview(nextValid);
-                } else {
-                    delta = -1;
-                    QString prevValid;
-                    while (true) {
-                        QString candidate = target->getAdjacentFilePath(path, delta);
-                        if (candidate.isEmpty()) break;
-                        if (!QFileInfo(candidate).isDir() && UiHelper::canPreviewFile(candidate)) {
-                            prevValid = candidate;
-                            break;
-                        }
-                        delta--;
-                    }
-                    if (!prevValid.isEmpty()) {
-                        QuickLookWindow::instance().preview(prevValid);
-                    } else {
-                        QuickLookWindow::instance().closePreview();
-                    }
+        int delta = 1;
+        while (true) {
+            QString candidate = target->getAdjacentFilePath(path, delta);
+            if (candidate.isEmpty()) break;
+            if (!QFileInfo(candidate).isDir() && UiHelper::canPreviewFile(candidate)) {
+                nextTarget = candidate;
+                break;
+            }
+            delta++;
+        }
+
+        if (nextTarget.isEmpty()) {
+            delta = -1;
+            while (true) {
+                QString candidate = target->getAdjacentFilePath(path, delta);
+                if (candidate.isEmpty()) break;
+                if (!QFileInfo(candidate).isDir() && UiHelper::canPreviewFile(candidate)) {
+                    nextTarget = candidate;
+                    break;
                 }
-                target->refreshAll();
+                delta--;
             }
         }
+
+        // 锁定 QuickLook 失焦关闭门禁，防止刷新与对话框导致预览被误关
+        QuickLookWindow::instance().setIgnoreDeactivate(true);
+
+        bool deleteOk = TrashService::instance().moveToTrash({path}, target);
+
+        if (deleteOk) {
+            target->refreshAll();
+
+            if (!nextTarget.isEmpty() && QFile::exists(nextTarget)) {
+                QuickLookWindow::instance().preview(nextTarget);
+                target->selectAndScrollToPath(nextTarget);
+            } else {
+                QuickLookWindow::instance().closePreview();
+            }
+        }
+
+        QTimer::singleShot(200, &QuickLookWindow::instance(), []() {
+            QuickLookWindow::instance().setIgnoreDeactivate(false);
+        });
     });
 
     // 4. 统计与过滤联动 (动态支持多分栏焦点切换)
