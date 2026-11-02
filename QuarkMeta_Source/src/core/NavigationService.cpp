@@ -88,6 +88,12 @@ void NavigationService::navigateTo(const QString& rawUrl, bool recordHistory, bo
 
     QString normalized = normalizeUrl(rawUrl);
 
+    // 路径跳转幂等性守卫 (No-op Protection)：
+    // 若目标路径与当前路径一致（大小写不敏感对比）且非递归状态变更，直接返回，阻断无意义的视图重载与筛选面板重置
+    if (QString::compare(normalized, m_currentUrl, Qt::CaseInsensitive) == 0 && !recursive) {
+        return;
+    }
+
     if (recordHistory) {
         if (m_currentIndex < m_history.size() - 1) {
             m_history = m_history.mid(0, m_currentIndex + 1);
