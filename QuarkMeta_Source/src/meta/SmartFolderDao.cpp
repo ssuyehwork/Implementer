@@ -40,7 +40,7 @@ QJsonObject SmartFolderRule::toJson() const {
     if (num1 != 0) obj["num1"] = num1;
     if (num2 != 0) obj["num2"] = num2;
     if (!unit.isEmpty()) obj["unit"] = unit;
-    if (type == SmartRuleType::AutoColor && tolerance != 50) obj["tolerance"] = tolerance;
+    if (type == SmartRuleType::AutoColor) obj["tolerance"] = tolerance;
     return obj;
 }
 

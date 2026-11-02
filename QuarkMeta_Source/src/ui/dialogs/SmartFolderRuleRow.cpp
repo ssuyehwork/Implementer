@@ -146,9 +146,8 @@ void SmartFolderRuleRow::updateValueWidget() {
     SmartRuleType type = static_cast<SmartRuleType>(m_typeCombo->currentData().toInt());
     SmartRuleOperator op = static_cast<SmartRuleOperator>(m_opCombo->currentData().toInt());
 
-    // Save current values if m_valueWidget is valid
+    // 销毁旧值控件：切忌在此处反向提取旧控件数据，防止跨类型切换或初始化时冲刷污染 m_currentRule
     if (m_valueWidget) {
-        m_valueWidget->getRuleValues(m_currentRule);
         m_layout->removeWidget(m_valueWidget);
         m_valueWidget->hide();
         m_valueWidget->setParent(nullptr);

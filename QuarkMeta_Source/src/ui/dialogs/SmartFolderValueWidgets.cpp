@@ -510,7 +510,8 @@ void AutoColorValueWidget::setRuleValues(const SmartFolderRule& rule) {
     if (!rule.value.isEmpty()) {
         m_colorHex = rule.value.toUpper();
     }
-    m_toleranceSpin->setValue(rule.tolerance > 0 ? rule.tolerance : 50);
+    // 允许 0~100 全区间合法容差精准还原，仅在超出范围时兜底 50
+    m_toleranceSpin->setValue((rule.tolerance >= 0 && rule.tolerance <= 100) ? rule.tolerance : 50);
     updateBtnStyle();
 }
 
