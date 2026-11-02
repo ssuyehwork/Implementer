@@ -17,6 +17,7 @@
 #include "models/FilterProxyModel.h"
 #include "controllers/ContentSortController.h"
 #include "../core/ModelContract.h"
+#include "../meta/SmartFolderDao.h"
 
 namespace QuarkMeta {
 
@@ -128,6 +129,10 @@ public:
     int incrementLoadRequestId() { return ++m_loadRequestId; }
     const FilterState& currentFilter() const { return m_currentFilter; }
     bool isLoading() const { return m_isLoading.load(); }
+    SmartFolderRecord activeSmartFolder() const { return m_activeSmartFolder; }
+    void setActiveSmartFolder(const SmartFolderRecord& record) { m_activeSmartFolder = record; }
+    uint64_t smartFolderRequestId() const { return m_smartFolderReqId; }
+    uint64_t incrementSmartFolderRequestId() { return ++m_smartFolderReqId; }
 
     // 2. 状态与配置高阶方法
     void updateHeaderTitle();
@@ -230,6 +235,8 @@ public slots:
     void setPendingSelectPath(const QString& fullPath, bool edit = false);
     void setPendingSelectName(const QString& name, bool edit = false);
     void refreshAll();
+    void loadSmartFolder(const SmartFolderRecord& record, const QString& displayName = QString());
+    void refreshSmartFolderIfShowing();
     void updateItemMetadata(QString path);
     void updateItemsMetadata(const QStringList& paths);
     void migrateModelCache(const QString& oldPath, const QString& newPath);
@@ -276,6 +283,8 @@ private:
     QString m_categoryTitle;
     int m_categoryId = 0;
     bool m_isRecursive = false;
+    SmartFolderRecord m_activeSmartFolder;
+    uint64_t m_smartFolderReqId = 0;
     ViewMode m_currentViewMode = static_cast<ViewMode>(-1);
     std::atomic<bool> m_isLoading{false};
     bool m_isContextMenuActive = false;

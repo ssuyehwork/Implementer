@@ -725,6 +725,10 @@ void ContentPanel::applyViewTarget(const QString& path, const QString& categoryT
     m_categoryId = categoryId;
     m_isRecursive = recursive;
 
+    if (categoryType != "smart_folder") {
+        m_activeSmartFolder = SmartFolderRecord();
+    }
+
     if (m_model) {
         m_model->setCurrentPath(path);
     }
@@ -1004,6 +1008,10 @@ void ContentPanel::refreshAll() {
     }
 
     if (m_currentCategoryType == "smart_folder" || m_currentPath.startsWith("smartfolder://")) {
+        if (m_activeSmartFolder.id > 0 || !m_activeSmartFolder.rules.isEmpty()) {
+            loadSmartFolder(m_activeSmartFolder, m_categoryTitle);
+            return;
+        }
         loadLibraryPaths(m_lastLoadedLibraryPaths);
         return;
     }
@@ -1013,6 +1021,57 @@ void ContentPanel::refreshAll() {
     } else if (m_currentPath == "computer://") {
         loadDirectory("computer://");
     }
+}
+
+void ContentPanel::loadSmartFolder(const SmartFolderRecord& record, const QString& displayName) {
+    if (m_dataLoader) {
+        m_dataLoader->loadSmartFolder(record, displayName);
+    }
+}
+
+void ContentPanel::refreshSmartFolderIfShowing() {
+    if (m_currentCategoryType != "smart_folder" || (m_activeSmartFolder.id <= 0 && m_activeSmartFolder.rules.isEmpty())) {
+        return;
+    }
+
+    uint64_t reqId = ++m_smartFolderReqId;
+    SmartFolderRecord recordSnapshot = m_activeSmartFolder;
+    QPointer<ContentPanel> weakThis(this);
+
+    (void)QtConcurrent::run([weakThis, recordSnapshot, reqId]() {
+        QStringList newPaths = SmartFolderDao::getMatchingPaths(recordSnapshot);
+
+        QMetaObject::invokeMethod(qApp, [weakThis, recordSnapshot, reqId, newPaths]() {
+            if (!weakThis || reqId != weakThis->m_smartFolderReqId) return;
+            if (weakThis->m_currentCategoryType != "smart_folder" || weakThis->m_activeSmartFolder.id != recordSnapshot.id) return;
+
+            // 路径集合比对（统一分隔符、不区分大小写、不关心顺序）
+            auto normalizeSet = [](const QStringList& list) {
+                QSet<QString> s;
+                for (const QString& p : list) {
+                    s.insert(QDir::toNativeSeparators(p).toLower());
+                }
+                return s;
+            };
+
+            if (normalizeSet(newPaths) == normalizeSet(weakThis->m_lastLoadedLibraryPaths)) {
+                return; // 完全相同，静默不刷新、不闪烁
+            }
+
+            // 路径集发生物理变动：暂存当前选区并重载
+            QStringList selList = weakThis->getSelectedPaths();
+            weakThis->m_selectionState.currentFolder = weakThis->m_currentPath;
+            weakThis->m_selectionState.selectedPaths = QSet<QString>(selList.begin(), selList.end());
+            if (!weakThis->m_selectionState.selectedPaths.isEmpty()) {
+                weakThis->m_selectionState.focusedPath = *weakThis->m_selectionState.selectedPaths.begin();
+            } else {
+                weakThis->m_selectionState.focusedPath.clear();
+            }
+
+            weakThis->setLastLoadedLibraryPaths(newPaths);
+            weakThis->loadLibraryPaths(newPaths);
+        });
+    });
 }
 
 void ContentPanel::updateItemMetadata(QString path) {

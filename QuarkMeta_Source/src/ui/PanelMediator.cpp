@@ -427,12 +427,9 @@ void PanelMediator::setupConnections() {
             });
 
             connect(libraryPanel, &LibraryPanel::smartFolderSelected, this, [this, contentPanel, filterPanel, addressBar, titleBar](const SmartFolderRecord& record) {
-                QStringList matchingPaths = SmartFolderDao::getMatchingPaths(record);
                 ContentPanel* target = m_activeContentPanel ? m_activeContentPanel.data() : contentPanel;
                 if (target) {
-                    target->applyViewTarget(QString("smartfolder://%1").arg(record.id), "smart_folder", record.name, -20, false);
-                    target->setLastLoadedLibraryPaths(matchingPaths);
-                    target->loadLibraryPaths(matchingPaths);
+                    target->loadSmartFolder(record, record.name);
                 }
                 if (addressBar) {
                     addressBar->setPath("库 → " + record.name);
@@ -446,16 +443,12 @@ void PanelMediator::setupConnections() {
             });
 
             connect(libraryPanel, &LibraryPanel::smartFolderPreviewRequested, this, [this, contentPanel, filterPanel, addressBar, titleBar](const SmartFolderRecord& record) {
-                QStringList matchingPaths = SmartFolderDao::getMatchingPaths(record);
+                QString displayName = record.name.isEmpty() ? "智能文件夹预览" : record.name;
                 ContentPanel* target = m_activeContentPanel ? m_activeContentPanel.data() : contentPanel;
                 if (target) {
-                    QString displayName = record.name.isEmpty() ? "智能文件夹预览" : record.name;
-                    target->applyViewTarget(QString("smartfolder://%1").arg(record.id), "smart_folder", displayName, -20, false);
-                    target->setLastLoadedLibraryPaths(matchingPaths);
-                    target->loadLibraryPaths(matchingPaths);
+                    target->loadSmartFolder(record, displayName);
                 }
                 if (addressBar) {
-                    QString displayName = record.name.isEmpty() ? "智能文件夹预览" : record.name;
                     addressBar->setPath("库 → " + displayName);
                 }
                 if (filterPanel) {
@@ -920,6 +913,22 @@ void PanelMediator::setupConnections() {
                 searchController->setActiveContentPanel(activePanel);
             });
         }
+
+        connect(&LibrarySyncService::instance(), &LibrarySyncService::libraryItemsSynced, this, [this, libraryPanel, contentPanel]() {
+            if (libraryPanel) {
+                libraryPanel->refreshSmartFolderCounts();
+            }
+            if (contentPanel) {
+                ContentPanel* root = contentPanel->rootPane();
+                if (root) {
+                    for (ContentPanel* pane : root->panes()) {
+                        if (pane) {
+                            pane->refreshSmartFolderIfShowing();
+                        }
+                    }
+                }
+            }
+        });
 
         if (metaPanel) {
             connect(this, &PanelMediator::activeContentPanelChanged, this, [contentPanel, updateMetaPanelFromPanel](ContentPanel* activePanel) {

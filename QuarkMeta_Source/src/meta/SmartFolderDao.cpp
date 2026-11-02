@@ -635,32 +635,47 @@ int SmartFolderDao::countMatchingItems(const SmartFolderRecord& rec) {
     return count;
 }
 
-int SmartFolderDao::countMatchingItemsReadOnly(const QString& dbPath, const SmartFolderRecord& rec) {
-    if (rec.rules.isEmpty() || dbPath.isEmpty()) return 0;
-
-    QString whereClause = buildWhereClause(rec);
-    if (whereClause.isEmpty()) return 0;
+QMap<int, int> SmartFolderDao::countMatchingItemsBatchReadOnly(const QString& dbPath, const QList<SmartFolderRecord>& records) {
+    QMap<int, int> results;
+    if (dbPath.isEmpty() || records.isEmpty()) return results;
 
     sqlite3* dbReadOnly = nullptr;
     int rc = sqlite3_open_v2(dbPath.toUtf8().constData(), &dbReadOnly, SQLITE_OPEN_READONLY, nullptr);
     if (rc != SQLITE_OK || !dbReadOnly) {
         if (dbReadOnly) sqlite3_close(dbReadOnly);
-        return 0;
+        return results;
     }
 
-    QString sql = QString("SELECT COUNT(*) FROM library_items WHERE %1 AND sync_state != 2;")
-                  .arg(whereClause);
+    sqlite3_busy_timeout(dbReadOnly, 3000);
 
-    sqlite3_stmt* stmt = nullptr;
-    int count = 0;
-    if (sqlite3_prepare_v2(dbReadOnly, sql.toUtf8().constData(), -1, &stmt, nullptr) == SQLITE_OK) {
-        if (sqlite3_step(stmt) == SQLITE_ROW) {
-            count = sqlite3_column_int(stmt, 0);
+    for (const auto& rec : records) {
+        if (rec.rules.isEmpty()) {
+            results.insert(rec.id, 0);
+            continue;
         }
-        sqlite3_finalize(stmt);
+
+        QString whereClause = buildWhereClause(rec);
+        if (whereClause.isEmpty()) {
+            results.insert(rec.id, 0);
+            continue;
+        }
+
+        QString sql = QString("SELECT COUNT(*) FROM library_items WHERE %1 AND sync_state != 2;")
+                      .arg(whereClause);
+
+        sqlite3_stmt* stmt = nullptr;
+        if (sqlite3_prepare_v2(dbReadOnly, sql.toUtf8().constData(), -1, &stmt, nullptr) == SQLITE_OK) {
+            int count = 0;
+            if (sqlite3_step(stmt) == SQLITE_ROW) {
+                count = sqlite3_column_int(stmt, 0);
+            }
+            sqlite3_finalize(stmt);
+            results.insert(rec.id, count);
+        }
     }
+
     sqlite3_close(dbReadOnly);
-    return count;
+    return results;
 }
 
 QStringList SmartFolderDao::getMatchingPaths(const SmartFolderRecord& rec) {
