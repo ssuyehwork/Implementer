@@ -48,17 +48,20 @@ void LibrarySyncService::handleJsonChangeEvent(const QuarkMetaJsonStore::ChangeE
                 m_libraryPathsSet.erase(normalizePath(oldP).toStdWString());
                 m_libraryPathsSet.insert(normalizePath(newP).toStdWString());
             }
+            QMetaObject::invokeMethod(this, &LibrarySyncService::libraryItemsSynced, Qt::QueuedConnection);
         });
     } else if (event.type == QuarkMetaJsonStore::ChangeType::FolderMigrated) {
         (void)QtConcurrent::run(&m_workPool, [this, oldF = event.path, newF = event.newPath]() {
             LibraryDao::updatePathPrefix(oldF, newF);
             LibraryItemDao::updatePathPrefix(oldF, newF);
             loadLibraryPathSet(); // 彻底重新从数据库刷新内存成员集合
+            QMetaObject::invokeMethod(this, &LibrarySyncService::libraryItemsSynced, Qt::QueuedConnection);
         });
     } else if (event.type == QuarkMetaJsonStore::ChangeType::ItemRemoved) {
         if (!isLibraryPath(event.path)) return;
-        (void)QtConcurrent::run(&m_workPool, [eventP = event.path]() {
+        (void)QtConcurrent::run(&m_workPool, [this, eventP = event.path]() {
             LibraryItemDao::markSyncStateByPath(eventP, 2); // 标记 sync_state = 2 (缺失)
+            QMetaObject::invokeMethod(this, &LibrarySyncService::libraryItemsSynced, Qt::QueuedConnection);
         });
     }
 }
@@ -123,9 +126,32 @@ void LibrarySyncService::syncPaths(const QStringList& paths) {
 
     (void)QtConcurrent::run(&m_workPool, [this, paths]() {
         const int batchSize = 100;
+        bool anyBatchSuccess = false;
         for (int i = 0; i < paths.size(); i += batchSize) {
             QStringList batch = paths.mid(i, batchSize);
-            processSyncBatch(batch);
+            std::vector<ItemRecord> records;
+            records.reserve(batch.size());
+            for (const QString& path : batch) {
+                ItemRecord rec = ItemRecord::create(path);
+                ItemMeta meta;
+                if (QuarkMetaJsonStore::instance().readItemMeta(path.toStdWString(), meta)) {
+                    ItemMetaMapper::apply(meta, rec);
+                }
+                QFileInfo info(path);
+                std::wstring folderPath = info.isDir() ? path.toStdWString() : info.absolutePath().toStdWString();
+                rec.metaFileId = QuarkMetaJsonStore::instance().getMetaFileId(folderPath);
+                records.push_back(rec);
+            }
+            if (LibraryItemDao::upsertItems(records)) {
+                anyBatchSuccess = true;
+            } else {
+                qWarning() << "[LibrarySyncService] Failed to upsert batch, first path:"
+                           << (batch.isEmpty() ? QString() : batch.first())
+                           << "batch size:" << batch.size();
+            }
+        }
+        if (anyBatchSuccess) {
+            QMetaObject::invokeMethod(this, &LibrarySyncService::libraryItemsSynced, Qt::QueuedConnection);
         }
     });
 }
@@ -149,6 +175,7 @@ void LibrarySyncService::removePaths(const QStringList& paths) {
         }
         if (!pathsToRemove.isEmpty()) {
             LibraryItemDao::removeItemsByPaths(pathsToRemove);
+            QMetaObject::invokeMethod(this, &LibrarySyncService::libraryItemsSynced, Qt::QueuedConnection);
         }
     });
 }

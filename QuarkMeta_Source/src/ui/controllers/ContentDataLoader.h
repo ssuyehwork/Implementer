@@ -20,6 +20,7 @@ public:
     void loadPaths(const QStringList& paths, int reqId = 0);
     void loadLibraryPaths(const QStringList& paths, int reqId = 0);
     void appendPaths(const QStringList& paths, int reqId = 0);
+    void loadSmartFolder(const struct SmartFolderRecord& record, const QString& displayName);
 
     int currentRequestId() const { return m_loadRequestId; }
 

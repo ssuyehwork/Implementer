@@ -82,7 +82,7 @@ public:
     static bool updateSmartFolder(const SmartFolderRecord& rec);
     static bool removeSmartFolderById(int id);
     static int countMatchingItems(const SmartFolderRecord& rec);
-    static int countMatchingItemsReadOnly(const QString& dbPath, const SmartFolderRecord& rec);
+    static QMap<int, int> countMatchingItemsBatchReadOnly(const QString& dbPath, const QList<SmartFolderRecord>& records);
     static QStringList getMatchingPaths(const SmartFolderRecord& rec);
 
     // SQL 条件独立构建单元

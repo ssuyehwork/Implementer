@@ -82,9 +82,7 @@ void ContentDataLoader::loadDirectory(const QString& path, bool recursive) {
     if (path.startsWith("smartfolder://")) {
         int sfId = path.mid(14).toInt();
         SmartFolderRecord rec = SmartFolderDao::getSmartFolderById(sfId);
-        QStringList matching = SmartFolderDao::getMatchingPaths(rec);
-        m_panel->applyViewTarget(path, "smart_folder", rec.name, -20, false);
-        m_panel->loadLibraryPaths(matching);
+        loadSmartFolder(rec, rec.name);
         return;
     }
 
@@ -219,6 +217,32 @@ void ContentDataLoader::loadPaths(const QStringList& paths, int reqId) {
                 weakPanel->applyFilters();
                 weakPanel->restoreSelections();
             }
+        });
+    });
+}
+
+void ContentDataLoader::loadSmartFolder(const SmartFolderRecord& record, const QString& displayName) {
+    if (!m_panel) return;
+
+    QString targetName = displayName.isEmpty() ? record.name : displayName;
+    m_panel->applyViewTarget(QString("smartfolder://%1").arg(record.id), "smart_folder", targetName, -20, false);
+    m_panel->setActiveSmartFolder(record);
+
+    uint64_t sfReqId = m_panel->incrementSmartFolderRequestId();
+    int reqId = m_panel->incrementLoadRequestId();
+    m_loadRequestId = reqId;
+
+    QPointer<ContentPanel> weakPanel(m_panel);
+    (void)QtConcurrent::run([weakPanel, record, sfReqId, reqId]() {
+        QStringList matchingPaths = SmartFolderDao::getMatchingPaths(record);
+
+        QMetaObject::invokeMethod(qApp, [weakPanel, record, sfReqId, reqId, matchingPaths]() {
+            if (!weakPanel) return;
+            if (weakPanel->loadRequestId() != reqId || weakPanel->smartFolderRequestId() != sfReqId) return;
+            if (weakPanel->getCurrentCategoryType() != "smart_folder" || weakPanel->activeSmartFolder().id != record.id) return;
+
+            weakPanel->setLastLoadedLibraryPaths(matchingPaths);
+            weakPanel->loadLibraryPaths(matchingPaths, reqId);
         });
     });
 }

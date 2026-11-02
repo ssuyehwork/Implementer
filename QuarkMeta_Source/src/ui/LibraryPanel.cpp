@@ -23,6 +23,7 @@
 #include "../core/AppConfig.h"
 #include "controllers/ContextMenuFactory.h"
 #include <QLabel>
+#include <QPointer>
 #include <QPushButton>
 #include <QMenu>
 #include <QWidgetAction>
@@ -535,7 +536,7 @@ void LibraryPanel::initUi() {
     });
 
     connect(m_model, &QStandardItemModel::itemChanged, this, [this](QStandardItem* item) {
-        if (!item || m_isLoading) return;
+        if (!item || m_isLoading || m_isUpdatingCounts) return;
         int nodeId = item->data(Qt::UserRole + 1).toInt();
         QString type = item->data(TypeRole).toString();
         if (type == "smart_folder" && nodeId > 0) {
@@ -1351,28 +1352,68 @@ void LibraryPanel::invalidateSmartFolderCache(int smartFolderId) {
     }
 }
 
+void LibraryPanel::refreshSmartFolderCounts() {
+    if (!m_countDebounceTimer) {
+        m_countDebounceTimer = new QTimer(this);
+        m_countDebounceTimer->setSingleShot(true);
+        connect(m_countDebounceTimer, &QTimer::timeout, this, [this]() {
+            uint64_t reqId = ++m_currentCountReqId;
+            QString dbPath = DatabaseManager::getGlobalDbPath();
+            QPointer<LibraryPanel> weakThis(this);
+
+            (void)QtConcurrent::run([weakThis, reqId, dbPath]() {
+                auto smartFolders = SmartFolderDao::getAllSmartFolders();
+                QMap<int, int> results = SmartFolderDao::countMatchingItemsBatchReadOnly(dbPath, smartFolders);
+
+                QMetaObject::invokeMethod(qApp, [weakThis, reqId, results]() {
+                    if (!weakThis || reqId != weakThis->m_currentCountReqId || !weakThis->m_model) return;
+
+                    weakThis->m_isUpdatingCounts = true;
+                    QStandardItem* sfHeader = weakThis->findItemByNodeId(weakThis->m_model->invisibleRootItem(), -20);
+                    for (auto it = results.constBegin(); it != results.constEnd(); ++it) {
+                        int sfId = it.key();
+                        int newCount = it.value();
+
+                        weakThis->m_smartFolderCountCache.insert(sfId, newCount);
+
+                        if (sfHeader) {
+                            QStandardItem* sfItem = weakThis->findItemByNodeId(sfHeader, sfId);
+                            if (sfItem) {
+                                int oldCount = sfItem->data(Qt::UserRole + 9).toInt();
+                                if (oldCount != newCount) {
+                                    sfItem->setData(newCount, Qt::UserRole + 9);
+                                }
+                            }
+                        }
+                    }
+                    weakThis->m_isUpdatingCounts = false;
+                });
+            });
+        });
+    }
+    m_countDebounceTimer->start(150);
+}
+
 void LibraryPanel::updateSmartFolderCountsAsync(uint64_t reqId, const QList<SmartFolderRecord>& smartFolders) {
     QString dbPath = DatabaseManager::getGlobalDbPath();
+    QPointer<LibraryPanel> weakThis(this);
 
-    (void)QtConcurrent::run([this, reqId, smartFolders, dbPath]() {
-        QMap<int, int> results;
-        for (const auto& sfRec : smartFolders) {
-            int c = SmartFolderDao::countMatchingItemsReadOnly(dbPath, sfRec);
-            results.insert(sfRec.id, c);
-        }
+    (void)QtConcurrent::run([weakThis, reqId, smartFolders, dbPath]() {
+        QMap<int, int> results = SmartFolderDao::countMatchingItemsBatchReadOnly(dbPath, smartFolders);
 
-        QMetaObject::invokeMethod(this, [this, reqId, results]() {
-            if (reqId != m_currentCountReqId || !m_model) return;
+        QMetaObject::invokeMethod(qApp, [weakThis, reqId, results]() {
+            if (!weakThis || reqId != weakThis->m_currentCountReqId || !weakThis->m_model) return;
 
-            QStandardItem* sfHeader = findItemByNodeId(m_model->invisibleRootItem(), -20);
+            weakThis->m_isUpdatingCounts = true;
+            QStandardItem* sfHeader = weakThis->findItemByNodeId(weakThis->m_model->invisibleRootItem(), -20);
             for (auto it = results.constBegin(); it != results.constEnd(); ++it) {
                 int sfId = it.key();
                 int newCount = it.value();
 
-                m_smartFolderCountCache.insert(sfId, newCount);
+                weakThis->m_smartFolderCountCache.insert(sfId, newCount);
 
                 if (sfHeader) {
-                    QStandardItem* sfItem = findItemByNodeId(sfHeader, sfId);
+                    QStandardItem* sfItem = weakThis->findItemByNodeId(sfHeader, sfId);
                     if (sfItem) {
                         int oldCount = sfItem->data(Qt::UserRole + 9).toInt();
                         if (oldCount != newCount) {
@@ -1381,6 +1422,7 @@ void LibraryPanel::updateSmartFolderCountsAsync(uint64_t reqId, const QList<Smar
                     }
                 }
             }
+            weakThis->m_isUpdatingCounts = false;
         });
     });
 }

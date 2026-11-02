@@ -23,6 +23,9 @@ public:
 
     void triggerStartupReconciliation();
 
+signals:
+    void libraryItemsSynced();
+
 private:
     explicit LibrarySyncService(QObject* parent = nullptr);
     ~LibrarySyncService() override;

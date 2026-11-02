@@ -71,6 +71,7 @@ public:
     LibraryTreeView* treeView() const { return m_treeView; }
 
     void invalidateSmartFolderCache(int smartFolderId = 0);
+    void refreshSmartFolderCounts();
 
 signals:
     void categoryPathsSelected(const QStringList& paths, const QString& name = QString(), int categoryId = 0);
@@ -107,6 +108,8 @@ private:
     // 智能文件夹异步匹配数量内存缓存
     QMap<int, int> m_smartFolderCountCache;
     uint64_t m_currentCountReqId = 0;
+    QTimer* m_countDebounceTimer = nullptr;
+    bool m_isUpdatingCounts = false;
 };
 
 } // namespace QuarkMeta
