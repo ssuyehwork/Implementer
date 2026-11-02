@@ -243,6 +243,13 @@ void PanelMediator::setupConnections() {
             }
         });
 
+        connect(shortcutController, &AppShortcutController::createNewMdRequested, this, [this, contentPanel]() {
+            ContentPanel* target = m_activeContentPanel ? m_activeContentPanel.data() : contentPanel;
+            if (target) {
+                target->createNewItem("md");
+            }
+        });
+
         connect(shortcutController, &AppShortcutController::extractContentRequested, this, [this, contentPanel]() {
             ContentPanel* target = m_activeContentPanel ? m_activeContentPanel.data() : contentPanel;
             if (target) {
@@ -1037,19 +1044,26 @@ void PanelMediator::setupConnections() {
                 if (!nextValid.isEmpty()) {
                     QuickLookWindow::instance().preview(nextValid);
                 } else {
-                    delta = -1;
-                    QString prevValid;
-                    while (true) {
-                        QString candidate = target->getAdjacentFilePath(path, delta);
-                        if (candidate.isEmpty()) break;
-                        if (!QFileInfo(candidate).isDir() && UiHelper::canPreviewFile(candidate)) {
-                            prevValid = candidate;
-                            break;
+                    // 若下一个无有效文件，说明被删除的是最后一个项目：回环跳转至第一个可预览项目
+                    QString firstValid;
+                    QAbstractItemView* view = target->activeItemView();
+                    if (view && view->model()) {
+                        QAbstractItemModel* model = view->model();
+                        int rowCount = model->rowCount();
+                        for (int r = 0; r < rowCount; ++r) {
+                            QModelIndex idx = model->index(r, 0);
+                            if (idx.data(SectionHeaderRole).toBool()) continue;
+                            QString p = idx.data(PathRole).toString();
+                            if (p != path && !p.isEmpty() && !QFileInfo(p).isDir() && UiHelper::canPreviewFile(p)) {
+                                firstValid = p;
+                                break;
+                            }
                         }
-                        delta--;
                     }
-                    if (!prevValid.isEmpty()) {
-                        QuickLookWindow::instance().preview(prevValid);
+
+                    if (!firstValid.isEmpty()) {
+                        QuickLookWindow::instance().preview(firstValid);
+                        ToolTipOverlay::instance()->showToast("当前处于第一个项目", 2000, QColor("#3498db"));
                     } else {
                         QuickLookWindow::instance().closePreview();
                     }

@@ -102,6 +102,8 @@ void QuickLookWindow::setupUi() {
     m_lblEmptyPrompt->setAlignment(Qt::AlignCenter);
     m_lblEmptyPrompt->setObjectName("QLEmptyPromptLabel");
     m_lblEmptyPrompt->hide();
+    m_lblEmptyPrompt->installEventFilter(this);
+    m_container->installEventFilter(this);
     layout->addWidget(m_lblEmptyPrompt);
 
     // 状态与信息标签
@@ -404,7 +406,9 @@ void QuickLookWindow::showEvent(QShowEvent* event) {
 bool QuickLookWindow::eventFilter(QObject* watched, QEvent* event) {
     bool hasTextEditViewport = m_textEdit && m_textEdit->viewport();
 
-    if ((watched == m_textEdit || (hasTextEditViewport && watched == m_textEdit->viewport()) || watched == m_graphicsView) && event->type() == QEvent::MouseButtonDblClick) {
+    if ((watched == m_textEdit || (hasTextEditViewport && watched == m_textEdit->viewport()) ||
+         watched == m_graphicsView || watched == m_lblEmptyPrompt ||
+         watched == m_container || watched == this) && event->type() == QEvent::MouseButtonDblClick) {
         closePreview();
         return true;
     }
