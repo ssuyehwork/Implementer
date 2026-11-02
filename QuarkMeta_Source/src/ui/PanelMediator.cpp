@@ -4,6 +4,7 @@
 #include "LibraryPanel.h"
 #include "MarkedPanel.h"
 #include "../meta/HistoryService.h"
+#include "../meta/LibrarySyncService.h"
 #include "ContentPanel.h"
 #include "ColumnViewWidget.h"
 #include "controllers/ContentPaneSplitManager.h"

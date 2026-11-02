@@ -2,6 +2,7 @@
 #define NOMINMAX
 #endif
 #include "ContentPanel.h"
+#include <QtConcurrent/QtConcurrent>
 #include "models/SectionProxyModel.h"
 #include "ContentHeaderWidget.h"
 #include "controllers/ContentContextMenu.h"
