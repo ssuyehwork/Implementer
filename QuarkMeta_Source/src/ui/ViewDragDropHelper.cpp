@@ -93,9 +93,21 @@ bool DragDropEventFilter::eventFilter(QObject* watched, QEvent* event) {
     return QObject::eventFilter(watched, event);
 }
 
+ViewDragDropHelper::DragSourcePanel ViewDragDropHelper::s_lastDragSourcePanel = ViewDragDropHelper::DragSourcePanel::None;
+int ViewDragDropHelper::s_lastDragSourceCategoryId = 0;
 QAbstractItemView* ViewDragDropHelper::s_hoverView = nullptr;
 QPersistentModelIndex ViewDragDropHelper::s_hoverIndex;
 QPoint ViewDragDropHelper::s_lastDragStartPos;
+
+void ViewDragDropHelper::setLastDragSource(DragSourcePanel source, int categoryId) {
+    s_lastDragSourcePanel = source;
+    s_lastDragSourceCategoryId = categoryId;
+}
+
+void ViewDragDropHelper::clearLastDragSource() {
+    s_lastDragSourcePanel = DragSourcePanel::None;
+    s_lastDragSourceCategoryId = 0;
+}
 
 bool ViewDragDropHelper::isDropTarget(const QWidget* widget, const QModelIndex& index) {
     if (!widget || !s_hoverView || !s_hoverIndex.isValid()) return false;

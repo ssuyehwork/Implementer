@@ -13,6 +13,8 @@
 #include "../../core/LastOperationManager.h"
 #include "../../util/DiskIoService.h"
 #include "../../meta/LibraryService.h"
+#include "../../meta/FavoriteService.h"
+#include "../../meta/MarkedFolderService.h"
 
 #include <QDir>
 #include <QFileInfo>
@@ -98,6 +100,47 @@ bool ContentFileOpsHandler::resolvePasteDestination() {
 
 void ContentFileOpsHandler::onPathsDropped(const QStringList& paths, const QModelIndex& targetIndex, const QString& targetDirOverride, Qt::DropAction action) {
     if (!m_panel || paths.isEmpty()) return;
+
+    // 🚀【拖拽移出/脱管交互语义】：若拖拽源来自侧边栏（收藏夹、库分类、标记），执行解绑移出而非磁盘文件操作
+    auto dragSource = ViewDragDropHelper::lastDragSourcePanel();
+    if (dragSource == ViewDragDropHelper::DragSourcePanel::Favorite) {
+        int removedCount = 0;
+        for (const QString& p : paths) {
+            if (FavoriteService::instance().removeFavorite(p)) {
+                removedCount++;
+            }
+        }
+        if (removedCount > 0) {
+            ToolTipOverlay::instance()->showToast(QString("已将 %1 个项目从收藏夹中移出").arg(removedCount), 2000, QColor("#3498db"));
+        }
+        return;
+    }
+
+    if (dragSource == ViewDragDropHelper::DragSourcePanel::Library) {
+        int catId = ViewDragDropHelper::lastDragSourceCategoryId();
+        if (catId > 0) {
+            LibraryService::instance().removePathsFromCategory(catId, paths);
+            ToolTipOverlay::instance()->showToast(QString("已将 %1 个项目从分类中解除归类").arg(paths.size()), 2000, QColor("#3498db"));
+        } else {
+            LibraryService::instance().removePathsFromLibrary(paths);
+            ToolTipOverlay::instance()->showToast(QString("已将 %1 个项目从“库”中移出").arg(paths.size()), 2000, QColor("#3498db"));
+        }
+        return;
+    }
+
+    if (dragSource == ViewDragDropHelper::DragSourcePanel::Marked) {
+        int unmarkedCount = 0;
+        for (const QString& p : paths) {
+            if (MarkedFolderService::instance().isMarked(p)) {
+                MarkedFolderService::instance().removeMarked(p);
+                unmarkedCount++;
+            }
+        }
+        if (unmarkedCount > 0) {
+            ToolTipOverlay::instance()->showToast(QString("已取消 %1 个目标文件夹标记").arg(unmarkedCount), 2000, QColor("#3498db"));
+        }
+        return;
+    }
 
     // 1. 目标窗格分类视图拖放重定向逻辑
     QString catType = m_panel->getCurrentCategoryType();

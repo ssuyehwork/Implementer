@@ -13,6 +13,7 @@
 #include "../util/ShellHelper.h"
 #include "../core/NavigationService.h"
 #include "controllers/ContextMenuFactory.h"
+#include "ViewDragDropHelper.h"
 
 namespace QuarkMeta {
 
@@ -36,6 +37,7 @@ void MarkedPanel::initUi() {
     m_treeWidget->setIconSize(QSize(16, 16));
     m_treeWidget->setContextMenuPolicy(Qt::CustomContextMenu);
     m_treeWidget->setSelectionMode(QAbstractItemView::SingleSelection);
+    m_treeWidget->setDragEnabled(true);
     m_treeWidget->setAcceptDrops(true);
     if (m_treeWidget->viewport()) {
         m_treeWidget->viewport()->setAcceptDrops(true);
@@ -76,7 +78,26 @@ void MarkedPanel::dropEvent(QDropEvent* event) {
 
 bool MarkedPanel::eventFilter(QObject* watched, QEvent* event) {
     if (watched == m_treeWidget || (m_treeWidget && watched == m_treeWidget->viewport())) {
-        if (event->type() == QEvent::DragEnter) {
+        if (event->type() == QEvent::MouseMove) {
+            QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+            if (mouseEvent->buttons() & Qt::LeftButton) {
+                QTreeWidgetItem* hitItem = m_treeWidget->itemAt(mouseEvent->pos());
+                if (hitItem) {
+                    QString path = hitItem->data(0, Qt::UserRole).toString();
+                    if (!path.isEmpty() && QFileInfo::exists(path)) {
+                        ToolTipOverlay::hideTip();
+                        ViewDragDropHelper::setLastDragSource(ViewDragDropHelper::DragSourcePanel::Marked);
+                        QDrag* drag = new QDrag(m_treeWidget);
+                        QMimeData* mimeData = new QMimeData();
+                        mimeData->setUrls({QUrl::fromLocalFile(path)});
+                        drag->setMimeData(mimeData);
+                        drag->exec(Qt::CopyAction);
+                        ViewDragDropHelper::clearLastDragSource();
+                        return true;
+                    }
+                }
+            }
+        } else if (event->type() == QEvent::DragEnter) {
             auto* de = static_cast<QDragEnterEvent*>(event);
             if (de->mimeData() && de->mimeData()->hasUrls()) {
                 de->acceptProposedAction();

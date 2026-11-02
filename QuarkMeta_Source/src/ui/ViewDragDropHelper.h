@@ -36,17 +36,31 @@ private:
 
 class ViewDragDropHelper {
 public:
+    enum class DragSourcePanel {
+        None,
+        Favorite,
+        Library,
+        Marked
+    };
+
     static bool handleDragEnter(QAbstractItemView* view, QDragEnterEvent* event);
     static bool handleDragMove(QAbstractItemView* view, QDragMoveEvent* event);
     static bool handleDrop(QAbstractItemView* view, QDropEvent* event, QStringList& outPaths, QModelIndex& outTargetIdx, Qt::DropAction* outAction = nullptr, QPoint* outStartPos = nullptr);
     static void executeStartDrag(QAbstractItemView* view, Qt::DropActions supportedActions);
     static QPoint lastDragStartPos() { return s_lastDragStartPos; }
 
+    static void setLastDragSource(DragSourcePanel source, int categoryId = 0);
+    static DragSourcePanel lastDragSourcePanel() { return s_lastDragSourcePanel; }
+    static int lastDragSourceCategoryId() { return s_lastDragSourceCategoryId; }
+    static void clearLastDragSource();
+
     static bool isDropTarget(const QWidget* widget, const QModelIndex& index);
     static void setHoverTarget(QAbstractItemView* view, const QModelIndex& index);
     static void clearHover(QAbstractItemView* view = nullptr);
 
 private:
+    static DragSourcePanel s_lastDragSourcePanel;
+    static int s_lastDragSourceCategoryId;
     static QAbstractItemView* s_hoverView;
     static QPersistentModelIndex s_hoverIndex;
     static QPoint s_lastDragStartPos;

@@ -202,6 +202,17 @@ void DropTreeView::startDrag(Qt::DropActions supportedActions) {
 
     QMimeData* mimeData = new QMimeData();
     mimeData->setData("application/x-quarkmeta-tree-nodes", QByteArray("1"));
+
+    if (this->objectName() == "FavoriteTreeView") {
+        ViewDragDropHelper::setLastDragSource(ViewDragDropHelper::DragSourcePanel::Favorite);
+    } else if (this->objectName() == "LibraryTreeView") {
+        int srcCatId = -2;
+        if (!filteredIndexes.isEmpty()) {
+            srcCatId = filteredIndexes.first().data(Qt::UserRole + 1).toInt();
+        }
+        ViewDragDropHelper::setLastDragSource(ViewDragDropHelper::DragSourcePanel::Library, srcCatId);
+    }
+
     if (!urls.isEmpty()) {
         mimeData->setUrls(urls);
     }
@@ -217,6 +228,7 @@ void DropTreeView::startDrag(Qt::DropActions supportedActions) {
     drag->exec(supportedActions | Qt::CopyAction | Qt::MoveAction, Qt::MoveAction);
 
     // 拖拽结束后清理
+    ViewDragDropHelper::clearLastDragSource();
     m_internalDragSources.clear();
     clearInternalDropIndicator();
     stopEdgeScroll();

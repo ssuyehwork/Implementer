@@ -6,6 +6,7 @@
 #include "Logger.h"
 #include "TreeItemDelegate.h"
 #include "DropTreeView.h"
+#include "ViewDragDropHelper.h"
 #include "ContentPanel.h"
 #include "ToolTipOverlay.h"
 #include "../core/AppConfig.h"
@@ -213,7 +214,51 @@ void NavPanel::initUi() {
     m_treeView->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_treeView->setExpandsOnDoubleClick(true);
     m_treeView->setDragEnabled(true);
-    m_treeView->setDragDropMode(QAbstractItemView::DragOnly);
+    m_treeView->setAcceptDrops(true);
+    m_treeView->setDragDropMode(QAbstractItemView::DragDrop);
+    connect(m_treeView, &DropTreeView::pathsDropped, this, [this](const QStringList& paths, const QModelIndex& targetIndex, Qt::DropAction action) {
+        Q_UNUSED(targetIndex);
+        Q_UNUSED(action);
+        if (paths.isEmpty()) return;
+
+        auto dragSource = ViewDragDropHelper::lastDragSourcePanel();
+        if (dragSource == ViewDragDropHelper::DragSourcePanel::Favorite) {
+            int removedCount = 0;
+            for (const QString& p : paths) {
+                if (FavoriteService::instance().removeFavorite(p)) removedCount++;
+            }
+            if (removedCount > 0) {
+                ToolTipOverlay::instance()->showToast(QString("已将 %1 个项目从收藏夹中移出").arg(removedCount), 2000, QColor("#3498db"));
+            }
+            return;
+        }
+
+        if (dragSource == ViewDragDropHelper::DragSourcePanel::Library) {
+            int catId = ViewDragDropHelper::lastDragSourceCategoryId();
+            if (catId > 0) {
+                LibraryService::instance().removePathsFromCategory(catId, paths);
+                ToolTipOverlay::instance()->showToast(QString("已将 %1 个项目从分类中解除归类").arg(paths.size()), 2000, QColor("#3498db"));
+            } else {
+                LibraryService::instance().removePathsFromLibrary(paths);
+                ToolTipOverlay::instance()->showToast(QString("已将 %1 个项目从“库”中移出").arg(paths.size()), 2000, QColor("#3498db"));
+            }
+            return;
+        }
+
+        if (dragSource == ViewDragDropHelper::DragSourcePanel::Marked) {
+            int unmarkCount = 0;
+            for (const QString& p : paths) {
+                if (MarkedFolderService::instance().isMarked(p)) {
+                    MarkedFolderService::instance().removeMarked(p);
+                    unmarkCount++;
+                }
+            }
+            if (unmarkCount > 0) {
+                ToolTipOverlay::instance()->showToast(QString("已取消 %1 个目标文件夹标记").arg(unmarkCount), 2000, QColor("#3498db"));
+            }
+            return;
+        }
+    });
     m_treeView->setItemDelegate(new TreeItemDelegate(this, false));
     m_treeView->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     m_treeView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
