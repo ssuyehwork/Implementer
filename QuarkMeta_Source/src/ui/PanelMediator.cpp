@@ -1026,51 +1026,61 @@ void PanelMediator::setupConnections() {
     connect(&QuickLookWindow::instance(), &QuickLookWindow::deleteRequested, this, [this, contentPanel](const QString& path) {
         if (path.isEmpty()) return;
         ContentPanel* target = m_activeContentPanel ? m_activeContentPanel.data() : contentPanel;
+        if (!target) return;
 
-        if (TrashService::instance().moveToTrash({path}, target)) {
-            if (target) {
-                int delta = 1;
-                QString nextValid;
-                while (true) {
-                    QString candidate = target->getAdjacentFilePath(path, delta);
-                    if (candidate.isEmpty()) break;
-                    if (!QFileInfo(candidate).isDir() && UiHelper::canPreviewFile(candidate)) {
-                        nextValid = candidate;
-                        break;
-                    }
-                    delta++;
+        // 🚀【核心修复 1】：在删除执行前，提前计算出“下一个有效文件”或“备选的上一个文件”
+        QString nextTarget;
+
+        // 先向后找下一个可预览文件
+        int delta = 1;
+        while (true) {
+            QString candidate = target->getAdjacentFilePath(path, delta);
+            if (candidate.isEmpty()) break;
+            if (!QFileInfo(candidate).isDir() && UiHelper::canPreviewFile(candidate)) {
+                nextTarget = candidate;
+                break;
+            }
+            delta++;
+        }
+
+        // 如果后面没有了（当前是末尾项），则向前找上一个可预览文件
+        if (nextTarget.isEmpty()) {
+            delta = -1;
+            while (true) {
+                QString candidate = target->getAdjacentFilePath(path, delta);
+                if (candidate.isEmpty()) break;
+                if (!QFileInfo(candidate).isDir() && UiHelper::canPreviewFile(candidate)) {
+                    nextTarget = candidate;
+                    break;
                 }
-
-                if (!nextValid.isEmpty()) {
-                    QuickLookWindow::instance().preview(nextValid);
-                } else {
-                    // 若下一个无有效文件，说明被删除的是最后一个项目：回环跳转至第一个可预览项目
-                    QString firstValid;
-                    QAbstractItemView* view = target->activeItemView();
-                    if (view && view->model()) {
-                        QAbstractItemModel* model = view->model();
-                        int rowCount = model->rowCount();
-                        for (int r = 0; r < rowCount; ++r) {
-                            QModelIndex idx = model->index(r, 0);
-                            if (idx.data(SectionHeaderRole).toBool()) continue;
-                            QString p = idx.data(PathRole).toString();
-                            if (p != path && !p.isEmpty() && !QFileInfo(p).isDir() && UiHelper::canPreviewFile(p)) {
-                                firstValid = p;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (!firstValid.isEmpty()) {
-                        QuickLookWindow::instance().preview(firstValid);
-                        ToolTipOverlay::instance()->showToast("当前处于第一个项目", 2000, QColor("#3498db"));
-                    } else {
-                        QuickLookWindow::instance().closePreview();
-                    }
-                }
-                target->refreshAll();
+                delta--;
             }
         }
+
+        // 🚀【核心修复 2】：锁死 QuickLook 失焦关闭门禁，防止弹窗或模型刷新杀死预览窗口
+        QuickLookWindow::instance().setIgnoreDeactivate(true);
+
+        // 🚀【核心修复 3】：执行删除操作
+        bool deleteOk = TrashService::instance().moveToTrash({path}, target);
+
+        if (deleteOk) {
+            // 同步刷新主内容面板视图
+            target->refreshAll();
+
+            if (!nextTarget.isEmpty() && QFile::exists(nextTarget)) {
+                // 自动跳转到预先锁定的下一个（或末尾时的上一个）项目
+                QuickLookWindow::instance().preview(nextTarget);
+                target->selectAndScrollToPath(nextTarget);
+            } else {
+                // 当前目录已没有任何可预览文件，安全关闭
+                QuickLookWindow::instance().closePreview();
+            }
+        }
+
+        // 恢复失焦保护
+        QTimer::singleShot(200, &QuickLookWindow::instance(), []() {
+            QuickLookWindow::instance().setIgnoreDeactivate(false);
+        });
     });
 
     // 4. 统计与过滤联动 (动态支持多分栏焦点切换)
