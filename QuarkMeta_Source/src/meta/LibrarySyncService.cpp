@@ -217,20 +217,22 @@ void LibrarySyncService::triggerStartupReconciliation() {
             syncPaths(missingPaths);
         }
 
-        // 对账 2: 库表中有但已无任何分类引用的孤儿条目，自动清理
+        // 🚨 核心防误删契约：彻底废除启动后台物理清理孤儿条目的危险操作！
+        // 秉持数据资产“宽进严出”与后台零删除原则，唯有用户在 UI 界面显式触发“从库中移除”时才允许删除条目。
+        // 此处仅对无分类引用的条目进行数量审计，绝不下发 SQL DELETE 物理清除。
         std::unordered_set<std::wstring> catSet;
         for (const QString& cp : categoryPaths) {
             catSet.insert(normalizePath(cp).toStdWString());
         }
 
-        QStringList orphanPaths;
+        int unreferencedCount = 0;
         for (const auto& p : existingPaths) {
             if (catSet.count(normalizePath(p).toStdWString()) == 0) {
-                orphanPaths.append(p);
+                unreferencedCount++;
             }
         }
-        if (!orphanPaths.isEmpty()) {
-            LibraryItemDao::removeItemsByPaths(orphanPaths);
+        if (unreferencedCount > 0) {
+            qDebug() << "[LibrarySyncService] 启动对账完成：检测到" << unreferencedCount << "个未绑定分类的条目，安全保留。";
         }
     });
 }

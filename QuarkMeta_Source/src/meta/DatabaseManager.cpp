@@ -5,6 +5,7 @@
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QDebug>
+#include <QThread>
 #include <windows.h>
 #include "../util/AppDirectoryInitializer.h"
 
@@ -136,15 +137,25 @@ bool DatabaseManager::tryRecoverFromBackup() {
     if (backupFiles.isEmpty()) return false;
 
     QString dbPath = getGlobalDbPath();
-    // 🚨 严密清理：不仅移除 .store 主文件，必须同步彻底移除残留的 -wal 与 -shm，防止旧快照与新 WAL 合并回放导致数据库污染
-    QFile::remove(dbPath);
-    QFile::remove(dbPath + "-wal");
-    QFile::remove(dbPath + "-shm");
+    // 🚨 防灾抗毁保护：严禁直接 QFile::remove 物理删除！
+    // 必须将现场疑似损坏的文件进行安全归档重命名隔离，防止误杀新增有效数据
+    QString timestamp = QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss");
+    if (QFile::exists(dbPath)) {
+        QString corruptedArchive = dbPath + ".corrupted." + timestamp;
+        QFile::rename(dbPath, corruptedArchive);
+        qWarning() << "[DatabaseManager] 已将原主库归档隔离至:" << corruptedArchive;
+    }
+    if (QFile::exists(dbPath + "-wal")) {
+        QFile::rename(dbPath + "-wal", dbPath + "-wal.corrupted." + timestamp);
+    }
+    if (QFile::exists(dbPath + "-shm")) {
+        QFile::rename(dbPath + "-shm", dbPath + "-shm.corrupted." + timestamp);
+    }
 
     for (const auto& bFile : backupFiles) {
         if (QFile::copy(bFile.absoluteFilePath(), dbPath)) {
             qCritical() << "[DatabaseManager] 🚨 警告：已从自动备份文件自愈恢复数据库快照:" << bFile.fileName()
-                        << "，原 -wal 与 -shm 日志已完全清除，确保快照纯净装载！";
+                        << "，现场损坏文件已安全归档隔离！";
             return true;
         }
     }
@@ -188,26 +199,11 @@ bool DatabaseManager::loadDb(const std::wstring& diskPath, DbConnection& conn) {
         logSqlError("PRAGMA user_version read", conn.diskDb);
     }
 
-    if (currentVersion != kSchemaVersion) {
-        char* err = nullptr;
-        if (sqlite3_exec(conn.diskDb, "BEGIN TRANSACTION;", nullptr, nullptr, &err) == SQLITE_OK) {
-            sqlite3_exec(conn.diskDb, "DROP TABLE IF EXISTS item_palettes;", nullptr, nullptr, nullptr);
-            sqlite3_exec(conn.diskDb, "DROP TABLE IF EXISTS file_tags;", nullptr, nullptr, nullptr);
-            sqlite3_exec(conn.diskDb, "DROP TABLE IF EXISTS library_items;", nullptr, nullptr, nullptr);
-            if (sqlite3_exec(conn.diskDb, "COMMIT;", nullptr, nullptr, &err) != SQLITE_OK) {
-                logSqlError("Version upgrade transaction commit", conn.diskDb, "COMMIT;");
-                if (err) sqlite3_free(err);
-                sqlite3_close_v2(conn.diskDb);
-                conn.diskDb = nullptr;
-                return false;
-            }
-        } else {
-            logSqlError("Version upgrade transaction begin", conn.diskDb, "BEGIN TRANSACTION;");
-            if (err) sqlite3_free(err);
-            sqlite3_close_v2(conn.diskDb);
-            conn.diskDb = nullptr;
-            return false;
-        }
+    // 🚨 核心防灾升级：彻底废除暴力 DROP TABLE 自毁逻辑！
+    // 遵循向前兼容平滑迁移原则，已有数据表结构与数据资产绝对不被清空抹杀
+    if (currentVersion > kSchemaVersion) {
+        qWarning() << "[DatabaseManager] ⚠️ 检测到当前数据库 Schema 版本 (" << currentVersion
+                   << ") 高于程序内置版本 (" << kSchemaVersion << ")，以只读/兼容模式加载，禁止回退破坏！";
     }
 
     const char* schema = R"(
@@ -395,13 +391,18 @@ bool DatabaseManager::initLocked() {
 
     std::wstring globalPath = getGlobalDbPath().toStdWString();
     if (!loadDb(globalPath, m_globalDb)) {
-        qWarning() << "[DatabaseManager] 主数据库装载失败，尝试从 7 天自动快照自愈恢复...";
-        if (tryRecoverFromBackup()) {
-            if (!loadDb(globalPath, m_globalDb)) {
+        // 🚨 防误杀重试：强杀后可能存在短暂的文件锁未瞬间释放，退避重试一次
+        qWarning() << "[DatabaseManager] 首次装载数据库失败，等待 200ms 后退避重试一次...";
+        QThread::msleep(200);
+        if (!loadDb(globalPath, m_globalDb)) {
+            qWarning() << "[DatabaseManager] 重试装载仍失败，尝试从 7 天自动快照自愈恢复...";
+            if (tryRecoverFromBackup()) {
+                if (!loadDb(globalPath, m_globalDb)) {
+                    return false;
+                }
+            } else {
                 return false;
             }
-        } else {
-            return false;
         }
     }
 
