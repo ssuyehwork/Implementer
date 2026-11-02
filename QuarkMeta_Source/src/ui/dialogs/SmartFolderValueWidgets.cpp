@@ -39,11 +39,15 @@ StarRatingValueWidget::StarRatingValueWidget(QWidget* parent) : ISmartFolderValu
 
     m_combo->setIconSize(QSize(100, 18));
 
+    // 添加“无”选项（对应 rating = 0），专门筛选无星级/评分的项目
+    m_combo->addItem("无", 0);
+
     const int starSize = 14;
     const int spacing = 4;
+    const int fullIconWidth = 5 * starSize + 4 * spacing; // 86px 固定画布宽度，保证图标严格靠左对齐
+
     for (int stars = 1; stars <= 5; ++stars) {
-        int maxW = stars * starSize + (stars - 1) * spacing;
-        QPixmap pixmap(maxW, starSize);
+        QPixmap pixmap(fullIconWidth, starSize);
         pixmap.fill(Qt::transparent);
 
         QPainter painter(&pixmap);
