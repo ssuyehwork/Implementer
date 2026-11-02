@@ -13,27 +13,41 @@ namespace QuarkMeta {
 SqlTransaction::SqlTransaction(sqlite3* db) : m_db(db) {
     if (m_db) {
         m_isNested = (sqlite3_get_autocommit(m_db) == 0);
-        if (!m_isNested) {
-            sqlite3_exec(m_db, "BEGIN IMMEDIATE TRANSACTION", nullptr, nullptr, nullptr);
+        if (m_isNested) {
+            qWarning() << "[SqlTransaction] ⚠️ 警告：检测到数据库连接已处于未提交事务中 (autocommit=0)，本事务判定为嵌套事务/假事务！若上层事务泄漏，后续提交将全部静默失效！";
+        } else {
+            int rc = sqlite3_exec(m_db, "BEGIN IMMEDIATE TRANSACTION", nullptr, nullptr, nullptr);
+            if (rc != SQLITE_OK) {
+                qCritical() << "[SqlTransaction] ❌ BEGIN IMMEDIATE TRANSACTION 失败，错误码:" << rc << sqlite3_errmsg(m_db);
+            }
         }
     }
 }
 
 SqlTransaction::~SqlTransaction() {
-    if (m_db && !m_committed && !m_isNested) {
-        sqlite3_exec(m_db, "ROLLBACK", nullptr, nullptr, nullptr);
+    if (m_db && !m_committed) {
+        if (m_isNested) {
+            qWarning() << "[SqlTransaction] ⚠️ 嵌套事务析构时未显式 commit()，已被跳过，依赖外层事务决定";
+        } else {
+            qWarning() << "[SqlTransaction] ⚠️ 事务析构时未提交，执行自动 ROLLBACK 回滚！";
+            sqlite3_exec(m_db, "ROLLBACK", nullptr, nullptr, nullptr);
+        }
     }
 }
 
 bool SqlTransaction::commit() {
     if (m_db && !m_committed) {
         if (m_isNested) {
+            qWarning() << "[SqlTransaction] ⚠️ 嵌套事务调用 commit()：仅标记局部提交，实际未向 SQLite 下发 COMMIT 指令！";
             m_committed = true;
             return true;
         }
-        if (sqlite3_exec(m_db, "COMMIT", nullptr, nullptr, nullptr) == SQLITE_OK) {
+        int rc = sqlite3_exec(m_db, "COMMIT", nullptr, nullptr, nullptr);
+        if (rc == SQLITE_OK) {
             m_committed = true;
             return true;
+        } else {
+            qCritical() << "[SqlTransaction] ❌ 真实 COMMIT 失败，错误码:" << rc << sqlite3_errmsg(m_db);
         }
     }
     return false;
@@ -42,7 +56,10 @@ bool SqlTransaction::commit() {
 void SqlTransaction::rollback() {
     if (m_db && !m_committed) {
         if (!m_isNested) {
+            qWarning() << "[SqlTransaction] 显式执行真实 ROLLBACK";
             sqlite3_exec(m_db, "ROLLBACK", nullptr, nullptr, nullptr);
+        } else {
+            qWarning() << "[SqlTransaction] ⚠️ 嵌套事务调用 rollback()，无法单独向 SQLite 下发 ROLLBACK，请注意外层一致性！";
         }
         m_committed = true;
     }
@@ -119,11 +136,15 @@ bool DatabaseManager::tryRecoverFromBackup() {
     if (backupFiles.isEmpty()) return false;
 
     QString dbPath = getGlobalDbPath();
-    QFile::remove(dbPath); // 清理可能损坏的残存孤儿主文件
+    // 🚨 严密清理：不仅移除 .store 主文件，必须同步彻底移除残留的 -wal 与 -shm，防止旧快照与新 WAL 合并回放导致数据库污染
+    QFile::remove(dbPath);
+    QFile::remove(dbPath + "-wal");
+    QFile::remove(dbPath + "-shm");
 
     for (const auto& bFile : backupFiles) {
         if (QFile::copy(bFile.absoluteFilePath(), dbPath)) {
-            qWarning() << "[DatabaseManager] 已成功从备份文件自动恢复数据库:" << bFile.fileName();
+            qCritical() << "[DatabaseManager] 🚨 警告：已从自动备份文件自愈恢复数据库快照:" << bFile.fileName()
+                        << "，原 -wal 与 -shm 日志已完全清除，确保快照纯净装载！";
             return true;
         }
     }
