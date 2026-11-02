@@ -216,7 +216,9 @@ void NavPanel::initUi() {
     m_treeView->setDragEnabled(true);
     m_treeView->setAcceptDrops(true);
     m_treeView->setDragDropMode(QAbstractItemView::DragDrop);
-    connect(m_treeView, &DropTreeView::pathsDropped, this, [this](const QStringList& paths, const QModelIndex& targetIndex, Qt::DropAction action) {
+    DropTreeView* dropTreeView = qobject_cast<DropTreeView*>(m_treeView);
+    if (dropTreeView) {
+        connect(dropTreeView, &DropTreeView::pathsDropped, this, [this](const QStringList& paths, const QModelIndex& targetIndex, Qt::DropAction action) {
         Q_UNUSED(targetIndex);
         Q_UNUSED(action);
         if (paths.isEmpty()) return;
@@ -258,7 +260,8 @@ void NavPanel::initUi() {
             }
             return;
         }
-    });
+        });
+    }
     m_treeView->setItemDelegate(new TreeItemDelegate(this, false));
     m_treeView->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     m_treeView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);

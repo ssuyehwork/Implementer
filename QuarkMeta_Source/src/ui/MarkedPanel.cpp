@@ -7,6 +7,7 @@
 #include <QMenu>
 #include <QMouseEvent>
 #include <QMimeData>
+#include <QDrag>
 #include <QUrl>
 #include <QClipboard>
 #include <QGuiApplication>
