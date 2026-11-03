@@ -50,6 +50,7 @@
 #include <QClipboard>
 #include <QThreadPool>
 #include <QPointer>
+#include <QMouseEvent>
 
 namespace QuarkMeta {
 
@@ -374,16 +375,41 @@ void ContentContextMenu::showMenu(QAbstractItemView* view, const QPoint& pos) {
                     });
                 };
 
-                connect(moveMenu, &QMenu::hovered, this, [](QAction* action) {
-                    if (action && action->property("hoverPath").isValid()) {
-                        QString path = action->property("hoverPath").toString();
-                        if (!path.isEmpty()) {
-                            ToolTipOverlay::instance()->showText(QCursor::pos(), path, 0, QColor("#333333"), false);
-                            return;
+                class MoveMenuHoverFilter : public QObject {
+                public:
+                    explicit MoveMenuHoverFilter(QMenu* menu) : QObject(menu), m_menu(menu) {}
+                protected:
+                    bool eventFilter(QObject* watched, QEvent* event) override {
+                        if (watched == m_menu) {
+                            if (event->type() == QEvent::MouseMove) {
+                                QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+                                QAction* action = m_menu->actionAt(mouseEvent->pos());
+                                if (action && action->property("hoverPath").isValid()) {
+                                    QString path = action->property("hoverPath").toString();
+                                    if (!path.isEmpty()) {
+                                        QString nativePath = QDir::toNativeSeparators(path);
+                                        if (m_lastHoveredPath != nativePath) {
+                                            m_lastHoveredPath = nativePath;
+                                            ToolTipOverlay::instance()->showText(QCursor::pos(), nativePath, 0);
+                                        }
+                                        return QObject::eventFilter(watched, event);
+                                    }
+                                }
+                                m_lastHoveredPath.clear();
+                                ToolTipOverlay::hideTip();
+                            } else if (event->type() == QEvent::Leave) {
+                                m_lastHoveredPath.clear();
+                                ToolTipOverlay::hideTip();
+                            }
                         }
+                        return QObject::eventFilter(watched, event);
                     }
-                    ToolTipOverlay::hideTip();
-                });
+                private:
+                    QMenu* m_menu;
+                    QString m_lastHoveredPath;
+                };
+
+                moveMenu->installEventFilter(new MoveMenuHoverFilter(moveMenu));
                 connect(moveMenu, &QMenu::aboutToHide, this, []() {
                     ToolTipOverlay::hideTip();
                 });
