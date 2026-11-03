@@ -27,7 +27,7 @@
 #include "../../core/NavigationService.h"
 #include "../../core/OperationSnapshotEngine.h"
 #include "../../util/DiskIoService.h"
-#include "../FramelessFileDialog.h"
+#include <QFileDialog>
 #include "../../core/CoreEngine.h"
 #include "../../meta/MetadataManager.h"
 #include "../../meta/FavoriteDao.h"
@@ -375,16 +375,14 @@ void ContentContextMenu::showMenu(QAbstractItemView* view, const QPoint& pos) {
                 };
 
                 connect(moveMenu, &QMenu::hovered, this, [](QAction* action) {
-                    if (action) {
+                    if (action && action->property("hoverPath").isValid()) {
                         QString path = action->property("hoverPath").toString();
                         if (!path.isEmpty()) {
-                            ToolTipOverlay::instance()->showText(QCursor::pos(), path, 0);
-                        } else {
-                            ToolTipOverlay::hideTip();
+                            ToolTipOverlay::instance()->showText(QCursor::pos(), path, 0, QColor("#333333"), false);
+                            return;
                         }
-                    } else {
-                        ToolTipOverlay::hideTip();
                     }
+                    ToolTipOverlay::hideTip();
                 });
                 connect(moveMenu, &QMenu::aboutToHide, this, []() {
                     ToolTipOverlay::hideTip();
@@ -409,7 +407,12 @@ void ContentContextMenu::showMenu(QAbstractItemView* view, const QPoint& pos) {
 
                 QAction* actBrowseMove = moveMenu->addAction(UiHelper::getIcon("folder", QColor("#EEEEEE"), 16), "浏览选择文件夹...");
                 connect(actBrowseMove, &QAction::triggered, this, [this, performMoveTo]() {
-                    QString selectedDir = FramelessFileDialog::getExistingDirectory(m_panel, "选择移动的目标文件夹", m_panel->currentPath());
+                    QString selectedDir = QFileDialog::getExistingDirectory(
+                        m_panel,
+                        "选择移动的目标文件夹",
+                        m_panel->currentPath(),
+                        QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks
+                    );
                     if (!selectedDir.isEmpty()) {
                         performMoveTo(selectedDir);
                     }
