@@ -5,6 +5,8 @@
 #include <QString>
 #include <QVector>
 #include <QPair>
+#include <vector>
+#include <utility>
 
 namespace QuarkMeta {
 
@@ -36,6 +38,7 @@ public:
 
     // 4. 自动提取色彩匹配算法 (SSOT 唯一真理源)
     static bool matchesAutoColor(const QColor& target, const QColor& candidate, int precision);
+    static float matchedAreaRatio(const QColor& target, const std::vector<std::pair<QColor, float>>& palettes, const QString& autoColorHex, int precision);
     static float matchedAreaRatio(const QColor& target, const QVector<QPair<QColor, float>>& palettes, const QString& autoColorHex, int precision);
 
     // 5. 国际标准色差算法 (CIEDE2000)

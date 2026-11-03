@@ -477,6 +477,24 @@ bool ColorPaletteEngine::matchesAutoColor(const QColor& target, const QColor& ca
     }
 }
 
+float ColorPaletteEngine::matchedAreaRatio(const QColor& target, const std::vector<std::pair<QColor, float>>& palettes, const QString& autoColorHex, int precision) {
+    if (!palettes.empty()) {
+        float totalArea = 0.0f;
+        for (const auto& pe : palettes) {
+            if (matchesAutoColor(target, pe.first, precision)) {
+                totalArea += pe.second;
+            }
+        }
+        return totalArea;
+    } else if (!autoColorHex.isEmpty()) {
+        QColor recordCol = parseColorName(autoColorHex);
+        if (matchesAutoColor(target, recordCol, precision)) {
+            return 1.0f;
+        }
+    }
+    return 0.0f;
+}
+
 float ColorPaletteEngine::matchedAreaRatio(const QColor& target, const QVector<QPair<QColor, float>>& palettes, const QString& autoColorHex, int precision) {
     if (!palettes.empty()) {
         float totalArea = 0.0f;
