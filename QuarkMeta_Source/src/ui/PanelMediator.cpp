@@ -417,11 +417,12 @@ void PanelMediator::setupConnections() {
 
         if (libraryPanel) {
             connect(libraryPanel, &LibraryPanel::categoryPathsSelected, this, [this, contentPanel, filterPanel, addressBar, titleBar](const QStringList& paths, const QString& name, int categoryId) {
-                if (filterPanel) {
-                    filterPanel->clearAllFilters(false);
-                }
                 ContentPanel* target = m_activeContentPanel ? m_activeContentPanel.data() : contentPanel;
+                if (filterPanel) {
+                    filterPanel->clearAllFilters(true);
+                }
                 if (target) {
+                    target->search("");
                     target->applyViewTarget(QString("library://%1").arg(categoryId), "library", name, categoryId, false);
                     target->setLastLoadedLibraryPaths(paths);
                     target->loadLibraryPaths(paths);

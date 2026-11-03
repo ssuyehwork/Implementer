@@ -376,8 +376,8 @@ bool LibraryDao::addPathsToCategory(int id, const QStringList& paths) {
     std::lock_guard<std::mutex> lock(DatabaseManager::instance().getGlobalMutex());
     SqlTransaction trans(db);
 
-    // 1. 先清除被操作路径已有的所有旧分类关联
-    const char* delPathsSql = "DELETE FROM library_category_paths WHERE path = ?;";
+    // 1. 先清除被操作路径已有的所有旧分类关联 (强制忽略大小写，彻底确保删除旧关联 100% 命中)
+    const char* delPathsSql = "DELETE FROM library_category_paths WHERE path = ? COLLATE NOCASE;";
     sqlite3_stmt* stmtDelP = nullptr;
     if (sqlite3_prepare_v2(db, delPathsSql, -1, &stmtDelP, nullptr) == SQLITE_OK) {
         for (const QString& p : paths) {
