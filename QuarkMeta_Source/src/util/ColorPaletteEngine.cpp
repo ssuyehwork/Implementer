@@ -440,4 +440,59 @@ double ColorPaletteEngine::calculateDeltaE(const QColor& c1, const QColor& c2) {
     return dE;
 }
 
+bool ColorPaletteEngine::matchesAutoColor(const QColor& target, const QColor& candidate, int precision) {
+    if (!target.isValid() || !candidate.isValid()) return false;
+
+    int targetSat = target.hsvSaturation();
+    int pcSat = candidate.hsvSaturation();
+
+    if (targetSat >= 38) {
+        // 有彩色：要求 candidate 非灰黑白(饱和度 >= 38)，色相偏离 <= kHueTolerance，纯度符合精准度要求
+        if (pcSat < 38) return false;
+
+        int targetHue = target.hsvHue();
+        int pcHue = candidate.hsvHue();
+        if (targetHue < 0 || pcHue < 0) return false;
+
+        int d = std::abs(pcHue - targetHue);
+        if (d > 180) d = 360 - d;
+
+        double precisionFactor = static_cast<double>(precision) / 100.0;
+
+        // 1. 动态收紧色相差容差：精准度 0~100 对应色相差 15° ~ 6° (50时为 10°)
+        int maxHueDiff = qRound(15.0 - 9.0 * precisionFactor);
+        if (d > maxHueDiff) return false;
+
+        // 2. 纯度要求：必须符合精准度最低饱和度阈值
+        double minSat = 255.0 * (1.0 - precisionFactor);
+        if (static_cast<double>(pcSat) < minSat) return false;
+
+        // 3. 严格明度约束：精准度 0~100 对应最大明度差 40 ~ 15 (50时仅为 27)
+        int maxValDiff = qRound(40.0 - 25.0 * precisionFactor);
+        return std::abs(candidate.value() - target.value()) <= maxValDiff;
+    } else {
+        // 灰、黑、白：要求 candidate 亦属于灰黑白(饱和度 < 38)，且 lightnessF 差值 <= 0.2
+        if (pcSat >= 38) return false;
+        return std::abs(candidate.lightnessF() - target.lightnessF()) <= 0.2;
+    }
+}
+
+float ColorPaletteEngine::matchedAreaRatio(const QColor& target, const QVector<QPair<QColor, float>>& palettes, const QString& autoColorHex, int precision) {
+    if (!palettes.empty()) {
+        float totalArea = 0.0f;
+        for (const auto& pe : palettes) {
+            if (matchesAutoColor(target, pe.first, precision)) {
+                totalArea += pe.second;
+            }
+        }
+        return totalArea;
+    } else if (!autoColorHex.isEmpty()) {
+        QColor recordCol = parseColorName(autoColorHex);
+        if (matchesAutoColor(target, recordCol, precision)) {
+            return 1.0f;
+        }
+    }
+    return 0.0f;
+}
+
 } // namespace QuarkMeta

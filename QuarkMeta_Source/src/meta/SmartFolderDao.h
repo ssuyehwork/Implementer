@@ -5,6 +5,8 @@
 #include <QJsonObject>
 #include <QJsonArray>
 
+struct sqlite3;
+
 namespace QuarkMeta {
 
 enum class SmartRuleType {
@@ -57,7 +59,8 @@ struct SmartFolderRule {
     qint64 num1 = 0;
     qint64 num2 = 0;
     QString unit;   // "KB", "MB", "GB"
-    int tolerance = 50; // 图像颜色色差容差
+    int tolerance = 50; // 图像颜色精准度 (原名 tolerance)
+    int minArea = 0;    // 图像颜色占比 (0~100)
 
     QJsonObject toJson() const;
     static SmartFolderRule fromJson(const QJsonObject& obj);
@@ -100,7 +103,10 @@ public:
     static QString buildExtensionCondition(const SmartFolderRule& rule);
     static QString buildTagCondition(const SmartFolderRule& rule);
 
+    static bool registerColorFunctions(sqlite3* db);
+
 private:
+    static QString buildAutoColorAreaExpression(const QString& targetHexEscaped, int precision);
     static QString buildWhereClause(const SmartFolderRecord& rec);
 };
 

@@ -2,6 +2,7 @@
 #include "DatabaseManager.h"
 #include "LibraryDao.h"
 #include "MetadataManager.h"
+#include "../util/ColorPaletteEngine.h"
 #include <sqlite3.h>
 #include <QJsonDocument>
 #include <QDateTime>
@@ -40,7 +41,12 @@ QJsonObject SmartFolderRule::toJson() const {
     if (num1 != 0) obj["num1"] = num1;
     if (num2 != 0) obj["num2"] = num2;
     if (!unit.isEmpty()) obj["unit"] = unit;
-    if (type == SmartRuleType::AutoColor) obj["tolerance"] = tolerance;
+    if (type == SmartRuleType::AutoColor) {
+        obj["tolerance"] = tolerance;
+        if (minArea > 0) {
+            obj["minArea"] = minArea;
+        }
+    }
     return obj;
 }
 
@@ -55,6 +61,7 @@ SmartFolderRule SmartFolderRule::fromJson(const QJsonObject& obj) {
     rule.num2 = obj.value("num2").toVariant().toLongLong();
     rule.unit = obj.value("unit").toString();
     rule.tolerance = obj.value("tolerance").toInt(50);
+    rule.minArea = obj.value("minArea").toInt(0);
 
     if (obj.contains("tags") && obj.value("tags").isArray()) {
         QJsonArray tagArr = obj.value("tags").toArray();
@@ -508,14 +515,75 @@ QString SmartFolderDao::buildColorCondition(const SmartFolderRule& rule) {
     }
 }
 
+static void qm_color_hit_func(sqlite3_context* context, int argc, sqlite3_value** argv) {
+    if (argc < 3) {
+        sqlite3_result_int(context, 0);
+        return;
+    }
+    const unsigned char* candText = sqlite3_value_text(argv[0]);
+    const unsigned char* targetText = sqlite3_value_text(argv[1]);
+    int precision = sqlite3_value_int(argv[2]);
+
+    if (!candText || !targetText) {
+        sqlite3_result_int(context, 0);
+        return;
+    }
+
+    QString candStr = QString::fromUtf8(reinterpret_cast<const char*>(candText));
+    QString targetStr = QString::fromUtf8(reinterpret_cast<const char*>(targetText));
+
+    QColor candCol = ColorPaletteEngine::parseColorName(candStr);
+    QColor targetCol = ColorPaletteEngine::parseColorName(targetStr);
+
+    if (!candCol.isValid() || !targetCol.isValid()) {
+        sqlite3_result_int(context, 0);
+        return;
+    }
+
+    bool hit = ColorPaletteEngine::matchesAutoColor(targetCol, candCol, precision);
+    sqlite3_result_int(context, hit ? 1 : 0);
+}
+
+bool SmartFolderDao::registerColorFunctions(sqlite3* db) {
+    if (!db) return false;
+    int rc = sqlite3_create_function(
+        db,
+        "qm_color_hit",
+        3,
+        SQLITE_UTF8 | SQLITE_DETERMINISTIC,
+        nullptr,
+        qm_color_hit_func,
+        nullptr,
+        nullptr
+    );
+    return rc == SQLITE_OK;
+}
+
+QString SmartFolderDao::buildAutoColorAreaExpression(const QString& targetHexEscaped, int precision) {
+    return QString(
+        "CASE WHEN EXISTS (SELECT 1 FROM item_palettes p0 WHERE p0.file_id = library_items.file_id) "
+        "THEN COALESCE((SELECT SUM(p.ratio) FROM item_palettes p WHERE p.file_id = library_items.file_id AND qm_color_hit(p.color_hex, '%1', %2) = 1), 0) "
+        "ELSE (CASE WHEN qm_color_hit(library_items.auto_color, '%1', %2) = 1 THEN 1.0 ELSE 0 END) "
+        "END"
+    ).arg(targetHexEscaped).arg(precision);
+}
+
 QString SmartFolderDao::buildAutoColorCondition(const SmartFolderRule& rule) {
-    QString colorVal = rule.value.trimmed().replace("'", "''");
-    if (colorVal.isEmpty()) return QString();
+    QString rawVal = rule.value.trimmed();
+    if (rawVal.isEmpty()) return QString();
+
+    QString targetHexEscaped = rawVal;
+    targetHexEscaped.replace("'", "''");
+
+    int p = qBound(0, rule.tolerance, 100);
+    int m = qBound(0, rule.minArea, 100);
+
+    QString areaExpr = buildAutoColorAreaExpression(targetHexEscaped, p);
 
     if (rule.op == SmartRuleOperator::NotContains) {
-        return QString("auto_color != '%1'").arg(colorVal);
+        return QString("NOT (%1 > 0 AND %1 * 100 >= %2)").arg(areaExpr).arg(m);
     } else {
-        return QString("auto_color = '%1'").arg(colorVal);
+        return QString("(%1 > 0 AND %1 * 100 >= %2)").arg(areaExpr).arg(m);
     }
 }
 
@@ -691,6 +759,7 @@ QMap<int, int> SmartFolderDao::countMatchingItemsBatchReadOnly(const QString& db
         return results;
     }
 
+    registerColorFunctions(dbReadOnly);
     sqlite3_busy_timeout(dbReadOnly, 3000);
 
     for (const auto& rec : records) {

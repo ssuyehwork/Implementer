@@ -80,64 +80,9 @@ bool FilterProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex& source
     if (!currentFilter.colors.isEmpty()) {
         bool matchAuto = false;
 
-        auto isMatch = [&](const QColor& targetCol, const QColor& pc) -> bool {
-            if (!targetCol.isValid() || !pc.isValid()) return false;
-
-            int targetSat = targetCol.hsvSaturation();
-            int pcSat = pc.hsvSaturation();
-
-            if (targetSat >= 38) {
-                // 有彩色：要求 pc 非灰黑白(饱和度 >= 38)，色相偏离 <= kHueTolerance，纯度符合精准度要求
-                if (pcSat < 38) return false;
-
-                int targetHue = targetCol.hsvHue();
-                int pcHue = pc.hsvHue();
-                if (targetHue < 0 || pcHue < 0) return false;
-
-                int d = std::abs(pcHue - targetHue);
-                if (d > 180) d = 360 - d;
-
-                double precisionFactor = static_cast<double>(currentFilter.colorPrecision) / 100.0;
-
-                // 1. 动态收紧色相差容差：精准度 0~100 对应色相差 15° ~ 6° (50时为 10°)
-                int maxHueDiff = qRound(15.0 - 9.0 * precisionFactor);
-                if (d > maxHueDiff) return false;
-
-                // 2. 纯度要求：必须符合精准度最低饱和度阈值
-                double minSat = 255.0 * (1.0 - precisionFactor);
-                if (static_cast<double>(pcSat) < minSat) return false;
-
-                // 3. 严格明度约束：精准度 0~100 对应最大明度差 40 ~ 15 (50时仅为 27)
-                // 彻底阻断大亮红（V=255）与深暗褐色（V=53）之间的混淆匹配
-                int maxValDiff = qRound(40.0 - 25.0 * precisionFactor);
-                return std::abs(pc.value() - targetCol.value()) <= maxValDiff;
-            } else {
-                // 灰、黑、白：要求 pc 亦属于灰黑白(饱和度 < 38)，且 lightnessF 差值 <= 0.2
-                if (pcSat >= 38) return false;
-                return std::abs(pc.lightnessF() - targetCol.lightnessF()) <= 0.2;
-            }
-        };
-
-        auto calculateMatchedArea = [&](const QColor& targetCol) -> float {
-            float totalArea = 0.0f;
-            if (!record.palettes.empty()) {
-                for (const auto& pe : record.palettes) {
-                    if (isMatch(targetCol, pe.first)) {
-                        totalArea += pe.second;
-                    }
-                }
-            } else if (!record.autoColor.isEmpty()) {
-                QColor recordCol = UiHelper::parseColorName(record.autoColor);
-                if (isMatch(targetCol, recordCol)) {
-                    totalArea = 1.0f;
-                }
-            }
-            return totalArea;
-        };
-
         for (const QString& fc : currentFilter.colors) {
             QColor targetCol = UiHelper::parseColorName(fc);
-            float area = calculateMatchedArea(targetCol);
+            float area = ColorPaletteEngine::matchedAreaRatio(targetCol, record.palettes, record.autoColor, currentFilter.colorPrecision);
             if (area > 0.0f && (area * 100.0f >= static_cast<float>(currentFilter.minColorArea))) {
                 matchAuto = true;
                 break;

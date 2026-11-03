@@ -158,6 +158,7 @@ private:
     QPushButton* m_colorBtn = nullptr;
     QSpinBox* m_toleranceSpin = nullptr;
     QString m_colorHex = "#FF0000";
+    int m_minArea = 0;
 };
 
 class TagPillValueWidget : public ISmartFolderValueWidget {

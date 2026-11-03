@@ -349,7 +349,7 @@ void ManualColorValueWidget::setRuleValues(const SmartFolderRule& rule) {
 // --- SmartFolderColorWheelPopup ---
 class SmartFolderColorWheelPopup : public QWidget {
 public:
-    SmartFolderColorWheelPopup(const QString& initialHex, int initialTol, QWidget* parent = nullptr)
+    SmartFolderColorWheelPopup(const QString& initialHex, int initialTol, int initialMinArea, QWidget* parent = nullptr)
         : QWidget(parent, Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint)
     {
         setAttribute(Qt::WA_StyledBackground, true);
@@ -383,11 +383,11 @@ public:
         hexRow->addStretch();
         layout->addLayout(hexRow);
 
-        // 3. 容差滑块调节行
+        // 3. 精准度滑块调节行
         auto* tolRow = new QHBoxLayout();
         tolRow->setContentsMargins(0, 0, 0, 0);
         tolRow->setSpacing(6);
-        auto* tolLabel = new QLabel("容差:", this);
+        auto* tolLabel = new QLabel("精准度:", this);
         m_tolSlider = new QSlider(Qt::Horizontal, this);
         m_tolSlider->setRange(0, 100);
         m_tolSlider->setValue(initialTol);
@@ -397,6 +397,21 @@ public:
         tolRow->addWidget(m_tolSlider, 1);
         tolRow->addWidget(m_tolValLabel);
         layout->addLayout(tolRow);
+
+        // 4. 占比滑块调节行
+        auto* areaRow = new QHBoxLayout();
+        areaRow->setContentsMargins(0, 0, 0, 0);
+        areaRow->setSpacing(6);
+        auto* areaLabel = new QLabel("占比:", this);
+        m_areaSlider = new QSlider(Qt::Horizontal, this);
+        m_areaSlider->setRange(0, 100);
+        m_areaSlider->setValue(initialMinArea);
+        m_areaValLabel = new QLabel(QString::number(initialMinArea), this);
+        m_areaValLabel->setFixedWidth(28);
+        areaRow->addWidget(areaLabel);
+        areaRow->addWidget(m_areaSlider, 1);
+        areaRow->addWidget(m_areaValLabel);
+        layout->addLayout(areaRow);
 
         // 初始化色轮值
         QColor initCol(initialHex);
@@ -410,14 +425,20 @@ public:
             m_hexEdit->setText(hex);
             m_tolSlider->setValue(p);
             m_tolValLabel->setText(QString::number(p));
-            if (m_callback) m_callback(hex, p);
+            if (m_callback) m_callback(hex, p, m_areaSlider->value());
         });
 
-        // 容差变动响应
+        // 精准度变动响应
         connect(m_tolSlider, &QSlider::valueChanged, this, [this](int val) {
             m_tolValLabel->setText(QString::number(val));
             m_wheel->setValues(m_wheel->hue(), val);
-            if (m_callback) m_callback(m_hexEdit->text().trimmed().toUpper(), val);
+            if (m_callback) m_callback(m_hexEdit->text().trimmed().toUpper(), val, m_areaSlider->value());
+        });
+
+        // 占比变动响应
+        connect(m_areaSlider, &QSlider::valueChanged, this, [this](int val) {
+            m_areaValLabel->setText(QString::number(val));
+            if (m_callback) m_callback(m_hexEdit->text().trimmed().toUpper(), m_tolSlider->value(), val);
         });
 
         // Hex 输入回车响应
@@ -428,12 +449,12 @@ public:
             if (c.isValid()) {
                 int h = qMax(0, c.hsvHue());
                 m_wheel->setValues(h, m_tolSlider->value());
-                if (m_callback) m_callback(c.name().toUpper(), m_tolSlider->value());
+                if (m_callback) m_callback(c.name().toUpper(), m_tolSlider->value(), m_areaSlider->value());
             }
         });
     }
 
-    void setOnColorChanged(std::function<void(const QString&, int)> cb) {
+    void setOnColorChanged(std::function<void(const QString&, int, int)> cb) {
         m_callback = std::move(cb);
     }
 
@@ -442,7 +463,9 @@ private:
     QLineEdit* m_hexEdit = nullptr;
     QSlider* m_tolSlider = nullptr;
     QLabel* m_tolValLabel = nullptr;
-    std::function<void(const QString&, int)> m_callback;
+    QSlider* m_areaSlider = nullptr;
+    QLabel* m_areaValLabel = nullptr;
+    std::function<void(const QString&, int, int)> m_callback;
 };
 
 // --- AutoColorValueWidget ---
@@ -463,7 +486,7 @@ AutoColorValueWidget::AutoColorValueWidget(QWidget* parent) : ISmartFolderValueW
     m_toleranceSpin->setObjectName("SmartFolderSpinBox");
     m_toleranceSpin->setRange(0, 100);
     m_toleranceSpin->setValue(50);
-    m_toleranceSpin->setPrefix("容差: ");
+    m_toleranceSpin->setPrefix("精准度: ");
 
     layout->addWidget(m_toleranceSpin, 1);
 
@@ -485,14 +508,15 @@ void AutoColorValueWidget::updateBtnStyle() {
 }
 
 void AutoColorValueWidget::openColorWheelPopup() {
-    auto* popup = new SmartFolderColorWheelPopup(m_colorHex, m_toleranceSpin->value(), this);
+    auto* popup = new SmartFolderColorWheelPopup(m_colorHex, m_toleranceSpin->value(), m_minArea, this);
     popup->setAttribute(Qt::WA_DeleteOnClose);
 
     QPoint globalPos = m_colorBtn->mapToGlobal(QPoint(0, m_colorBtn->height() + 2));
     popup->move(globalPos);
 
-    popup->setOnColorChanged([this](const QString& hex, int tol) {
+    popup->setOnColorChanged([this](const QString& hex, int tol, int minArea) {
         m_colorHex = hex;
+        m_minArea = minArea;
         m_toleranceSpin->setValue(tol);
         updateBtnStyle();
         emit valueChanged();
@@ -504,14 +528,16 @@ void AutoColorValueWidget::openColorWheelPopup() {
 void AutoColorValueWidget::getRuleValues(SmartFolderRule& rule) const {
     rule.value = m_colorHex;
     rule.tolerance = m_toleranceSpin->value();
+    rule.minArea = m_minArea;
 }
 
 void AutoColorValueWidget::setRuleValues(const SmartFolderRule& rule) {
     if (!rule.value.isEmpty()) {
         m_colorHex = rule.value.toUpper();
     }
-    // 允许 0~100 全区间合法容差精准还原，仅在超出范围时兜底 50
+    // 允许 0~100 全区间合法精准度精准还原，仅在超出范围时兜底 50
     m_toleranceSpin->setValue((rule.tolerance >= 0 && rule.tolerance <= 100) ? rule.tolerance : 50);
+    m_minArea = qBound(0, rule.minArea, 100);
     updateBtnStyle();
 }
 

@@ -1,5 +1,6 @@
 #include "DatabaseManager.h"
 #include "DriveMetaDao.h"
+#include "SmartFolderDao.h"
 #include <QDir>
 #include <QFileInfo>
 #include <QCoreApplication>
@@ -175,6 +176,8 @@ bool DatabaseManager::loadDb(const std::wstring& diskPath, DbConnection& conn) {
     sqlite3_exec(conn.diskDb, "PRAGMA journal_mode = WAL;", nullptr, nullptr, nullptr);
     sqlite3_exec(conn.diskDb, "PRAGMA synchronous = NORMAL;", nullptr, nullptr, nullptr);
     sqlite3_exec(conn.diskDb, "PRAGMA temp_store = MEMORY;", nullptr, nullptr, nullptr);
+
+    SmartFolderDao::registerColorFunctions(conn.diskDb);
 
     constexpr int kSchemaVersion = 1;
     int currentVersion = 0;
