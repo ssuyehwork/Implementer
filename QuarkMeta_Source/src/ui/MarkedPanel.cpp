@@ -189,11 +189,11 @@ void MarkedPanel::updateDragOverlayText() {
     if (!m_hoverTargetPath.isEmpty()) {
         QString name = QFileInfo(m_hoverTargetPath).fileName();
         if (name.isEmpty()) name = m_hoverTargetPath;
-        m_dragOverlayLabel->setText(QString("项目即将分发到\n%1").arg(name));
+        m_dragOverlayLabel->setText(QString("项目即将分发至 1 个目标文件夹\n%1").arg(name));
     } else {
         if (!m_activeTargetNames.isEmpty()) {
             QStringList lines;
-            lines << "项目即将分发到";
+            lines << QString("项目即将分发至 %1 个目标文件夹").arg(m_activeTargetNames.size());
             lines.append(m_activeTargetNames);
             m_dragOverlayLabel->setText(lines.join("\n"));
         } else {

@@ -773,7 +773,7 @@ void MetaPanel::showDragOverlay(int activeCount) {
     auto activeFolders = MarkedFolderService::instance().getActiveMarked();
     if (!activeFolders.isEmpty()) {
         QStringList lines;
-        lines << QString("迁移到 %1 个标记文件夹").arg(activeFolders.size());
+        lines << QString("项目即将分发至 %1 个目标文件夹").arg(activeFolders.size());
         lines << ""; // 空行打散间距
         for (const auto& folderPath : activeFolders) {
             QString name = QFileInfo(folderPath).fileName();
