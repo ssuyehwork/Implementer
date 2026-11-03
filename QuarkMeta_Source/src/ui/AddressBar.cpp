@@ -150,41 +150,54 @@ AddressBar::AddressBar(QWidget* parent) : QWidget(parent) {
     connect(m_breadcrumbBar, &BreadcrumbBar::favoriteToggleRequested, this, [this](const QString& fullPath, const QPoint& globalPos) {
         if (fullPath.isEmpty() || fullPath == "computer://") return;
 
+        // 核心判定：当前面包屑节点是否属于实际物理硬盘目录
+        bool isLibraryScene = (fullPath.startsWith("library://") ||
+                               fullPath.startsWith("smartfolder://") ||
+                               fullPath.startsWith("库") ||
+                               fullPath.contains(" → "));
+
         QString nativePath = QDir::toNativeSeparators(QDir::cleanPath(fullPath));
+        bool isPhysicalDir = !isLibraryScene && QDir(nativePath).exists();
 
         QMenu menu(this);
         UiHelper::applyMenuStyle(&menu);
 
-        // 1. 打开文件夹
-        QAction* actOpenFolder = menu.addAction(UiHelper::getIcon("folder", QColor("#EEEEEE"), 18), "打开文件夹");
-        connect(actOpenFolder, &QAction::triggered, this, [this, nativePath]() {
-            emit pathChanged(nativePath);
+        // 1. 打开 / 跳转
+        QString openText = isLibraryScene ? "打开此分类" : "打开文件夹";
+        QAction* actOpenFolder = menu.addAction(UiHelper::getIcon("folder", QColor("#EEEEEE"), 18), openText);
+        connect(actOpenFolder, &QAction::triggered, this, [this, nativePath, fullPath, isLibraryScene]() {
+            emit pathChanged(isLibraryScene ? fullPath : nativePath);
         });
 
-        // 2. 标签页级联子菜单
-        ContextMenuFactory::buildTabCascadeMenu(&menu, nativePath, this);
+        // 2. 标签页级联子菜单 (支持物理目录与库分类在新标签中打开)
+        ContextMenuFactory::buildTabCascadeMenu(&menu, isLibraryScene ? fullPath : nativePath, this);
 
-        // 3. 在“资源管理器”中显示
-        ContextMenuFactory::buildShowInExplorerAction(&menu, nativePath, this);
+        // 3. 仅对物理目录支持在“资源管理器”中显示
+        if (isPhysicalDir) {
+            ContextMenuFactory::buildShowInExplorerAction(&menu, nativePath, this);
+        }
 
-        menu.addSeparator();
+        // 核心隔离：以下区域 ② 的所有操作仅对物理硬盘目录生效，库场景彻底剔除！
+        if (isPhysicalDir) {
+            menu.addSeparator();
 
-        // 4. 置顶 / 收藏夹 / 库
-        FavoriteService::instance().buildFavoriteAction(&menu, nativePath, this);
-        LibraryService::instance().buildLibraryAction(&menu, QStringList{nativePath}, this);
+            // 4. 置顶 / 收藏夹 / 库
+            FavoriteService::instance().buildFavoriteAction(&menu, nativePath, this);
+            LibraryService::instance().buildLibraryAction(&menu, QStringList{nativePath}, this);
 
-        menu.addSeparator();
+            menu.addSeparator();
 
-        // 5. 复制名称 / 复制完整路径
-        ContextMenuFactory::buildCopyNameAction(&menu, QStringList{nativePath}, this);
-        ContextMenuFactory::buildCopyPathAction(&menu, QStringList{nativePath}, this);
+            // 5. 复制名称 / 复制完整路径
+            ContextMenuFactory::buildCopyNameAction(&menu, QStringList{nativePath}, this);
+            ContextMenuFactory::buildCopyPathAction(&menu, QStringList{nativePath}, this);
 
-        // 6. 粘贴到此文件夹
-        QAction* actPaste = menu.addAction(UiHelper::getIcon("paste", QColor("#EEEEEE"), 18), "粘贴到此文件夹");
-        actPaste->setEnabled(ClipboardService::instance().canPaste(nativePath));
-        connect(actPaste, &QAction::triggered, this, [this, nativePath]() {
-            ClipboardService::instance().executePaste(nativePath, this);
-        });
+            // 6. 粘贴到此文件夹
+            QAction* actPaste = menu.addAction(UiHelper::getIcon("paste", QColor("#EEEEEE"), 18), "粘贴到此文件夹");
+            actPaste->setEnabled(ClipboardService::instance().canPaste(nativePath));
+            connect(actPaste, &QAction::triggered, this, [this, nativePath]() {
+                ClipboardService::instance().executePaste(nativePath, this);
+            });
+        }
 
         menu.exec(globalPos);
     });

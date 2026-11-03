@@ -262,7 +262,12 @@ void ContentContextMenu::showMenu(QAbstractItemView* view, const QPoint& pos) {
             QAction* actShowInExp = menu.addAction(UiHelper::getIcon("folder_search", QColor("#EEEEEE"), 18), ContextMenuFactory::kTextShowInExplorer);
             actShowInExp->setData(ContentPanel::ActionShowInExplorer);
 
-            if (m_panel && (m_panel->isRecursive() || m_panel->getCurrentCategoryType() == "library")) {
+            bool isLibraryScene = m_panel && (m_panel->getCurrentCategoryType() == "library" ||
+                                              m_panel->getCurrentCategoryType() == "smart_folder" ||
+                                              m_panel->currentPath().startsWith("library://") ||
+                                              m_panel->currentPath().startsWith("smartfolder://"));
+
+            if (m_panel && (m_panel->isRecursive() || isLibraryScene)) {
                 menu.addAction(UiHelper::getIcon("folder_filled", QColor("#EEEEEE"), 18), "在 QuarkMeta 中显示")->setData(ContentPanel::ActionShowInQuarkMeta);
             }
 
