@@ -1284,10 +1284,12 @@ void LibraryPanel::onPathsDroppedToCategory(const QStringList& paths, const QMod
 void LibraryPanel::loadLibrary() {
     if (!m_model) return;
 
-    // 记录刷新前选中的分类或智能文件夹节点 ID，刷新后精准恢复高亮选中
+    // 记录刷新前选中的分类或智能文件夹节点 ID 与节点类型（"category" 还是 "smart_folder"），刷新后精准恢复高亮选中
     int savedSelectedNodeId = 0;
+    QString savedSelectedType;
     if (m_treeView && m_treeView->currentIndex().isValid()) {
         savedSelectedNodeId = m_treeView->currentIndex().data(Qt::UserRole + 1).toInt();
+        savedSelectedType = m_treeView->currentIndex().data(TypeRole).toString();
     }
 
     m_isLoading = true;
@@ -1435,9 +1437,9 @@ void LibraryPanel::loadLibrary() {
         updateSmartFolderCountsAsync(m_currentCountReqId, smartFolders);
     }
 
-    // 恢复树节点的选中高亮状态，确保持续显示高亮
+    // 恢复树节点的选中高亮状态：严格同时校验 ID 与节点类型，严禁把普通分类的高亮挂到同名同 ID 的智能文件夹上
     if (savedSelectedNodeId != 0 && m_treeView) {
-        QStandardItem* targetItem = findItemByNodeId(m_model->invisibleRootItem(), savedSelectedNodeId);
+        QStandardItem* targetItem = findItemByNodeId(m_model->invisibleRootItem(), savedSelectedNodeId, savedSelectedType);
         if (targetItem) {
             m_treeView->setCurrentIndex(targetItem->index());
         }
@@ -1461,15 +1463,19 @@ void LibraryPanel::loadLibrary() {
     }
 }
 
-QStandardItem* LibraryPanel::findItemByNodeId(QStandardItem* parent, int nodeId) {
+QStandardItem* LibraryPanel::findItemByNodeId(QStandardItem* parent, int nodeId, const QString& type) {
     if (!parent) return nullptr;
     for (int i = 0; i < parent->rowCount(); ++i) {
         QStandardItem* child = parent->child(i);
         if (!child) continue;
-        if (child->data(Qt::UserRole + 1).toInt() == nodeId) {
+
+        bool idMatch = (child->data(Qt::UserRole + 1).toInt() == nodeId);
+        bool typeMatch = type.isEmpty() || (child->data(TypeRole).toString() == type);
+
+        if (idMatch && typeMatch) {
             return child;
         }
-        QStandardItem* found = findItemByNodeId(child, nodeId);
+        QStandardItem* found = findItemByNodeId(child, nodeId, type);
         if (found) return found;
     }
     return nullptr;

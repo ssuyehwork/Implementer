@@ -92,7 +92,7 @@ private slots:
 private:
     void initUi();
     void createAndEditCategory(int parentId = 0);
-    QStandardItem* findItemByNodeId(QStandardItem* parent, int nodeId);
+    QStandardItem* findItemByNodeId(QStandardItem* parent, int nodeId, const QString& type = QString());
     void toggleSectionByNodeId(int nodeId);
 
     void updateSmartFolderCountsAsync(uint64_t reqId, const QList<SmartFolderRecord>& smartFolders);

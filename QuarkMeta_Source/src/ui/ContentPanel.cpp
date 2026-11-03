@@ -120,6 +120,8 @@ ContentPanel::ContentPanel(QWidget* parent) : QFrame(parent) {
     connect(&ClipboardService::instance(), &ClipboardService::pasteCompleted, this, [this](const QString& dir) {
         if (m_currentPath == dir) refreshAll();
     });
+    // 核心联动修复：当库项目发生增加、移除、分类变更时，内容面板必须即时刷新同步
+    connect(&LibraryService::instance(), &LibraryService::libraryChanged, this, &ContentPanel::refreshAll);
 
     m_keyHandler = new ContentKeyHandler(this);
 
