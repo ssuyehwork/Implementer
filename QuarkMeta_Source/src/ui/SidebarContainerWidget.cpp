@@ -149,6 +149,9 @@ void SidebarContainerWidget::initUi() {
                 m_libraryPanel->treeView()->viewport()->update();
             }
         }
+        if (m_markedPanel) {
+            m_markedPanel->filterTreeNodes(kw);
+        }
     });
 
     m_mainLayout->addWidget(filterContainer, 0);
@@ -162,6 +165,7 @@ void SidebarContainerWidget::initUi() {
             QString kw = m_filterEdit->text().trimmed();
             if (index == 0 && m_favoritePanel) m_favoritePanel->filterTreeNodes(kw);
             if (index == 1 && m_libraryPanel) m_libraryPanel->filterTreeNodes(kw);
+            if (index == 2 && m_markedPanel) m_markedPanel->filterTreeNodes(kw);
         }
         AppConfig::instance().setValue("Sidebar/CurrentTabIndex", index);
         AppConfig::instance().sync();

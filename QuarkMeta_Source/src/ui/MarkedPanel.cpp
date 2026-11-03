@@ -35,7 +35,7 @@ void MarkedPanel::initUi() {
     m_treeWidget->setIndentation(0);
     m_treeWidget->setIconSize(QSize(16, 16));
     m_treeWidget->setContextMenuPolicy(Qt::CustomContextMenu);
-    m_treeWidget->setSelectionMode(QAbstractItemView::SingleSelection);
+    m_treeWidget->setSelectionMode(QAbstractItemView::ExtendedSelection);
     m_treeWidget->setAcceptDrops(true);
     if (m_treeWidget->viewport()) {
         m_treeWidget->viewport()->setAcceptDrops(true);
@@ -45,7 +45,7 @@ void MarkedPanel::initUi() {
 
     m_mainLayout->addWidget(m_treeWidget);
 
-    connect(m_treeWidget, &QTreeWidget::itemClicked, this, &MarkedPanel::onItemClicked);
+    connect(m_treeWidget, &QTreeWidget::itemDoubleClicked, this, &MarkedPanel::onItemDoubleClicked);
     connect(m_treeWidget, &QTreeWidget::customContextMenuRequested, this, &MarkedPanel::onContextMenuRequested);
 }
 
@@ -242,6 +242,9 @@ void MarkedPanel::loadMarkedFolders() {
             m_treeWidget->addTopLevelItem(item);
         }
     }
+    if (!m_currentFilterKeyword.isEmpty()) {
+        filterTreeNodes(m_currentFilterKeyword);
+    }
 }
 
 QTreeWidgetItem* MarkedPanel::createMarkedItem(const QString& path, bool active) {
@@ -254,7 +257,7 @@ QTreeWidgetItem* MarkedPanel::createMarkedItem(const QString& path, bool active)
     return item;
 }
 
-void MarkedPanel::onItemClicked(QTreeWidgetItem* item, int column) {
+void MarkedPanel::onItemDoubleClicked(QTreeWidgetItem* item, int column) {
     Q_UNUSED(column);
     if (!item) return;
     QString path = item->data(0, Qt::UserRole).toString();
@@ -264,56 +267,94 @@ void MarkedPanel::onItemClicked(QTreeWidgetItem* item, int column) {
 }
 
 void MarkedPanel::onContextMenuRequested(const QPoint& pos) {
-    QTreeWidgetItem* item = m_treeWidget ? m_treeWidget->itemAt(pos) : nullptr;
+    QList<QTreeWidgetItem*> selectedItems = m_treeWidget ? m_treeWidget->selectedItems() : QList<QTreeWidgetItem*>();
+    QTreeWidgetItem* clickedItem = m_treeWidget ? m_treeWidget->itemAt(pos) : nullptr;
+    if (clickedItem && !selectedItems.contains(clickedItem)) {
+        m_treeWidget->clearSelection();
+        clickedItem->setSelected(true);
+        selectedItems = {clickedItem};
+    }
+
     QMenu menu(this);
     UiHelper::applyMenuStyle(&menu);
 
-    if (item) {
-        QString path = item->data(0, Qt::UserRole).toString();
-        bool active = item->data(0, Qt::UserRole + 1).toBool();
+    if (!selectedItems.isEmpty()) {
+        QStringList selectedPaths;
+        bool allActive = true;
+        for (QTreeWidgetItem* item : selectedItems) {
+            QString path = item->data(0, Qt::UserRole).toString();
+            if (!path.isEmpty()) {
+                selectedPaths.append(path);
+                bool active = item->data(0, Qt::UserRole + 1).toBool();
+                if (!active) {
+                    allActive = false;
+                }
+            }
+        }
 
-        // 1. 打开与定位组
+        // 1. 打开与定位组 (仅单选有效，多选置灰)
         QAction* openAct = menu.addAction(UiHelper::getIcon("folder", QColor("#EEEEEE"), 16), "打开文件夹");
-        connect(openAct, &QAction::triggered, this, [this, path]() {
-            emit requestLocateFolder(path);
-        });
-
         QAction* newTabAct = menu.addAction(UiHelper::getIcon("add", QColor("#EEEEEE"), 16), "在新标签页中打开");
-        connect(newTabAct, &QAction::triggered, this, [path]() {
-            NavigationService::instance().openInNewTab(path);
-        });
-
-        ContextMenuFactory::buildShowInExplorerAction(&menu, path, this);
+        if (selectedPaths.size() == 1) {
+            QString singlePath = selectedPaths.first();
+            connect(openAct, &QAction::triggered, this, [this, singlePath]() {
+                emit requestLocateFolder(singlePath);
+            });
+            connect(newTabAct, &QAction::triggered, this, [singlePath]() {
+                NavigationService::instance().openInNewTab(singlePath);
+            });
+            ContextMenuFactory::buildShowInExplorerAction(&menu, singlePath, this);
+        } else {
+            openAct->setEnabled(false);
+            newTabAct->setEnabled(false);
+            QAction* expAct = menu.addAction(UiHelper::getIcon("folder_search", QColor("#EEEEEE"), 16), ContextMenuFactory::kTextShowInExplorer);
+            connect(expAct, &QAction::triggered, this, [selectedPaths]() {
+                for (const QString& p : selectedPaths) {
+                    ShellHelper::openInExplorer(p);
+                }
+            });
+        }
 
         menu.addSeparator();
 
-        // 2. 标记状态控制组
-        if (active) {
+        // 2. 标记状态控制组 (支持批量)
+        if (allActive) {
             QAction* unmarkAct = menu.addAction(UiHelper::getIcon("Destination.svg", QColor("#EEEEEE"), 16), "取消标记");
-            connect(unmarkAct, &QAction::triggered, this, [path]() {
-                MarkedFolderService::instance().removeMarked(path);
+            connect(unmarkAct, &QAction::triggered, this, [selectedPaths]() {
+                for (const QString& p : selectedPaths) {
+                    MarkedFolderService::instance().removeMarked(p);
+                }
             });
         } else {
             QAction* markAct = menu.addAction(UiHelper::getIcon("Destination.svg", QColor("#EEEEEE"), 16), "标记为目标文件夹");
-            connect(markAct, &QAction::triggered, this, [path]() {
-                MarkedFolderService::instance().addMarked(path);
+            connect(markAct, &QAction::triggered, this, [selectedPaths]() {
+                for (const QString& p : selectedPaths) {
+                    MarkedFolderService::instance().addMarked(p);
+                }
             });
         }
 
         QAction* keepOnlyAct = menu.addAction(UiHelper::getIcon("Destination.svg", QColor("#EEEEEE"), 16), "取消其他标记");
-        connect(keepOnlyAct, &QAction::triggered, this, [path]() {
-            MarkedFolderService::instance().keepOnlyMarked(path);
-        });
+        if (selectedPaths.size() == 1) {
+            QString singlePath = selectedPaths.first();
+            connect(keepOnlyAct, &QAction::triggered, this, [singlePath]() {
+                MarkedFolderService::instance().keepOnlyMarked(singlePath);
+            });
+        } else {
+            keepOnlyAct->setEnabled(false);
+        }
 
         QAction* removeAct = menu.addAction(UiHelper::getIcon("close", QColor("#EEEEEE"), 16), "从标记历史中移除");
-        connect(removeAct, &QAction::triggered, this, [path]() {
-            MarkedFolderService::instance().removeFolderRecord(path);
+        connect(removeAct, &QAction::triggered, this, [selectedPaths]() {
+            for (const QString& p : selectedPaths) {
+                MarkedFolderService::instance().removeFolderRecord(p);
+            }
         });
 
         menu.addSeparator();
 
-        // 3. 辅助工具组
-        ContextMenuFactory::buildCopyPathAction(&menu, QStringList{path}, this);
+        // 3. 辅助工具组 (支持批量复制完整路径)
+        ContextMenuFactory::buildCopyPathAction(&menu, selectedPaths, this);
 
         QAction* refreshAct = menu.addAction(UiHelper::getIcon("refresh", QColor("#EEEEEE"), 16), "刷新");
         connect(refreshAct, &QAction::triggered, this, [this]() {
@@ -342,6 +383,7 @@ void MarkedPanel::onMarkedFoldersChanged() {
 }
 
 void MarkedPanel::filterTreeNodes(const QString& keyword) {
+    m_currentFilterKeyword = keyword;
     QString kw = keyword.trimmed().toLower();
     for (int i = 0; i < m_treeWidget->topLevelItemCount(); ++i) {
         QTreeWidgetItem* item = m_treeWidget->topLevelItem(i);

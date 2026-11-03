@@ -34,7 +34,7 @@ protected:
     bool eventFilter(QObject* watched, QEvent* event) override;
 
 private slots:
-    void onItemClicked(QTreeWidgetItem* item, int column);
+    void onItemDoubleClicked(QTreeWidgetItem* item, int column);
     void onContextMenuRequested(const QPoint& pos);
     void onMarkedFoldersChanged();
 
@@ -53,6 +53,7 @@ private:
     QLabel* m_dragOverlayLabel = nullptr;
     QStringList m_activeTargetNames;
     QString m_hoverTargetPath;
+    QString m_currentFilterKeyword;
 };
 
 } // namespace QuarkMeta
