@@ -167,12 +167,3 @@ if(WIN32)
 
 endif()
 
-# --- 2026-04-18 [NEW] 看门狗守护程序 (Watchdog) ---
-set(WATCHDOG_SOURCES src/watchdog/main.cpp)
-add_executable(Watchdog ${WATCHDOG_SOURCES})
-target_link_libraries(Watchdog PRIVATE Qt6::Core)
-
-if(WIN32)
-    # 确保看门狗以 Windows 窗口模式运行（不弹出命令行黑框）
-    set_target_properties(Watchdog PROPERTIES WIN32_EXECUTABLE TRUE)
-endif()

@@ -156,13 +156,6 @@ int main(int argc, char *argv[]) {
         if (isExiting) return;
         isExiting = true;
 
-        // 2026-04-18 [WATCHDOG] 向看门狗发送“合法退出”信号：创建标识文件
-        QFile lockFile(QCoreApplication::applicationDirPath() + "/exit_gracefully.lock");
-        if (lockFile.open(QIODevice::WriteOnly)) {
-            lockFile.write("GRACEFUL_EXIT");
-            lockFile.close();
-        }
-
         // 2026-03-15 核心优化：视觉先行。立即隐藏窗口。
         for (QWidget* widget : QApplication::topLevelWidgets()) {
             if (widget && widget->objectName() != "ToolTipOverlay") {
@@ -720,14 +713,6 @@ int main(int argc, char *argv[]) {
             }
         });
     });
-
-    // 2026-04-18 [WATCHDOG] 启动看门狗守护进程
-    // 让看门狗监听当前程序的 PID，一旦闪退则自动拉起
-    QString watchdogPath = QCoreApplication::applicationDirPath() + "/Watchdog.exe";
-    if (QFile::exists(watchdogPath)) {
-        QProcess::startDetached(watchdogPath, QStringList() << "--pid" << QString::number(QCoreApplication::applicationPid()));
-        qDebug() << "[WATCHDOG] 已启动守护进程，正在监听 PID:" << QCoreApplication::applicationPid();
-    }
 
     int result = a.exec();
     
