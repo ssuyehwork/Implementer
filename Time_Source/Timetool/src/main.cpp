@@ -185,7 +185,7 @@ private:
                     return 1; 
                 }
 
-                if (ctrl && pKey->vkCode == 'W' && isKeyDown) {
+                if (ctrl && pKey->vkCode == 'Q' && isKeyDown) {
                     emit KeyboardHook::instance().exitRequested();
                     return 1;
                 }
@@ -652,7 +652,7 @@ private:
         m_buttonGroup = new QButtonGroup(this);
         m_buttonGroup->addButton(m_radioPrev, 0); m_buttonGroup->addButton(m_radioNext, 1);
 
-        auto* tip = new QLabel("按 0-9 输出时间 | Ctrl+W 退出程序");
+        auto* tip = new QLabel("按 0-9 输出时间 | Ctrl+Q 退出程序");
         tip->setAlignment(Qt::AlignCenter);
         tip->setStyleSheet("color: #555; font-size: 11px;");
         contentLayout->addWidget(tip);
