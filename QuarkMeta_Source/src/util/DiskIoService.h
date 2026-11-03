@@ -24,6 +24,8 @@ struct DiskIoContext {
     bool autoRenameAll = false;
     QSet<QString> overwriteFiles;
     QSet<QString> autoRenameFiles;
+    bool recordUndo = true;
+    std::shared_ptr<QMap<QString, QString>> actualDestMap; // 源路径 -> 实际落地路径，可为空
 };
 
 /**
@@ -38,10 +40,12 @@ public:
 
     void executeAsync(const DiskIoContext& ctx, std::function<void(bool)> callback) {
         (void)QtConcurrent::run([ctx, callback]() {
+            QMap<QString, QString>* outMapPtr = ctx.actualDestMap ? ctx.actualDestMap.get() : nullptr;
             bool success = ShellHelper::copyOrMoveItems(ctx.sources, ctx.destination, ctx.isMove,
                                                         ctx.overwriteAll, ctx.autoRenameAll,
-                                                        ctx.overwriteFiles, ctx.autoRenameFiles);
-            if (success && ctx.isMove) {
+                                                        ctx.overwriteFiles, ctx.autoRenameFiles,
+                                                        outMapPtr);
+            if (success && ctx.isMove && ctx.recordUndo) {
                 UndoManager::instance().pushCommand(std::make_unique<MoveCommand>(
                     ctx.sources, 
                     QFileInfo(ctx.sources.first()).absolutePath(), 

@@ -15,11 +15,11 @@ public:
     struct TargetResult {
         QString targetDir;
         QString createdCopyPath;
+        bool isMoved = false;
     };
 
     TransferToMarkedCommand(const QStringList& sourcePaths,
-                            const QMap<QString, QVector<TargetResult>>& copyResults,
-                            const QStringList& recycledSources);
+                            const QMap<QString, QVector<TargetResult>>& copyResults);
 
     void execute() override {}
     void undo() override;
@@ -30,7 +30,6 @@ public:
 private:
     QStringList m_sourcePaths;
     QMap<QString, QVector<TargetResult>> m_copyResults;
-    QStringList m_recycledSources;
     bool m_isFirstRun = true;
 };
 

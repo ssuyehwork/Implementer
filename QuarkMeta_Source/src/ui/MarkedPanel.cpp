@@ -52,6 +52,7 @@ void MarkedPanel::initUi() {
 void MarkedPanel::dragEnterEvent(QDragEnterEvent* event) {
     if (event->mimeData() && event->mimeData()->hasUrls()) {
         event->acceptProposedAction();
+        showDragOverlay();
         return;
     }
     QWidget::dragEnterEvent(event);
@@ -60,12 +61,26 @@ void MarkedPanel::dragEnterEvent(QDragEnterEvent* event) {
 void MarkedPanel::dragMoveEvent(QDragMoveEvent* event) {
     if (event->mimeData() && event->mimeData()->hasUrls()) {
         event->acceptProposedAction();
+        QPoint pos = event->position().toPoint();
+        QPoint viewportPos = (m_treeWidget && m_treeWidget->viewport()) ? m_treeWidget->viewport()->mapFrom(this, pos) : pos;
+        QTreeWidgetItem* item = m_treeWidget ? m_treeWidget->itemAt(viewportPos) : nullptr;
+        QString hoverPath = item ? item->data(0, Qt::UserRole).toString() : QString();
+        if (hoverPath != m_hoverTargetPath) {
+            m_hoverTargetPath = hoverPath;
+            updateDragOverlayText();
+        }
         return;
     }
     QWidget::dragMoveEvent(event);
 }
 
+void MarkedPanel::dragLeaveEvent(QDragLeaveEvent* event) {
+    hideDragOverlay();
+    QWidget::dragLeaveEvent(event);
+}
+
 void MarkedPanel::dropEvent(QDropEvent* event) {
+    hideDragOverlay();
     if (event->mimeData() && event->mimeData()->hasUrls()) {
         event->acceptProposedAction();
         handleDropPaths(event->mimeData(), event->position().toPoint(), false);
@@ -74,21 +89,43 @@ void MarkedPanel::dropEvent(QDropEvent* event) {
     QWidget::dropEvent(event);
 }
 
+void MarkedPanel::resizeEvent(QResizeEvent* event) {
+    QWidget::resizeEvent(event);
+    if (m_dragOverlay && m_dragOverlay->isVisible()) {
+        m_dragOverlay->setGeometry(rect());
+        m_dragOverlay->raise();
+    }
+}
+
 bool MarkedPanel::eventFilter(QObject* watched, QEvent* event) {
     if (watched == m_treeWidget || (m_treeWidget && watched == m_treeWidget->viewport())) {
         if (event->type() == QEvent::DragEnter) {
             auto* de = static_cast<QDragEnterEvent*>(event);
             if (de->mimeData() && de->mimeData()->hasUrls()) {
                 de->acceptProposedAction();
+                showDragOverlay();
                 return true;
             }
         } else if (event->type() == QEvent::DragMove) {
             auto* dm = static_cast<QDragMoveEvent*>(event);
             if (dm->mimeData() && dm->mimeData()->hasUrls()) {
                 dm->acceptProposedAction();
+                bool isViewportPos = (m_treeWidget && watched == m_treeWidget->viewport());
+                QPoint pos = dm->position().toPoint();
+                QPoint viewportPos = isViewportPos ? pos : (m_treeWidget->viewport() ? m_treeWidget->viewport()->mapFrom(m_treeWidget, pos) : pos);
+                QTreeWidgetItem* item = m_treeWidget ? m_treeWidget->itemAt(viewportPos) : nullptr;
+                QString hoverPath = item ? item->data(0, Qt::UserRole).toString() : QString();
+                if (hoverPath != m_hoverTargetPath) {
+                    m_hoverTargetPath = hoverPath;
+                    updateDragOverlayText();
+                }
                 return true;
             }
+        } else if (event->type() == QEvent::DragLeave) {
+            hideDragOverlay();
+            return false;
         } else if (event->type() == QEvent::Drop) {
+            hideDragOverlay();
             auto* de = static_cast<QDropEvent*>(event);
             if (de->mimeData() && de->mimeData()->hasUrls()) {
                 de->acceptProposedAction();
@@ -99,6 +136,70 @@ bool MarkedPanel::eventFilter(QObject* watched, QEvent* event) {
         }
     }
     return QWidget::eventFilter(watched, event);
+}
+
+void MarkedPanel::showDragOverlay(const QString& hoverTargetPath) {
+    if (!m_dragOverlay) {
+        m_dragOverlay = new QWidget(this);
+        m_dragOverlay->setObjectName("MarkedDragOverlay");
+        m_dragOverlay->setAttribute(Qt::WA_TransparentForMouseEvents);
+        m_dragOverlay->setAttribute(Qt::WA_StyledBackground);
+        m_dragOverlay->setStyleSheet(
+            "QWidget#MarkedDragOverlay { background-color: rgba(0, 122, 255, 0.90); border: 2px solid #007AFF; }"
+        );
+
+        QVBoxLayout* layout = new QVBoxLayout(m_dragOverlay);
+        layout->setContentsMargins(10, 10, 10, 10);
+        m_dragOverlayLabel = new QLabel(m_dragOverlay);
+        m_dragOverlayLabel->setAlignment(Qt::AlignCenter);
+        m_dragOverlayLabel->setStyleSheet(
+            "color: #FFFFFF; font-size: 13px; font-weight: bold;"
+        );
+        layout->addWidget(m_dragOverlayLabel);
+    }
+
+    // 性能要求：getActiveMarked() 是数据库查询，只允许在 DragEnter 时调用一次并缓存到 m_activeTargetNames
+    m_activeTargetNames.clear();
+    const QStringList activePaths = MarkedFolderService::instance().getActiveMarked();
+    for (const QString& path : activePaths) {
+        QString name = QFileInfo(path).fileName();
+        if (name.isEmpty()) name = path;
+        m_activeTargetNames.append(name);
+    }
+
+    m_hoverTargetPath = hoverTargetPath;
+    updateDragOverlayText();
+
+    m_dragOverlay->setGeometry(rect());
+    m_dragOverlay->show();
+    m_dragOverlay->raise();
+}
+
+void MarkedPanel::hideDragOverlay() {
+    m_hoverTargetPath.clear();
+    m_activeTargetNames.clear();
+    if (m_dragOverlay) {
+        m_dragOverlay->hide();
+    }
+}
+
+void MarkedPanel::updateDragOverlayText() {
+    if (!m_dragOverlayLabel) return;
+
+    if (!m_hoverTargetPath.isEmpty()) {
+        QString name = QFileInfo(m_hoverTargetPath).fileName();
+        if (name.isEmpty()) name = m_hoverTargetPath;
+        m_dragOverlayLabel->setText(QString("项目即将分发到\n%1").arg(name));
+    } else {
+        if (!m_activeTargetNames.isEmpty()) {
+            QStringList lines;
+            lines << "项目即将分发到";
+            lines.append(m_activeTargetNames);
+            m_dragOverlayLabel->setText(lines.join("\n"));
+        } else {
+            m_dragOverlayLabel->setText("尚未标记目的地");
+        }
+    }
 }
 
 void MarkedPanel::handleDropPaths(const QMimeData* mimeData, const QPoint& pos, bool isViewportPos) {

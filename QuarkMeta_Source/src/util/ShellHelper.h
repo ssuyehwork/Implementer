@@ -2,6 +2,7 @@
 #include <QString>
 #include <QStringList>
 #include <QSet>
+#include <QMap>
 #include <QIcon>
 #include <QWidget>
 
@@ -23,7 +24,8 @@ public:
      */
     static bool copyOrMoveItems(const QStringList& sourcePaths, const QString& destDir, bool isMove,
                                 bool overwriteAll = false, bool autoRenameAll = false,
-                                const QSet<QString>& overwriteFiles = {}, const QSet<QString>& autoRenameFiles = {});
+                                const QSet<QString>& overwriteFiles = {}, const QSet<QString>& autoRenameFiles = {},
+                                QMap<QString, QString>* outDestMap = nullptr);
 
     /**
      * @brief 显示文件属性对话框

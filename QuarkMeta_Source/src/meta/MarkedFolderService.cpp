@@ -124,7 +124,7 @@ bool MarkedFolderService::executeTransferToMarked(const QStringList& sourcePaths
             QMetaObject::invokeMethod(QCoreApplication::instance(), [jobId, sharedCopyResults, sharedFailure, validSources]() {
                 if (!sharedCopyResults->isEmpty()) {
                     UndoManager::instance().pushCommand(std::make_unique<TransferToMarkedCommand>(
-                        validSources, *sharedCopyResults, QStringList{}
+                        validSources, *sharedCopyResults
                     ));
                 }
                 TaskProgressService::instance().finishJob(jobId);
@@ -161,20 +161,27 @@ bool MarkedFolderService::executeTransferToMarked(const QStringList& sourcePaths
             return;
         }
 
+        bool isMoved = (targetIdx == validTargets.size() - 1);
+        auto actualDestMap = std::make_shared<QMap<QString, QString>>();
+
         DiskIoContext ioCtx;
         ioCtx.sources = QStringList{srcPath};
         ioCtx.destination = targetDir;
         // 只有当目标是该源文件的最后一个目的地时，才执行物理剪切/移动；前面的目的地严格执行复制
-        ioCtx.isMove = (targetIdx == validTargets.size() - 1);
+        ioCtx.isMove = isMoved;
+        ioCtx.recordUndo = false;
+        ioCtx.autoRenameAll = true;
+        ioCtx.actualDestMap = actualDestMap;
 
-        QString destPath = QDir(targetDir).filePath(itemName);
-
-        DiskIoService::instance().executeAsync(ioCtx, [jobId, completedCounter, totalWorkUnits, sharedCopyResults, sharedFailure, srcPath, targetDir, destPath, nextSrcIdx, nextTargetIdx, dispatchNextTarget](bool targetSuccess) {
+        DiskIoService::instance().executeAsync(ioCtx, [jobId, completedCounter, totalWorkUnits, sharedCopyResults, sharedFailure, srcPath, targetDir, isMoved, actualDestMap, nextSrcIdx, nextTargetIdx, dispatchNextTarget](bool targetSuccess) {
             int current = completedCounter->fetchAndAddOrdered(1) + 1;
             if (!targetSuccess) {
                 sharedFailure->storeRelease(1);
             } else {
-                (*sharedCopyResults)[srcPath].append({targetDir, destPath});
+                if (actualDestMap->contains(srcPath)) {
+                    QString createdCopyPath = actualDestMap->value(srcPath);
+                    (*sharedCopyResults)[srcPath].append({targetDir, createdCopyPath, isMoved});
+                }
             }
 
             QMetaObject::invokeMethod(QCoreApplication::instance(), [jobId, current, totalWorkUnits]() {

@@ -32,7 +32,8 @@ bool ShellHelper::moveToTrash(const QStringList& paths) {
 
 bool ShellHelper::copyOrMoveItems(const QStringList& sourcePaths, const QString& destDir, bool isMove,
                                    bool overwriteAll, bool autoRenameAll,
-                                   const QSet<QString>& overwriteFiles, const QSet<QString>& autoRenameFiles) {
+                                   const QSet<QString>& overwriteFiles, const QSet<QString>& autoRenameFiles,
+                                   QMap<QString, QString>* outDestMap) {
 #ifdef Q_OS_WIN
     if (sourcePaths.isEmpty() || destDir.isEmpty()) return false;
     QuarkMetaJsonStore::instance().flushAllDirtyBuffers(true);
@@ -94,6 +95,11 @@ bool ShellHelper::copyOrMoveItems(const QStringList& sourcePaths, const QString&
         QuarkMetaJson::roamBatchMetadata(pathPairs, isMove);
         DiskMediaExtractor::roamThumbnailCacheBatch(pathPairs, isMove);
         MetadataManager::instance().notifyUI(MetadataManager::RefreshLevel::PathUpdate, destDir);
+        if (outDestMap) {
+            for (const auto& pair : pathPairs) {
+                outDestMap->insert(pair.first, pair.second);
+            }
+        }
     }
     return ok;
 #else
@@ -104,6 +110,7 @@ bool ShellHelper::copyOrMoveItems(const QStringList& sourcePaths, const QString&
     Q_UNUSED(autoRenameAll);
     Q_UNUSED(overwriteFiles);
     Q_UNUSED(autoRenameFiles);
+    Q_UNUSED(outDestMap);
     return false;
 #endif
 }
