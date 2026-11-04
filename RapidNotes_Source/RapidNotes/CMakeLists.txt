@@ -69,6 +69,18 @@ set(SOURCES
     src/core/ShortcutManager.cpp
     src/core/ShortcutManager.h
     src/core/ActionRecorder.cpp
+    src/core/ItemType.cpp
+    src/core/ItemType.h
+    src/core/ItemClassifier.cpp
+    src/core/ItemClassifier.h
+    src/core/PathSummary.cpp
+    src/core/PathSummary.h
+    src/core/WordBucket.cpp
+    src/core/WordBucket.h
+    src/core/TagCodec.cpp
+    src/core/TagCodec.h
+    src/core/ThumbnailMaker.cpp
+    src/core/ThumbnailMaker.h
     src/main.cpp
     src/models/CategoryModel.cpp
     src/models/CategoryModel.h

@@ -1,4 +1,8 @@
 #include "NoteModel.h"
+#include "../core/ItemType.h"
+#include "../core/ItemClassifier.h"
+#include "../core/PathSummary.h"
+#include "../core/ThumbnailMaker.h"
 #include <QDateTime>
 #include <QRegularExpression>
 #include <QIcon>
@@ -41,118 +45,34 @@ QVariant NoteModel::data(const QModelIndex& index, int role) const {
         case Qt::BackgroundRole:
             return QVariant(); // 强制不返回任何背景色，由 Delegate 控制
         case Qt::DecorationRole: {
-            // 2026-03-11 按照用户要求，全局重定义图标颜色，确保色差 >= 60 度以实现快速识别
             QString type = note.value("item_type").toString();
             QString content = note.value("content").toString().trimmed();
-            QString iconName = "text"; // Default
-            QString iconColor = "#95A5A6"; // 文本：默认灰色
 
-            // 优先依据 item_type 显示图标，确保即使内容不完整也能维持属性展示一致性
-            if (type == "link") {
-                iconName = "link";
-                iconColor = "#17B345";
-                return IconHelper::getIcon(iconName, iconColor, 32);
-            } else if (type == "code") {
-                iconName = "code";
-                iconColor = "#00FF00";
-                return IconHelper::getIcon(iconName, iconColor, 32);
-            } else if (type == "color") {
-                iconName = "palette";
-                iconColor = content;
-                return IconHelper::getIcon(iconName, iconColor, 32);
-            }
-
+            // 图片类型特殊处理（使用 ThumbnailMaker 生成 64x64 缩略图并缓存）
             if (type == "image") {
                 int id = note.value("id").toInt();
                 if (m_thumbnailCache.contains(id)) return m_thumbnailCache[id];
-                
+
                 QImage img;
                 img.loadFromData(note.value("data_blob").toByteArray());
                 if (!img.isNull()) {
-                    // [OPTIMIZATION] 2026-05-xx 按照用户要求：同步扩大缩略图缓存至 500，确保大数据量滚动无掉帧
                     if (m_thumbnailCache.size() > 500) m_thumbnailCache.clear();
-                    
-                    QIcon thumb(QPixmap::fromImage(img.scaled(64, 64, Qt::KeepAspectRatio, Qt::SmoothTransformation)));
+                    QIcon thumb = RapidNotes::ThumbnailMaker::makeThumbnailIcon(img);
                     m_thumbnailCache[id] = thumb;
                     return thumb;
                 }
-                iconName = "image";
-                iconColor = "#FF00FF"; // 图片：洋红色 (Hue 300)
-            } else if (type == "file" || type == "files" || type == "folder" || type == "folders") {
-                if (type == "folder" || (!content.contains(";") && QFileInfo(content.trimmed().remove('\"').remove('\'')).isDir())) {
-                    iconName = "folder";
-                    iconColor = "#FF8C00"; // 单文件夹：橙色 (Hue 33)
-                } else if (type == "folders") {
-                    iconName = "folders_multiple";
-                    iconColor = "#483D8B"; // 多文件夹：深紫蓝色 (Hue 248) - 与红色文件形成巨大反差
-                } else if (content.contains(";")) {
-                    iconName = "files_multiple";
-                    iconColor = "#FF0000"; // 多文件：纯红色 (Hue 0)
-                } else {
-                    iconName = "file";
-                    iconColor = "#FFFF00"; // 单文件：纯黄色 (Hue 60)
-                }
-            } else if (type == "ocr_text") {
-                iconName = "screenshot_ocr";
-                iconColor = "#00FFFF"; // OCR：纯青色 (Hue 180)
-            } else if (type == "captured_message") {
-                iconName = "message";
-                iconColor = "#00FFFF"; // 采集消息：纯青色 (Hue 180)
-            } else if (type == "local_file" || type == "local_batch") {
-                iconName = (type == "local_file") ? "file_import" : "batch_import";
-                iconColor = "#FFFF00"; // 本地导入文件：黄色
-            } else if (type == "local_folder") {
-                iconName = "folder_import";
-                iconColor = "#FF8C00"; // 本地导入文件夹：橙色
-            } else if (type == "color" || type == "palette") {
-                iconName = "palette";
-                iconColor = content; // 保持原有颜色
-            } else if (type == "pixel_ruler") {
-                iconName = "pixel_ruler";
-                iconColor = "#FF5722"; // 像素尺：深橙
-            } else {
-                QString stripped = content.trimmed();
-                QString cleanPath = stripped;
-                if ((cleanPath.startsWith("\"") && cleanPath.endsWith("\"")) || 
-                    (cleanPath.startsWith("'") && cleanPath.endsWith("'"))) {
-                    cleanPath = cleanPath.mid(1, cleanPath.length() - 2);
-                }
-
-                QString plain = StringUtils::htmlToPlainText(content).trimmed();
-                if (stripped.startsWith("http://") || stripped.startsWith("https://") || stripped.startsWith("www.")) {
-                    iconName = "link";
-                    iconColor = "#17B345"; // 链接：绿色 (2026-03-xx 用户修改)
-                } else if (static const QRegularExpression hexColorRegex("^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$"); hexColorRegex.match(plain).hasMatch()) {
-                    iconName = "palette";
-                    iconColor = plain;
-                } else if (plain.startsWith("import ") || plain.startsWith("class ") || 
-                           plain.startsWith("def ") || plain.startsWith("function") || 
-                           plain.startsWith("var ") || plain.startsWith("const ") ||
-                           // 2026-03-xx 按照用户要求重构：不再仅靠单字符判断，改用结构化特征识别
-                           (plain.startsWith("<") && [](){
-                               static const QRegularExpression htmlTagRegex("^<(html|div|p|span|table|h[1-6]|script|!DOCTYPE|body|head)", QRegularExpression::CaseInsensitiveOption);
-                               return htmlTagRegex;
-                           }().match(plain).hasMatch()) ||
-                           (plain.startsWith("{") && plain.contains("\":") && plain.contains("}"))) {
-                    iconName = "code";
-                    iconColor = "#00FF00"; // 代码：鲜绿色 (Hue 120)
-                } else if (cleanPath.length() < 260 && (
-                           (cleanPath.length() > 2 && cleanPath[1] == ':') || 
-                           cleanPath.startsWith("\\\\") || cleanPath.startsWith("/") || 
-                           cleanPath.startsWith("./") || cleanPath.startsWith("../"))) {
-                    QFileInfo info(cleanPath);
-                    if (info.exists()) {
-                        if (info.isDir()) {
-                            iconName = "folder";
-                            iconColor = "#FF8C00"; // 自动识别文件夹：橙色
-                        } else {
-                            iconName = "file";
-                            iconColor = "#FFFF00"; // 自动识别文件：黄色
-                        }
-                    }
-                }
+                return IconHelper::getIcon(QStringLiteral("image"), QStringLiteral("#FF00FF"), 32);
             }
-            return IconHelper::getIcon(iconName, iconColor, 32);
+
+            // 文件类旧类型由 PathSummary 决定
+            if (type == "file" || type == "files" || type == "folder" || type == "folders") {
+                RapidNotes::PathSummary::Kind kind = RapidNotes::PathSummary::summarizeFromSemicolonString(content);
+                return IconHelper::getIcon(RapidNotes::PathSummary::getIconName(kind), RapidNotes::PathSummary::getIconColor(kind), 32);
+            }
+
+            // 其他类型及文本特征归并由 ItemClassifier 决定（纯内存判定，绝对不访问磁盘）
+            RapidNotes::DisplayCategory cat = RapidNotes::ItemClassifier::detectDisplayCategory(type, content);
+            return IconHelper::getIcon(cat.iconName, cat.iconColor, 32);
         }
         case Qt::ToolTipRole: {
             int id = note.value("id").toInt();

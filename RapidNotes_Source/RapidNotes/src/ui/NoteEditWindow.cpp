@@ -1,5 +1,7 @@
 #include "NoteEditWindow.h"
 #include "StringUtils.h"
+#include "../core/ItemType.h"
+#include "../core/ItemClassifier.h"
 #include "../core/ShortcutManager.h"
 #include "AdvancedTagSelector.h"
 #include "TitleEditorDialog.h"
@@ -650,13 +652,13 @@ void NoteEditWindow::saveNote() {
 
     if (finalType == "image" || finalType == "file") {
         if (contentHasSubstantialChange && !m_contentEdit->isRich()) {
-            finalType = StringUtils::detectItemType(content);
+            finalType = RapidNotes::ItemType::toString(RapidNotes::ItemClassifier::detectIngestType(content));
         }
     } else if (finalType == "link" || finalType == "color" || finalType == "code") {
         // 按照用户要求：既然创建时是网页链接，无论怎么修改内容（如修改标题），它仍然应该是网页链接。
         // 除非用户删掉了链接换成了纯文本，否则不应降级。
         if (contentHasSubstantialChange) {
-            finalType = StringUtils::detectItemType(content);
+            finalType = RapidNotes::ItemType::toString(RapidNotes::ItemClassifier::detectIngestType(content));
             // 补偿逻辑：如果新检测出的是普通文本，但旧的是链接，说明用户可能只是在微调链接文本，应予以保留属性。
             if (finalType == "text" && m_origItemType == "link" && content.contains(".")) {
                  finalType = "link";
@@ -664,7 +666,7 @@ void NoteEditWindow::saveNote() {
         }
     } else {
         // 原本就是 text 类型，执行全量检测
-        finalType = StringUtils::detectItemType(content);
+        finalType = RapidNotes::ItemType::toString(RapidNotes::ItemClassifier::detectIngestType(content));
     }
 
     if (finalType.isEmpty()) finalType = "text";

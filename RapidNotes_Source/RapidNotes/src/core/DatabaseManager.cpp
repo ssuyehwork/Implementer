@@ -1,4 +1,5 @@
 #include "DatabaseManager.h"
+#include "WordBucket.h"
 #include <QDebug>
 #include <QSqlRecord>
 #include <QSqlError>
@@ -54,36 +55,8 @@ namespace {
         return result.join(", ");
     }
 
-    // 2026-05-02 紧急修复v2：加强版 C++ 脱壳引擎 (彻底剿灭残余 CSS 与实体字符)
     int calculateWordBucket(const QString& content, const QString& itemType) {
-        // 1. 类型拦截：非正文相关类型直接归为“无字数” (0)
-        if (itemType != "text" && itemType != "code" && itemType != "ocr_text" && itemType != "captured_message") {
-            return 0;
-        }
-        
-        QString plainText = content;
-        
-        // 2. 连锅端：杀掉 <style> 和 <script> 及其内部的所有排版代码（必须加 DotMatchesEverythingOption 解决换行问题）
-        plainText.remove(QRegularExpression("<style[^>]*>.*?</style>", QRegularExpression::CaseInsensitiveOption | QRegularExpression::DotMatchesEverythingOption));
-        plainText.remove(QRegularExpression("<script[^>]*>.*?</script>", QRegularExpression::CaseInsensitiveOption | QRegularExpression::DotMatchesEverythingOption));
-        
-        // 3. 剥离：杀掉所有剩下的普通 HTML 标签
-        plainText.remove(QRegularExpression("<[^>]*>")); 
-        
-        // 4. 清洗：杀掉常见的 HTML 实体乱码（比如 &nbsp; &amp;）
-        plainText.remove(QRegularExpression("&[a-zA-Z]+;"));
-        
-        // 5. 压缩：杀掉所有不可见的空白字符（空格、换行等）
-        plainText.remove(QRegularExpression("\\s+"));    
-        
-        int len = plainText.length();
-        
-        // 6. 阶梯映射
-        if (len == 0) return 0;
-        if (len <= 100) return (qMax(0, len - 1) / 10 + 1) * 10;
-        if (len <= 1000) return ((len - 1) / 100 + 1) * 100;
-        
-        return 1001; // 1000 字以上
+        return RapidNotes::WordBucket::calculate(content, itemType);
     }
 
 }
