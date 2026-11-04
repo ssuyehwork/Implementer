@@ -67,7 +67,7 @@ void Logger::messageHandler(QtMsgType type, const QMessageLogContext& context, c
         // QFile::handle() 在 Windows 下返回的是 HANDLE。必须使用 FlushFileBuffers 而非 _commit。
         // 此修复解决了程序在记录第一条日志时即自杀的致命 Bug。
         if (file.handle() != -1) {
-            FlushFileBuffers((HANDLE)file.handle());
+            FlushFileBuffers(reinterpret_cast<HANDLE>(static_cast<intptr_t>(file.handle())));
         }
 #endif
         
