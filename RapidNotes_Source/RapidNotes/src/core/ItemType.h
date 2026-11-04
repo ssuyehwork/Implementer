@@ -4,6 +4,10 @@
 
 namespace RapidNotes {
 
+/**
+ * @brief 条目类型词表唯一真理源 (SSOT)
+ * 对应 docs/SSOT接口索引.md 第 1 章。全工程唯一允许出现 item_type 字符串字面量的地方。
+ */
 class ItemType {
 public:
     enum class Type {

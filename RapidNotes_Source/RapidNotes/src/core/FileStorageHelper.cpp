@@ -1,6 +1,7 @@
 #include "FileStorageHelper.h"
 #include "DatabaseManager.h"
 #include "FileCryptoHelper.h"
+#include "TagCodec.h"
 #include "../ui/FramelessDialog.h"
 #include <QFileInfo>
 #include <QDir>
@@ -310,7 +311,7 @@ int FileStorageHelper::parseCsvFile(const QString& csvPath, int catId, QList<int
             QString tagsStr = (idxTags != -1 && idxTags < row.size()) ? row[idxTags] : "";
             if (title.isEmpty() && content.isEmpty()) continue;
             
-            int noteId = DatabaseManager::instance().addNote(title, content, tagsStr.split(",", Qt::SkipEmptyParts), "", catId);
+            int noteId = DatabaseManager::instance().addNote(title, content, RapidNotes::TagCodec::split(tagsStr), "", catId);
             if (noteId > 0) {
                 if (createdNoteIds) createdNoteIds->append(noteId);
                 count++;
@@ -659,7 +660,7 @@ void FileStorageHelper::importFromPackage(QWidget* parent) {
             QJsonArray notes = obj["notes"].toArray();
             for (const auto& v : notes) {
                 QJsonObject n = v.toObject();
-                QStringList tags = n["tags"].toString().split(",", Qt::SkipEmptyParts);
+                QStringList tags = RapidNotes::TagCodec::split(n["tags"].toString());
                 QByteArray blob = QByteArray::fromBase64(n["data_blob"].toString().toUtf8());
                 
                 int noteId = db.addNote(

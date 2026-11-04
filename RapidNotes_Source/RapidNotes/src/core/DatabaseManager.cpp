@@ -1049,7 +1049,7 @@ bool DatabaseManager::updateNote(int id, const QString& title, const QString& co
             QString tr = t.trimmed();
             if (!tr.isEmpty() && !trimmedTags.contains(tr)) trimmedTags << tr;
         }
-        query.bindValue(":tags", trimmedTags.join(", "));
+        query.bindValue(":tags", RapidNotes::TagCodec::joinDisplay(trimmedTags));
         
         query.bindValue(":updated_at", currentTime);
         query.bindValue(":category_id", categoryId == -1 ? QVariant() : categoryId);
@@ -3346,7 +3346,7 @@ bool DatabaseManager::addTagsToNote(int noteId, const QStringList& tags) {
     }
     
     // 2026-05-09 按照用户要求：严禁使用 "逗号+空格"，统一使用纯逗号分割。
-    QString tagsString = finalTags.join(",");
+    QString tagsString = RapidNotes::TagCodec::join(finalTags);
     bool ok = updateNoteState(noteId, "tags", tagsString);
     if (ok) syncNoteTags(noteId, finalTags); // 保持物理表同步
     return ok;

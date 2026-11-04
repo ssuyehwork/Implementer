@@ -5,6 +5,10 @@
 
 namespace RapidNotes {
 
+/**
+ * @brief 路径种类与图标归并唯一真理源 (SSOT)
+ * 对应 docs/SSOT接口索引.md 第 3 章。
+ */
 class PathSummary {
 public:
     enum class Kind {

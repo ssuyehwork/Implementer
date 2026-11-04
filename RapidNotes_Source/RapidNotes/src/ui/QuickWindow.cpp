@@ -3129,7 +3129,7 @@ void QuickWindow::openTagSelector() {
     if (selected.size() == 1) {
         int id = selected.first().data(NoteModel::IdRole).toInt();
         QVariantMap note = DatabaseManager::instance().getNoteById(id);
-        currentTags = note.value("tags").toString().split(",", Qt::SkipEmptyParts);
+        currentTags = RapidNotes::TagCodec::split(note.value("tags").toString());
     }
 
     for (QString& t : currentTags) t = t.trimmed();

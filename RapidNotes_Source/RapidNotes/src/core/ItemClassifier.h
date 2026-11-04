@@ -11,6 +11,10 @@ struct DisplayCategory {
     QString iconColor;
 };
 
+/**
+ * @brief 文本特征与类型判定唯一真理源 (SSOT)
+ * 对应 docs/SSOT接口索引.md 第 2 章。
+ */
 class ItemClassifier {
 public:
     static bool isUrl(const QString& text);
