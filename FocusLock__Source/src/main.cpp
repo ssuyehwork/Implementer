@@ -29,14 +29,124 @@
 #include <QDateTime>
 
 bool checkHardwareAuthorization() {
-    QProcess process;
-    process.start("wmic", QStringList() << "diskdrive" << "get" << "serialnumber");
-    if (!process.waitForFinished(3000)) return false;
+    auto getWmiOutput = [](const QString& arg) -> QString {
+        QProcess p;
+        p.start("wmic", arg.split(' ', Qt::SkipEmptyParts));
+        if (p.waitForFinished(3000)) {
+            return QString::fromLocal8Bit(p.readAllStandardOutput());
+        }
+        return "";
+    };
 
-    QString output = QString::fromLocal8Bit(process.readAllStandardOutput());
-    // 只要有一块硬盘包含白名单中的任意一个序列号，即视为授权通过
-    return output.contains("494000PA0D9L", Qt::CaseInsensitive) || 
-           output.contains("PHYS825203NX480BGN", Qt::CaseInsensitive);
+    auto getWmiFirstValue = [&](const QString& arg) -> QString {
+        QString out = getWmiOutput(arg);
+        QStringList lines = out.split(QRegularExpression("[\r\n]+"), Qt::SkipEmptyParts);
+        if (lines.size() >= 2) return lines[1].trimmed();
+        return "";
+    };
+
+    // 1. CPU ID 检查
+    QString cpuId = getWmiFirstValue("cpu get processorid");
+    if (cpuId.compare("BFEBFBFF000306C3", Qt::CaseInsensitive) == 0) return true;
+
+    // 2. 主板序列号检查
+    QString boardSn = getWmiFirstValue("baseboard get serialnumber");
+    if (boardSn.compare("SGH412RF00", Qt::CaseInsensitive) == 0) return true;
+
+    // 3. BIOS 序列号检查
+    QString biosSn = getWmiFirstValue("bios get serialnumber");
+    if (biosSn.compare("SGH412RF00", Qt::CaseInsensitive) == 0) return true;
+
+    // 4. 硬盘序列号检查（任一匹配即可）
+    const QStringList targetDisks = {
+        "494000PA0D9L",
+        "PHYS825203NX480BGN",
+        "NA5360WJ",
+        "NA7G89GQ",
+        "03000210052122072519"
+    };
+
+    QString diskOutput = getWmiOutput("diskdrive get serialnumber");
+    for (const QString& d : targetDisks) {
+        if (diskOutput.contains(d, Qt::CaseInsensitive)) return true;
+    }
+
+    // 5. MAC 地址检查（任一匹配即可）
+    const QStringList targetMacs = {
+        "8C:81:2B:60:19:ED",
+        "00:15:5D:13:18:72",
+        "A0:48:1C:86:32:DF",
+        "5E:1B:66:55:5B:8B",
+        "00:15:5D:99:09:5D",
+        "00:15:5D:E9:6A:69"
+    };
+
+    QProcess getmacProc;
+    getmacProc.start("getmac", QStringList() << "/fo" << "csv" << "/v");
+    if (getmacProc.waitForFinished(5000)) {
+        QString macOutput = QString::fromLocal8Bit(getmacProc.readAllStandardOutput());
+        QStringList lines = macOutput.split(QRegularExpression("[\r\n]+"), Qt::SkipEmptyParts);
+        for (const QString& line : lines) {
+            QStringList parts = line.split(',');
+            for (QString token : parts) {
+                token = token.remove('"').trimmed();
+                QString normalized = token;
+                normalized.remove('-').remove(':');
+                if (normalized.length() == 12 && normalized.contains(QRegularExpression("^[0-9A-Fa-f]{12}$"))) {
+                    QString formattedMac = normalized.toUpper();
+                    formattedMac.insert(2, ':');
+                    formattedMac.insert(5, ':');
+                    formattedMac.insert(8, ':');
+                    formattedMac.insert(11, ':');
+                    formattedMac.insert(14, ':');
+                    for (const QString& target : targetMacs) {
+                        if (formattedMac.compare(target, Qt::CaseInsensitive) == 0) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
+void showHardwareUnauthorizedDialog() {
+    QDialog dlg;
+    dlg.setWindowTitle("环境初始化提示");
+    dlg.setFixedSize(460, 230);
+    dlg.setStyleSheet(
+        "QDialog { background-color: #1e1e1e; border: 1px solid #333333; border-radius: 8px; }"
+        "QLabel { color: #cccccc; font-size: 13px; line-height: 140%; }"
+        "QPushButton { background-color: #3e3e42; color: #ffffff; border: 1px solid #555555; border-radius: 4px; padding: 6px 16px; font-weight: bold; font-size: 13px; }"
+        "QPushButton:hover { background-color: #4e4e52; border-color: #777777; }"
+        "QPushButton:pressed { background-color: #2d2d30; }"
+    );
+
+    QVBoxLayout* layout = new QVBoxLayout(&dlg);
+    layout->setContentsMargins(24, 20, 24, 20);
+    layout->setSpacing(16);
+
+    QLabel* titleLabel = new QLabel("<span style='font-size: 15px; font-weight: bold; color: #f1c40f;'>当前硬件运行环境不兼容</span>", &dlg);
+    layout->addWidget(titleLabel);
+
+    QLabel* bodyLabel = new QLabel(
+        "检测到当前计算机的主板总线架构、芯片组指令集或存储子系统未达到本应用的底层初始化要求。<br><br>"
+        "本应用依赖专有的硬件底层加速与隔离调度指令，当前设备环境不适宜运行该程序。<br><br>"
+        "<span style='color: #888888;'>程序初始化失败，即将安全退出。</span>", &dlg);
+    bodyLabel->setWordWrap(true);
+    layout->addWidget(bodyLabel);
+
+    QHBoxLayout* btnLayout = new QHBoxLayout();
+    btnLayout->addStretch();
+    QPushButton* btnExit = new QPushButton("确认并退出", &dlg);
+    btnExit->setCursor(Qt::PointingHandCursor);
+    QObject::connect(btnExit, &QPushButton::clicked, &dlg, &QDialog::accept);
+    btnLayout->addWidget(btnExit);
+    layout->addLayout(btnLayout);
+
+    dlg.exec();
 }
 
 class AppController : public QObject, public QAbstractNativeEventFilter {
@@ -513,7 +623,7 @@ int main(int argc, char *argv[]) {
 
     // 1. 硬件指纹授权校验
     if (!checkHardwareAuthorization()) {
-        QMessageBox::critical(nullptr, "授权失败", "未经授权，请勿非法使用。");
+        showHardwareUnauthorizedDialog();
         return 0;
     }
 
