@@ -239,25 +239,25 @@ QStringList HardwareInfoHelper::getAllMacAddresses() {
 
     QProcess process;
     process.start("getmac", QStringList() << "/fo" << "csv" << "/v");
-    process.waitForFinished(5000);
-    QString output = process.readAllStandardOutput();
-    
-    QStringList lines = output.split('\n', Qt::SkipEmptyParts);
-    for (const QString& line : lines) {
-        QStringList parts = line.split(',');
-        if (parts.size() >= 2) {
-            QString mac = parts[0].trimmed();
-            mac = mac.remove('"').trimmed(); // 移除引号
-            if (!mac.isEmpty() && mac != "Physical Address") {
-                // 标准化 MAC 地址格式为大写并添加冒号分隔符
-                if (mac.length() == 12) {
-                    QString formattedMac = mac.toUpper();
+    if (process.waitForFinished(5000)) {
+        QString output = QString::fromLocal8Bit(process.readAllStandardOutput());
+        QStringList lines = output.split(QRegularExpression("[\r\n]+"), Qt::SkipEmptyParts);
+        for (const QString& line : lines) {
+            QStringList parts = line.split(',');
+            for (QString token : parts) {
+                token = token.remove('"').trimmed();
+                QString normalized = token;
+                normalized.remove('-').remove(':');
+                if (normalized.length() == 12 && normalized.contains(QRegularExpression("^[0-9A-Fa-f]{12}$"))) {
+                    QString formattedMac = normalized.toUpper();
                     formattedMac.insert(2, ':');
                     formattedMac.insert(5, ':');
                     formattedMac.insert(8, ':');
                     formattedMac.insert(11, ':');
                     formattedMac.insert(14, ':');
-                    cachedMacAddresses << formattedMac;
+                    if (!cachedMacAddresses.contains(formattedMac)) {
+                        cachedMacAddresses << formattedMac;
+                    }
                 }
             }
         }
