@@ -644,7 +644,8 @@ void FramelessInputDialog::showEvent(QShowEvent* event) {
 // ============================================================================
 
 // ============================================================================
-FramelessMessageBox::FramelessMessageBox(const QString& title, const QString& text, QWidget* parent)
+FramelessMessageBox::FramelessMessageBox(const QString& title, const QString& text, QWidget* parent,
+                                         bool okOnly, const QString& okText)
     : FramelessDialog(title, parent)
 {
 
@@ -667,14 +668,16 @@ FramelessMessageBox::FramelessMessageBox(const QString& title, const QString& te
     auto* btnLayout = new QHBoxLayout();
     btnLayout->addStretch();
 
-    auto* btnCancel = new QPushButton("取消");
-    btnCancel->setAutoDefault(false);
-    btnCancel->setCursor(Qt::PointingHandCursor);
-    btnCancel->setStyleSheet("QPushButton { background-color: transparent; color: #888; border: 1px solid #555; border-radius: 4px; padding: 6px 15px; } QPushButton:hover { color: #eee; border-color: #888; }");
-    connect(btnCancel, &QPushButton::clicked, this, [this](){ emit cancelled(); reject(); });
-    btnLayout->addWidget(btnCancel);
+    if (!okOnly) {
+        auto* btnCancel = new QPushButton("取消");
+        btnCancel->setAutoDefault(false);
+        btnCancel->setCursor(Qt::PointingHandCursor);
+        btnCancel->setStyleSheet("QPushButton { background-color: transparent; color: #888; border: 1px solid #555; border-radius: 4px; padding: 6px 15px; } QPushButton:hover { color: #eee; border-color: #888; }");
+        connect(btnCancel, &QPushButton::clicked, this, [this](){ emit cancelled(); reject(); });
+        btnLayout->addWidget(btnCancel);
+    }
 
-    m_btnOk = new QPushButton("确定");
+    m_btnOk = new QPushButton(okText);
     m_btnOk->setAutoDefault(true); 
     m_btnOk->setCursor(Qt::PointingHandCursor);
     m_btnOk->setStyleSheet("QPushButton { background-color: #e74c3c; color: white; border: none; border-radius: 4px; padding: 6px 20px; font-weight: bold; } QPushButton:hover { background-color: #c0392b; }");

@@ -102,7 +102,8 @@ private:
 class FramelessMessageBox : public FramelessDialog {
     Q_OBJECT
 public:
-    explicit FramelessMessageBox(const QString& title, const QString& text, QWidget* parent = nullptr);
+    explicit FramelessMessageBox(const QString& title, const QString& text, QWidget* parent = nullptr,
+                                bool okOnly = false, const QString& okText = "确定");
 
 signals:
     void confirmed();

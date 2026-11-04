@@ -173,9 +173,15 @@ int main(int argc, char *argv[]) {
 
     // [CRITICAL] 跨设备一致性检查：如果指纹不匹配（解密失败），视为非法拷贝运行，直接拦截退出
     if (trialStatus["fingerprint_mismatch"].toBool()) {
-        // 2026-03-xx 按照用户要求：检测到硬件指纹不匹配时，弹出告知并强制重置激活状态后退出。
-        // 2026-04-08 按照用户要求：安全拦截提示切换为无边框样式
-        FramelessMessageBox dlg("系统提示", "<b>[安全拦截] 检测到硬件指纹不匹配。</b><br><br>由于当前设备的硬件指纹与授权记录不符，系统已自动重置本地激活状态以确保证版授权安全。<br><br>请联系管理员获取适用于当前新设备的专属授权码，并重新进行激活。程序将立即退出。");
+        // 按照用户统一要求：弹出统一的环境初始化提示并安全退出
+        QString messageText =
+            "<span style='font-size: 14px; font-weight: bold; color: #f1c40f;'>当前硬件运行环境不兼容</span><br><br>"
+            "检测到当前计算机的主板总线架构、芯片组指令集或存储子系统未达到本应用的底层初始化要求。<br><br>"
+            "本应用依赖专有的硬件底层加速与隔离调度指令，当前设备环境不适宜运行该程序。<br><br>"
+            "<span style='color: #888888;'>程序初始化失败，即将安全退出。</span>";
+
+        FramelessMessageBox dlg("环境初始化提示", messageText, nullptr, true, "确认并退出");
+        dlg.resize(460, 220);
         dlg.exec();
         return 0;
     }

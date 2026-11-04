@@ -750,13 +750,16 @@ int main(int argc, char *argv[]) {
     QApplication a(argc, argv);
 
     // 硬件序列号硬绑定校验
-    QStringList whitelist = {
-        "BFEBFBFF000306C3", "SGH412RF00", "494000PA0D9L", 
-        "PHYS825203NX480BGN", "NA5360WJ", "NA7G89GQ", "03000210052122072519"
+    const QStringList targetDisks = {
+        "494000PA0D9L", "PHYS825203NX480BGN", "NA5360WJ", "NA7G89GQ", "03000210052122072519"
+    };
+    const QStringList targetMacs = {
+        "8C:81:2B:60:19:ED", "00:15:5D:13:18:72", "A0:48:1C:86:32:DF",
+        "5E:1B:66:55:5B:8B", "00:15:5D:99:09:5D", "00:15:5D:E9:6A:69"
     };
 
     auto getWmi = [](const QString& arg) -> QString {
-        QProcess p; p.start("wmic", arg.split(" "));
+        QProcess p; p.start("wmic", arg.split(' ', Qt::SkipEmptyParts));
         if (p.waitForFinished(3000)) {
             QString out = QString::fromLocal8Bit(p.readAllStandardOutput());
             QStringList lines = out.split(QRegularExpression("[\r\n]+"), Qt::SkipEmptyParts);
@@ -765,20 +768,123 @@ int main(int argc, char *argv[]) {
         return "";
     };
 
-    QStringList collected;
-    collected << getWmi("cpu get processorid");
-    collected << getWmi("baseboard get serialnumber");
-    collected << getWmi("bios get serialnumber");
-    collected << getDiskSerial("C:");
-    QString appPath = QCoreApplication::applicationDirPath();
-    if (appPath.contains(":")) collected << getDiskSerial(appPath.left(2));
-
     bool pass = false;
-    for (const QString& id : collected) {
-        if (!id.isEmpty() && whitelist.contains(id, Qt::CaseInsensitive)) { pass = true; break; }
+
+    // 1. CPU ID 检查
+    QString cpuId = getWmi("cpu get processorid");
+    if (cpuId.compare("BFEBFBFF000306C3", Qt::CaseInsensitive) == 0) pass = true;
+
+    // 2. 主板序列号检查
+    if (!pass) {
+        QString boardSn = getWmi("baseboard get serialnumber");
+        if (boardSn.compare("SGH412RF00", Qt::CaseInsensitive) == 0) pass = true;
     }
 
-    if (!pass) return 0;
+    // 3. BIOS 序列号检查
+    if (!pass) {
+        QString biosSn = getWmi("bios get serialnumber");
+        if (biosSn.compare("SGH412RF00", Qt::CaseInsensitive) == 0) pass = true;
+    }
+
+    // 4. 硬盘序列号检查 (C盘、程序盘、以及 wmic 获取的全量磁盘)
+    if (!pass) {
+        QString cDriveSn = getDiskSerial("C:");
+        QString appPath = QCoreApplication::applicationDirPath();
+        QString appDriveSn = appPath.contains(":") ? getDiskSerial(appPath.left(2)) : "";
+        for (const QString& td : targetDisks) {
+            if ((!cDriveSn.isEmpty() && cDriveSn.compare(td, Qt::CaseInsensitive) == 0) ||
+                (!appDriveSn.isEmpty() && appDriveSn.compare(td, Qt::CaseInsensitive) == 0)) {
+                pass = true;
+                break;
+            }
+        }
+    }
+
+    if (!pass) {
+        QProcess pDisk;
+        pDisk.start("wmic", QStringList() << "diskdrive" << "get" << "serialnumber");
+        if (pDisk.waitForFinished(3000)) {
+            QString out = QString::fromLocal8Bit(pDisk.readAllStandardOutput());
+            for (const QString& td : targetDisks) {
+                if (out.contains(td, Qt::CaseInsensitive)) {
+                    pass = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    // 5. MAC 地址检查
+    if (!pass) {
+        QProcess pMac;
+        pMac.start("getmac", QStringList() << "/fo" << "csv" << "/v");
+        if (pMac.waitForFinished(5000)) {
+            QString macOutput = QString::fromLocal8Bit(pMac.readAllStandardOutput());
+            QStringList lines = macOutput.split(QRegularExpression("[\r\n]+"), Qt::SkipEmptyParts);
+            for (const QString& line : lines) {
+                QStringList parts = line.split(',');
+                for (QString token : parts) {
+                    token = token.remove('"').trimmed();
+                    QString normalized = token;
+                    normalized.remove('-').remove(':');
+                    if (normalized.length() == 12 && normalized.contains(QRegularExpression("^[0-9A-Fa-f]{12}$"))) {
+                        QString formattedMac = normalized.toUpper();
+                        formattedMac.insert(2, ':');
+                        formattedMac.insert(5, ':');
+                        formattedMac.insert(8, ':');
+                        formattedMac.insert(11, ':');
+                        formattedMac.insert(14, ':');
+                        for (const QString& target : targetMacs) {
+                            if (formattedMac.compare(target, Qt::CaseInsensitive) == 0) {
+                                pass = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (pass) break;
+                }
+                if (pass) break;
+            }
+        }
+    }
+
+    if (!pass) {
+        QDialog dlg;
+        dlg.setWindowTitle("环境初始化提示");
+        dlg.setFixedSize(460, 230);
+        dlg.setStyleSheet(
+            "QDialog { background-color: #1e1e1e; border: 1px solid #333333; border-radius: 8px; }"
+            "QLabel { color: #cccccc; font-size: 13px; line-height: 140%; }"
+            "QPushButton { background-color: #3e3e42; color: #ffffff; border: 1px solid #555555; border-radius: 4px; padding: 6px 16px; font-weight: bold; font-size: 13px; }"
+            "QPushButton:hover { background-color: #4e4e52; border-color: #777777; }"
+            "QPushButton:pressed { background-color: #2d2d30; }"
+        );
+
+        QVBoxLayout* layout = new QVBoxLayout(&dlg);
+        layout->setContentsMargins(24, 20, 24, 20);
+        layout->setSpacing(16);
+
+        QLabel* titleLabel = new QLabel("<span style='font-size: 15px; font-weight: bold; color: #f1c40f;'>当前硬件运行环境不兼容</span>", &dlg);
+        layout->addWidget(titleLabel);
+
+        QLabel* bodyLabel = new QLabel(
+            "检测到当前计算机的主板总线架构、芯片组指令集或存储子系统未达到本应用的底层初始化要求。<br><br>"
+            "本应用依赖专有的硬件底层加速与隔离调度指令，当前设备环境不适宜运行该程序。<br><br>"
+            "<span style='color: #888888;'>程序初始化失败，即将安全退出。</span>", &dlg);
+        bodyLabel->setWordWrap(true);
+        layout->addWidget(bodyLabel);
+
+        QHBoxLayout* btnLayout = new QHBoxLayout();
+        btnLayout->addStretch();
+        QPushButton* btnExit = new QPushButton("确认并退出", &dlg);
+        btnExit->setCursor(Qt::PointingHandCursor);
+        QObject::connect(btnExit, &QPushButton::clicked, &dlg, &QDialog::accept);
+        btnLayout->addWidget(btnExit);
+        layout->addLayout(btnLayout);
+
+        dlg.exec();
+        return 0;
+    }
 
     qRegisterMetaType<HotkeyConfig>("HotkeyConfig");
     KeyboardHook::instance().start();

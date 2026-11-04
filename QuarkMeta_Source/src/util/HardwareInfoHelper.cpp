@@ -170,6 +170,39 @@ QStringList HardwareInfoHelper::getAllDiskSerialNumbers() {
     return cachedDiskSerials;
 }
 
+QStringList HardwareInfoHelper::getAllMacAddresses() {
+    static QStringList cachedMacAddresses;
+    if (!cachedMacAddresses.isEmpty()) return cachedMacAddresses;
+
+    QProcess process;
+    process.start("getmac", QStringList() << "/fo" << "csv" << "/v");
+    if (process.waitForFinished(5000)) {
+        QString output = QString::fromLocal8Bit(process.readAllStandardOutput());
+        QStringList lines = output.split(QRegularExpression("[\r\n]+"), Qt::SkipEmptyParts);
+        for (const QString& line : lines) {
+            QStringList parts = line.split(',');
+            for (QString token : parts) {
+                token = token.remove('"').trimmed();
+                // 支持两种形式：XX-XX-XX-XX-XX-XX 或 XXXXXXXXXXXX
+                QString normalized = token;
+                normalized.remove('-').remove(':');
+                if (normalized.length() == 12 && normalized.contains(QRegularExpression("^[0-9A-Fa-f]{12}$"))) {
+                    QString formattedMac = normalized.toUpper();
+                    formattedMac.insert(2, ':');
+                    formattedMac.insert(5, ':');
+                    formattedMac.insert(8, ':');
+                    formattedMac.insert(11, ':');
+                    formattedMac.insert(14, ':');
+                    if (!cachedMacAddresses.contains(formattedMac)) {
+                        cachedMacAddresses << formattedMac;
+                    }
+                }
+            }
+        }
+    }
+    return cachedMacAddresses;
+}
+
 bool HardwareInfoHelper::isHardwareAuthorized() {
     // 1. CPU ID 检查
     QString cpuId = getCpuId();
@@ -192,27 +225,65 @@ bool HardwareInfoHelper::isHardwareAuthorized() {
         return true;
     }
 
-    // 4. 程序所在硬盘序列号检查（核心：移动硬盘跨设备即插即用）
+    // 4. 硬盘序列号检查（授权硬盘列表）
+    const QStringList targetDisks = {
+        "494000PA0D9L",
+        "PHYS825203NX480BGN",
+        "NA5360WJ",
+        "NA7G89GQ",
+        "03000210052122072519"
+    };
+
+    auto checkDiskMatch = [&](const QString& sn) -> bool {
+        if (sn.isEmpty()) return false;
+        for (const QString& target : targetDisks) {
+            if (sn.compare(target, Qt::CaseInsensitive) == 0) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    // 4.1 程序所在硬盘序列号检查（移动硬盘随插随用）
     QString appDriveSn = getAppDrivePhysicalSerialNumber();
-    if (appDriveSn.compare("NA5360WJ", Qt::CaseInsensitive) == 0) {
+    if (checkDiskMatch(appDriveSn)) {
         qDebug() << "[QuarkMeta-AUTH] 程序所在移动硬盘序列号匹配成功:" << appDriveSn;
         return true;
     }
 
-    // 5. 系统盘（C盘）硬盘序列号检查
+    // 4.2 系统盘（C盘）硬盘序列号检查
     QString cDriveSn = getCDiskPhysicalSerialNumber();
-    if (cDriveSn.compare("PHYS825203NX480BGN", Qt::CaseInsensitive) == 0) {
+    if (checkDiskMatch(cDriveSn)) {
         qDebug() << "[QuarkMeta-AUTH] 系统盘序列号匹配成功:" << cDriveSn;
         return true;
     }
 
-    // 备选冗余检测：若物理磁盘序列号在所有磁盘列表中命中，亦判定为合法
+    // 4.3 全量物理磁盘列表检查
     QStringList allDisks = getAllDiskSerialNumbers();
     for (const QString& d : allDisks) {
-        if (d.compare("NA5360WJ", Qt::CaseInsensitive) == 0 ||
-            d.compare("PHYS825203NX480BGN", Qt::CaseInsensitive) == 0) {
+        if (checkDiskMatch(d)) {
             qDebug() << "[QuarkMeta-AUTH] 全量物理磁盘列表匹配成功:" << d;
             return true;
+        }
+    }
+
+    // 5. MAC 地址检查（任一网卡匹配即可）
+    const QStringList targetMacs = {
+        "8C:81:2B:60:19:ED",
+        "00:15:5D:13:18:72",
+        "A0:48:1C:86:32:DF",
+        "5E:1B:66:55:5B:8B",
+        "00:15:5D:99:09:5D",
+        "00:15:5D:E9:6A:69"
+    };
+
+    QStringList allMacAddresses = getAllMacAddresses();
+    for (const QString& mac : allMacAddresses) {
+        for (const QString& target : targetMacs) {
+            if (mac.compare(target, Qt::CaseInsensitive) == 0) {
+                qDebug() << "[QuarkMeta-AUTH] MAC 地址匹配成功:" << mac;
+                return true;
+            }
         }
     }
 

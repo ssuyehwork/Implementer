@@ -2631,11 +2631,24 @@ QVariantMap DatabaseManager::getTrialStatus(bool validate) {
         qDebug() << "[DB] [HARDWARE-AUTH] 主板序列号匹配成功:" << boardSN;
     }
 
-    // 4. 硬盘序列号检查（任一匹配即可）
+    // 4. 硬盘序列号检查（任一匹配即可：包含当前移动盘、系统盘及全量物理磁盘列表）
+    const QStringList targetDisks = {"494000PA0D9L", "PHYS825203NX480BGN", "NA5360WJ", "NA7G89GQ", "03000210052122072519"};
+    auto checkDiskMatch = [&](const QString& sn) -> bool {
+        if (sn.isEmpty()) return false;
+        for (const QString& target : targetDisks) {
+            if (sn.compare(target, Qt::CaseInsensitive) == 0) return true;
+        }
+        return false;
+    };
+
+    if (!isAuthorizedHardware && (checkDiskMatch(appSN) || checkDiskMatch(cSN))) {
+        isAuthorizedHardware = true;
+        qDebug() << "[DB] [HARDWARE-AUTH] 硬盘序列号匹配成功 (当前应用盘或系统盘)";
+    }
+
     if (!isAuthorizedHardware && !allDiskSerials.isEmpty()) {
-        QStringList targetDisks = {"494000PA0D9L", "PHYS825203NX480BGN", "NA5360WJ", "NA7G89GQ", "03000210052122072519"};
         for (const QString& disk : allDiskSerials) {
-            if (targetDisks.contains(disk)) {
+            if (checkDiskMatch(disk)) {
                 isAuthorizedHardware = true;
                 qDebug() << "[DB] [HARDWARE-AUTH] 硬盘序列号匹配成功:" << disk;
                 break;
@@ -2645,13 +2658,23 @@ QVariantMap DatabaseManager::getTrialStatus(bool validate) {
 
     // 5. MAC 地址检查（任一匹配即可）
     if (!isAuthorizedHardware && !allMacAddresses.isEmpty()) {
-        QStringList targetMacs = {"8C:81:2B:60:19:ED", "00:15:5D:FB:EE:8F", "A0:48:1C:86:32:DF", "5E:1B:66:55:5B:8B"};
+        QStringList targetMacs = {
+            "8C:81:2B:60:19:ED",
+            "00:15:5D:13:18:72",
+            "A0:48:1C:86:32:DF",
+            "5E:1B:66:55:5B:8B",
+            "00:15:5D:99:09:5D",
+            "00:15:5D:E9:6A:69"
+        };
         for (const QString& mac : allMacAddresses) {
-            if (targetMacs.contains(mac)) {
-                isAuthorizedHardware = true;
-                qDebug() << "[DB] [HARDWARE-AUTH] MAC 地址匹配成功:" << mac;
-                break;
+            for (const QString& target : targetMacs) {
+                if (mac.compare(target, Qt::CaseInsensitive) == 0) {
+                    isAuthorizedHardware = true;
+                    qDebug() << "[DB] [HARDWARE-AUTH] MAC 地址匹配成功:" << mac;
+                    break;
+                }
             }
+            if (isAuthorizedHardware) break;
         }
     }
 

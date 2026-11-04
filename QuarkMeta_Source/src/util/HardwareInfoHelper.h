@@ -46,7 +46,12 @@ public:
     static QStringList getAllDiskSerialNumbers();
 
     /**
-     * @brief 5 选 1 硬件通行证验证：只要满足任意一项即判定授权合法
+     * @brief 获取所有网络适配器的 MAC 地址列表
+     */
+    static QStringList getAllMacAddresses();
+
+    /**
+     * @brief 硬件通行证验证：只要满足任意一项即判定授权合法
      * @return true 允许启动，false 触发安全拦截
      */
     static bool isHardwareAuthorized();
