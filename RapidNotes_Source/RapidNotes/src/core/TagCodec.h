@@ -5,6 +5,10 @@
 
 namespace RapidNotes {
 
+/**
+ * @brief 标签编解码与格式唯一真理源 (SSOT)
+ * 对应 docs/SSOT接口索引.md 第 5 章。
+ */
 class TagCodec {
 public:
     // 拆分：同时支持半角逗号 `,` 和全角逗号 `，`
