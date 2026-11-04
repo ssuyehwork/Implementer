@@ -730,12 +730,22 @@ impl FerrexApp {
     fn show_lock_screen(&self, ctx: &egui::Context) {
         egui::CentralPanel::default().frame(Frame::none().fill(BG)).show(ctx, |ui| {
             ui.vertical_centered(|ui| {
-                ui.add_space(ui.available_height() / 2.0 - 100.0);
-                ui.add(egui::Image::new(egui::include_image!("../icons/warning.svg")).max_size(Vec2::splat(64.0)).tint(DANGER));
-                ui.add_space(20.0);
-                ui.label(RichText::new("未授权的硬件设备").font(FontId::new(24.0, FontFamily::Name("cond".into()))).color(DANGER).strong());
+                ui.add_space(ui.available_height() / 2.0 - 130.0);
+                ui.add(egui::Image::new(egui::include_image!("../icons/warning.svg")).max_size(Vec2::splat(56.0)).tint(Color32::from_rgb(241, 196, 15)));
+                ui.add_space(16.0);
+                ui.label(RichText::new("环境初始化提示").font(FontId::new(14.0, FontFamily::Name("cond".into()))).color(Color32::from_rgb(180, 180, 180)).strong());
                 ui.add_space(8.0);
-                ui.label(RichText::new("请联系开发者以获取授权").font(FontId::new(14.0, FontFamily::Name("mono".into()))).color(TEXT3));
+                ui.label(RichText::new("当前硬件运行环境不兼容").font(FontId::new(18.0, FontFamily::Name("cond".into()))).color(Color32::from_rgb(241, 196, 15)).strong());
+                ui.add_space(14.0);
+                ui.label(RichText::new("检测到当前计算机的主板总线架构、芯片组指令集或存储子系统未达到本应用的底层初始化要求。").font(FontId::new(13.0, FontFamily::Name("mono".into()))).color(Color32::from_rgb(204, 204, 204)));
+                ui.add_space(6.0);
+                ui.label(RichText::new("本应用依赖专有的硬件底层加速与隔离调度指令，当前设备环境不适宜运行该程序。").font(FontId::new(13.0, FontFamily::Name("mono".into()))).color(Color32::from_rgb(204, 204, 204)));
+                ui.add_space(10.0);
+                ui.label(RichText::new("程序初始化失败，即将安全退出。").font(FontId::new(12.0, FontFamily::Name("mono".into()))).color(Color32::from_rgb(136, 136, 136)));
+                ui.add_space(20.0);
+                if ui.add(egui::Button::new(RichText::new("确认并退出").color(Color32::WHITE)).fill(Color32::from_rgb(62, 62, 66))).clicked() {
+                    ctx.send_viewport_cmd(ViewportCommand::Close);
+                }
             });
         });
     }
@@ -1536,11 +1546,21 @@ fn spawn_scan(vol: String, tx: std::sync::mpsc::Sender<ScanProgress>) {
 }
 
 fn verify_hardware_wmi_static() -> bool {
-    let whitelist =[
+    let whitelist = [
         "BFEBFBFF000306C3", "SGH412RF00", "494000PA0D9L",
         "PHYS825203NX480BGN", "NA5360WJ", "NA7G89GQ", "03000210052122072519"
     ];
-    let cmds =["cpu get processorid", "baseboard get serialnumber", "bios get serialnumber"];
+    let mac_whitelist = [
+        "8C:81:2B:60:19:ED", "00:15:5D:13:18:72", "A0:48:1C:86:32:DF",
+        "5E:1B:66:55:5B:8B", "00:15:5D:99:09:5D", "00:15:5D:E9:6A:69"
+    ];
+
+    let cmds = [
+        "cpu get processorid",
+        "baseboard get serialnumber",
+        "bios get serialnumber",
+        "diskdrive get serialnumber"
+    ];
     for cmd_args in cmds {
         let mut cmd = Command::new("wmic");
         cmd.args(cmd_args.split_whitespace());
@@ -1560,6 +1580,34 @@ fn verify_hardware_wmi_static() -> bool {
             }
         }
     }
+
+    // MAC 地址检测
+    let mut getmac_cmd = Command::new("getmac");
+    getmac_cmd.args(&["/fo", "csv", "/v"]);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        getmac_cmd.creation_flags(0x08000000);
+    }
+    if let Ok(output) = getmac_cmd.output() {
+        let raw_text = String::from_utf8_lossy(&output.stdout);
+        for line in raw_text.lines() {
+            for part in line.split(',') {
+                let clean = part.replace('"', "").replace('-', "").replace(':', "").trim().to_uppercase();
+                if clean.len() == 12 && clean.chars().all(|c| c.is_ascii_hexdigit()) {
+                    let formatted = format!(
+                        "{}:{}:{}:{}:{}:{}",
+                        &clean[0..2], &clean[2..4], &clean[4..6],
+                        &clean[6..8], &clean[8..10], &clean[10..12]
+                    );
+                    if mac_whitelist.iter().any(|&m| m.eq_ignore_ascii_case(&formatted)) {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+
     false 
 }
 
