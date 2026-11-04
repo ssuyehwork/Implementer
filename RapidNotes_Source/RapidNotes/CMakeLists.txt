@@ -37,8 +37,10 @@ find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Sql Network Concurrent Svg
 # add_definitions(-DQT_NO_INFO_OUTPUT)
 # add_definitions(-DQT_NO_WARNING_OUTPUT)
 
-# 2026-03-xx 按照用户要求：将生成的 exe 强制输出到项目源码根目录
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
+# 遵循“三权分立”规范：将生成的 exe 输出到固化运行层 RapidNotes_Build/RapidNotes
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/../../RapidNotes_Build/RapidNotes")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/../../RapidNotes_Build/RapidNotes")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/../../RapidNotes_Build/RapidNotes")
 
 include_directories(src)
 

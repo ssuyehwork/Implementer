@@ -5,6 +5,11 @@ project(CountdownLock VERSION 1.0.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# 遵循“三权分立”规范：将生成的 exe 输出到固化运行层 FocusLock_Build/FocusLock
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/../FocusLock_Build/FocusLock")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/../FocusLock_Build/FocusLock")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/../FocusLock_Build/FocusLock")
+
 # 寻找 Qt 6 库
 find_package(Qt6 REQUIRED COMPONENTS Widgets Gui Core Svg)
 

@@ -32,10 +32,10 @@ if(CMAKE_BINARY_DIR MATCHES "/out/")
     message(WARNING "⚠️ 检测到非法构建路径 [out]！请在 VS 工具栏切换至 [x64-release] 预设以符合《源码纯净》规范。")
 endif()
 
-# 2026-03-xx 将 QuarkMeta 可执行文件直接输出到项目子目录 QuarkMeta 下
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/QuarkMeta")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/QuarkMeta")
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/QuarkMeta")
+# 遵循“三权分立”规范：将 QuarkMeta 可执行文件与动态库输出到固化运行层 QuarkMeta_Build/QuarkMeta
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/../QuarkMeta_Build/QuarkMeta")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/../QuarkMeta_Build/QuarkMeta")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/../QuarkMeta_Build/QuarkMeta")
 
 # 自动生成 MOC/UIC/RCC
 set(CMAKE_AUTOMOC ON)

@@ -15,7 +15,12 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 set(CMAKE_PREFIX_PATH "G:/Qt/6.10.2/msvc2022_64_static")
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${PROJECT_SOURCE_DIR})
+
+# 遵循“三权分立”规范：将生成的 exe 输出到固化运行层 Timetool_Build/Timetool
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/../../Timetool_Build/Timetool")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "${PROJECT_SOURCE_DIR}/../../Timetool_Build/Timetool")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/../../Timetool_Build/Timetool")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/../../Timetool_Build/Timetool")
 
 if(MSVC)
     add_compile_options(
