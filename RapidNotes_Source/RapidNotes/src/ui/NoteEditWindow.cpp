@@ -1,5 +1,8 @@
 #include "NoteEditWindow.h"
 #include "StringUtils.h"
+#include "../core/ItemType.h"
+#include "../core/TagCodec.h"
+#include "../core/ItemClassifier.h"
 #include "../core/ShortcutManager.h"
 #include "AdvancedTagSelector.h"
 #include "TitleEditorDialog.h"
@@ -65,7 +68,7 @@ void NoteEditWindow::setInitialData(const QString& title, const QString& content
     // 2026-04-xx 按照用户要求：支持合并创建数据，初始化 UI 各组件
     if (m_titleEdit) m_titleEdit->setPlainText(title);
     if (m_contentEdit) m_contentEdit->setInitialContent(content);
-    if (m_tagEdit) m_tagEdit->setText(tags.join(", "));
+    if (m_tagEdit) m_tagEdit->setText(RapidNotes::TagCodec::joinDisplay(tags));
 }
 
 void NoteEditWindow::showEvent(QShowEvent* event) {
@@ -624,7 +627,7 @@ void NoteEditWindow::saveNote() {
     QString content = m_contentEdit->getOptimizedContent();
 
     QString tagsStr = m_tagEdit->text();
-    QStringList tagsList = tagsStr.split(QRegularExpression("[,，]"), Qt::SkipEmptyParts);
+    QStringList tagsList = RapidNotes::TagCodec::split(tagsStr);
     for (QString& t : tagsList) t = t.trimmed();
 
     int catId = m_catId;
@@ -648,26 +651,27 @@ void NoteEditWindow::saveNote() {
         contentHasSubstantialChange = true;
     }
 
-    if (finalType == "image" || finalType == "file") {
+    RapidNotes::ItemType::Type fTypeEnum = RapidNotes::ItemType::fromString(finalType);
+    if (fTypeEnum == RapidNotes::ItemType::Type::Image || fTypeEnum == RapidNotes::ItemType::Type::File) {
         if (contentHasSubstantialChange && !m_contentEdit->isRich()) {
-            finalType = StringUtils::detectItemType(content);
+            finalType = RapidNotes::ItemType::toString(RapidNotes::ItemClassifier::detectIngestType(content));
         }
-    } else if (finalType == "link" || finalType == "color" || finalType == "code") {
+    } else if (fTypeEnum == RapidNotes::ItemType::Type::Link || fTypeEnum == RapidNotes::ItemType::Type::Color || fTypeEnum == RapidNotes::ItemType::Type::Code) {
         // 按照用户要求：既然创建时是网页链接，无论怎么修改内容（如修改标题），它仍然应该是网页链接。
         // 除非用户删掉了链接换成了纯文本，否则不应降级。
         if (contentHasSubstantialChange) {
-            finalType = StringUtils::detectItemType(content);
+            finalType = RapidNotes::ItemType::toString(RapidNotes::ItemClassifier::detectIngestType(content));
             // 补偿逻辑：如果新检测出的是普通文本，但旧的是链接，说明用户可能只是在微调链接文本，应予以保留属性。
-            if (finalType == "text" && m_origItemType == "link" && content.contains(".")) {
-                 finalType = "link";
+            if (RapidNotes::ItemType::fromString(finalType) == RapidNotes::ItemType::Type::Text && RapidNotes::ItemType::fromString(m_origItemType) == RapidNotes::ItemType::Type::Link && content.contains(".")) {
+                 finalType = RapidNotes::ItemType::toString(RapidNotes::ItemType::Type::Link);
             }
         }
     } else {
         // 原本就是 text 类型，执行全量检测
-        finalType = StringUtils::detectItemType(content);
+        finalType = RapidNotes::ItemType::toString(RapidNotes::ItemClassifier::detectIngestType(content));
     }
 
-    if (finalType.isEmpty()) finalType = "text";
+    if (finalType.isEmpty()) finalType = RapidNotes::ItemType::toString(RapidNotes::ItemType::Type::Text);
 
     // [FIX] 使用 QPointer 追踪窗口状态，彻底解决后台任务回调时的野指针崩溃风险 (Qt::WA_DeleteOnClose 冲突)
     QPointer<NoteEditWindow> safeThis(this);
@@ -710,7 +714,7 @@ void NoteEditWindow::toggleSearchBar() {
 }
 
 void NoteEditWindow::openTagSelector() {
-    QStringList currentTags = m_tagEdit->text().split(",", Qt::SkipEmptyParts);
+    QStringList currentTags = RapidNotes::TagCodec::split(m_tagEdit->text());
     for (QString& t : currentTags) t = t.trimmed();
 
     auto* selector = new AdvancedTagSelector(this);
@@ -719,7 +723,7 @@ void NoteEditWindow::openTagSelector() {
     selector->setup(recentTags, allTags, currentTags);
 
     connect(selector, &AdvancedTagSelector::tagsConfirmed, [this](const QStringList& tags){
-        m_tagEdit->setText(tags.join(", "));
+        m_tagEdit->setText(RapidNotes::TagCodec::joinDisplay(tags));
     });
 
     selector->showAtCursor();

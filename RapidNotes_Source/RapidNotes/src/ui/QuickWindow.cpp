@@ -26,6 +26,7 @@
 #include "QuickNoteDelegate.h"
 #include "CategoryDelegate.h"
 #include "../core/DatabaseManager.h"
+#include "../core/TagCodec.h"
 #include "../core/ClipboardMonitor.h"
 #include <QGuiApplication>
 #include <QDragEnterEvent>
@@ -1981,7 +1982,7 @@ void QuickWindow::doMergeSelected() {
         mergedContents << StringUtils::htmlToPlainText(content).trimmed();
 
         QString tags = index.data(NoteModel::TagsRole).toString();
-        QStringList parts = tags.split(QRegularExpression("[,，]"), Qt::SkipEmptyParts);
+        QStringList parts = RapidNotes::TagCodec::split(tags);
         for (const QString& t : parts) tagsSet.insert(t.trimmed());
     }
 
@@ -3141,7 +3142,7 @@ void QuickWindow::openTagSelector() {
     connect(selector, &AdvancedTagSelector::tagsConfirmed, [this, selected](const QStringList& tags){
         for (const auto& index : std::as_const(selected)) {
             int id = index.data(NoteModel::IdRole).toInt();
-            DatabaseManager::instance().updateNoteState(id, "tags", tags.join(", "));
+            DatabaseManager::instance().updateNoteState(id, "tags", RapidNotes::TagCodec::joinDisplay(tags));
         }
         refreshData();
         ToolTipOverlay::instance()->showText(QCursor::pos(), "<b style='color: #2ecc71;'>[OK] 标签已更新</b>");
@@ -3158,7 +3159,7 @@ void QuickWindow::doCopyTags() {
     int id = selected.first().data(NoteModel::IdRole).toInt();
     QVariantMap note = DatabaseManager::instance().getNoteById(id);
     QString tagsStr = note.value("tags").toString();
-    QStringList tags = tagsStr.split(QRegularExpression("[,，]"), Qt::SkipEmptyParts);
+    QStringList tags = RapidNotes::TagCodec::split(tagsStr);
     for (QString& t : tags) t = t.trimmed();
 
     DatabaseManager::setTagClipboard(tags);
@@ -3180,7 +3181,7 @@ void QuickWindow::doPasteTags() {
     
     QList<int> ids;
     for (const auto& index : std::as_const(selected)) ids << index.data(NoteModel::IdRole).toInt();
-    DatabaseManager::instance().updateNoteStateBatch(ids, "tags", tagsToPaste.join(", "));
+    DatabaseManager::instance().updateNoteStateBatch(ids, "tags", RapidNotes::TagCodec::joinDisplay(tagsToPaste));
 
     refreshData();
 
@@ -3209,7 +3210,7 @@ void QuickWindow::doRepeatAction() {
         QStringList tagsList = ActionRecorder::instance().getLastActionData().toStringList();
         if (tagsList.isEmpty()) return;
 
-        QString tagsStr = tagsList.join(", ");
+        QString tagsStr = RapidNotes::TagCodec::joinDisplay(tagsList);
         DatabaseManager::instance().updateNoteStateBatch(ids, "tags", tagsStr);
         refreshData();
         ToolTipOverlay::instance()->showText(QCursor::pos(), QString("<b style='color: #2ecc71;'>[OK] 已重复：%1 条数据粘贴标签</b>").arg(ids.size()));

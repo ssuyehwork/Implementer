@@ -1,6 +1,7 @@
 #include "TagEditDialog.h"
 #include "AdvancedTagSelector.h"
 #include "../core/DatabaseManager.h"
+#include "../core/TagCodec.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -29,7 +30,7 @@ TagEditDialog::TagEditDialog(const QString& currentTags, QWidget* parent)
 
     // 2. 集成胶囊标签编辑器
     m_tagEditor = new TagEditorWidget(this);
-    QStringList tagList = currentTags.split(QRegularExpression("[,，]"), Qt::SkipEmptyParts);
+    QStringList tagList = RapidNotes::TagCodec::split(currentTags);
     for(QString& t : tagList) t = t.trimmed();
     m_tagEditor->setTags(tagList);
     
@@ -68,7 +69,7 @@ TagEditDialog::TagEditDialog(const QString& currentTags, QWidget* parent)
 }
 
 QString TagEditDialog::getTags() const {
-    return m_tagEditor->tags().join(", ");
+    return RapidNotes::TagCodec::joinDisplay(m_tagEditor->tags());
 }
 
 void TagEditDialog::openTagSelector() {
