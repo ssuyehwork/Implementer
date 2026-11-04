@@ -23,6 +23,7 @@
 #include "../core/ShortcutManager.h"
 #include "AdvancedTagSelector.h"
 #include "../core/DatabaseManager.h"
+#include "../core/TagCodec.h"
 #include "StringUtils.h"
 #include "ToolTipOverlay.h"
 
@@ -618,14 +619,14 @@ bool FramelessInputDialog::eventFilter(QObject* watched, QEvent* event) {
 
         auto recentTags = DatabaseManager::instance().getRecentTagsWithCounts(20);
         QStringList allTags = DatabaseManager::instance().getAllTags();
-        QStringList selected = m_edit->text().split(QRegularExpression("[,，]"), Qt::SkipEmptyParts);
+        QStringList selected = RapidNotes::TagCodec::split(m_edit->text());
         for(QString& s : selected) s = s.trimmed();
 
         selector->setup(recentTags, allTags, selected);
 
         connect(selector, &AdvancedTagSelector::tagsConfirmed, [this](const QStringList& tags){
             if (!tags.isEmpty()) {
-                m_edit->setText(tags.join(", "));
+                m_edit->setText(RapidNotes::TagCodec::joinDisplay(tags));
                 m_edit->setFocus();
             }
         });

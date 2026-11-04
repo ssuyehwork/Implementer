@@ -56,7 +56,6 @@ namespace {
         return result.join(", ");
     }
 
-    // 2026-05-02 紧急修复v2：加强版 C++ 脱壳引擎 (彻底剿灭残余 CSS 与实体字符)
     int calculateWordBucket(const QString& content, const QString& itemType) {
         return RapidNotes::WordBucket::calculate(content, itemType);
     }

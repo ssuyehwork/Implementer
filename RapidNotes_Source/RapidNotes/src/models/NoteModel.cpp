@@ -49,7 +49,8 @@ QVariant NoteModel::data(const QModelIndex& index, int role) const {
             QString content = note.value("content").toString().trimmed();
 
             // 图片类型特殊处理（使用 ThumbnailMaker 生成 64x64 缩略图并缓存）
-            if (type == "image") {
+            RapidNotes::ItemType::Type itype = RapidNotes::ItemType::fromString(type);
+            if (itype == RapidNotes::ItemType::Type::Image) {
                 int id = note.value("id").toInt();
                 if (m_thumbnailCache.contains(id)) return m_thumbnailCache[id];
 
@@ -61,11 +62,11 @@ QVariant NoteModel::data(const QModelIndex& index, int role) const {
                     m_thumbnailCache[id] = thumb;
                     return thumb;
                 }
-                return IconHelper::getIcon(QStringLiteral("image"), QStringLiteral("#FF00FF"), 32);
+                return IconHelper::getIcon(RapidNotes::ItemType::toString(RapidNotes::ItemType::Type::Image), QStringLiteral("#FF00FF"), 32);
             }
 
             // 文件类旧类型由 PathSummary 决定
-            if (type == "file" || type == "files" || type == "folder" || type == "folders") {
+            if (RapidNotes::ItemType::isFileOrFolder(itype)) {
                 RapidNotes::PathSummary::Kind kind = RapidNotes::PathSummary::summarizeFromSemicolonString(content);
                 return IconHelper::getIcon(RapidNotes::PathSummary::getIconName(kind), RapidNotes::PathSummary::getIconColor(kind), 32);
             }
@@ -176,7 +177,8 @@ QVariant NoteModel::data(const QModelIndex& index, int role) const {
                 QString display = plain.replace('\n', ' ').replace('\r', ' ').trimmed().left(150);
                 if (!display.isEmpty()) return display;
             }
-            if (type == "image") return QString("[图片]");
+            RapidNotes::ItemType::Type itype = RapidNotes::ItemType::fromString(type);
+            if (itype == RapidNotes::ItemType::Type::Image) return QString("[图片]");
             return QString();
         }
         case TitleRole:
@@ -256,7 +258,8 @@ QMimeData* NoteModel::mimeData(const QModelIndexList& indexes) const {
             QString type = data(index, TypeRole).toString();
             QByteArray blob = data(index, BlobRole).toByteArray();
             
-            if (type == "image") {
+            RapidNotes::ItemType::Type itype = RapidNotes::ItemType::fromString(type);
+            if (itype == RapidNotes::ItemType::Type::Image) {
                 // 支持图片导出
                 if (firstImage.isNull()) {
                     firstImage.loadFromData(blob);

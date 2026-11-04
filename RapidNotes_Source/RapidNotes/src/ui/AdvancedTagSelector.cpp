@@ -1,3 +1,4 @@
+#include "../core/TagCodec.h"
 #include "AdvancedTagSelector.h"
 #include "IconHelper.h"
 #include <QPushButton>
@@ -68,7 +69,7 @@ AdvancedTagSelector::AdvancedTagSelector(QWidget* parent)
         QString text = m_search->text().trimmed();
         if (!text.isEmpty()) {
             // [CRITICAL] 支持使用中英文逗号分割标签，提升批量输入体验
-            QStringList newTags = text.split(QRegularExpression("[,，]"), Qt::SkipEmptyParts);
+            QStringList newTags = RapidNotes::TagCodec::split(text);
             bool changed = false;
             for (QString& tag : newTags) {
                 tag = tag.trimmed();

@@ -1,3 +1,4 @@
+#include "ItemType.h"
 #include "WordBucket.h"
 #include <QRegularExpression>
 #include <QtGlobal>
@@ -6,10 +7,7 @@ namespace RapidNotes {
 
 int WordBucket::calculate(const QString& content, const QString& itemType) {
     // 1. 类型拦截：非正文相关类型直接归为“无字数” (0)
-    if (itemType != QStringLiteral("text") &&
-        itemType != QStringLiteral("code") &&
-        itemType != QStringLiteral("ocr_text") &&
-        itemType != QStringLiteral("captured_message")) {
+    if (!ItemType::isPureText(ItemType::fromString(itemType))) {
         return 0;
     }
 

@@ -29,6 +29,8 @@
 #include <functional>
 #include <utility>
 #include "core/DatabaseManager.h"
+#include "core/ItemType.h"
+#include "core/ItemClassifier.h"
 #include "core/HotkeyManager.h"
 #include "core/ClipboardMonitor.h"
 #include "ui/IconHelper.h"
@@ -601,17 +603,16 @@ int main(int argc, char *argv[]) {
                 if (type == "file") {
                     files = content.split(";", Qt::SkipEmptyParts);
                 } else {
-                    QString trimmed = content.trimmed();
-                    if ((trimmed.startsWith("\"") && trimmed.endsWith("\"")) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
-                        trimmed = trimmed.mid(1, trimmed.length() - 2);
-                    }
-                    QFileInfo info(trimmed);
-                    if (info.exists() && info.isAbsolute()) {
+                    RapidNotes::ItemType::Type detectedType = RapidNotes::ItemClassifier::detectIngestType(content);
+                    if (detectedType == RapidNotes::ItemType::Type::Folder || detectedType == RapidNotes::ItemType::Type::File) {
+                        QString trimmed = content.trimmed();
+                        if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith('\'') && trimmed.endsWith('\''))) {
+                            trimmed = trimmed.mid(1, trimmed.length() - 2);
+                        }
                         files << trimmed;
-                        finalType = info.isDir() ? "folder" : "file";
+                        finalType = RapidNotes::ItemType::toString(detectedType);
                     }
                 }
-
                 if (!files.isEmpty()) {
                     QString firstPath = files.first();
                     if (firstPath.endsWith("/") || firstPath.endsWith("\\")) firstPath.chop(1);
