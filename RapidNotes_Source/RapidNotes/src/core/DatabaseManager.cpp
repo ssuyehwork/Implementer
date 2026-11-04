@@ -1,5 +1,6 @@
 #include "DatabaseManager.h"
 #include "WordBucket.h"
+#include "TagCodec.h"
 #include <QDebug>
 #include <QSqlRecord>
 #include <QSqlError>
@@ -55,6 +56,7 @@ namespace {
         return result.join(", ");
     }
 
+    // 2026-05-02 紧急修复v2：加强版 C++ 脱壳引擎 (彻底剿灭残余 CSS 与实体字符)
     int calculateWordBucket(const QString& content, const QString& itemType) {
         return RapidNotes::WordBucket::calculate(content, itemType);
     }
@@ -763,7 +765,7 @@ bool DatabaseManager::createTables() {
                 int count = 0;
                 while (fetchNotes.next()) {
                     int noteId = fetchNotes.value(0).toInt();
-                    QStringList tagList = fetchNotes.value(1).toString().split(QRegularExpression("[,，]"), Qt::SkipEmptyParts);
+                    QStringList tagList = RapidNotes::TagCodec::split(fetchNotes.value(1).toString());
                     syncNoteTags(noteId, tagList);
                     count++;
                 }
@@ -847,7 +849,7 @@ int DatabaseManager::addNote(const QString& title, const QString& content, const
             // 获取已有笔记的详细信息，用于智能判定是否需要更新标题等
             QVariantMap existingNote = getNoteById(existingId);
             QString existingTagsStr = existingNote.value("tags").toString();
-            QStringList existingTags = existingTagsStr.split(",", Qt::SkipEmptyParts);
+            QStringList existingTags = RapidNotes::TagCodec::split(existingTagsStr);
             for(QString& t : existingTags) t = t.trimmed();
 
             // 智能合并标签
@@ -872,7 +874,7 @@ int DatabaseManager::addNote(const QString& title, const QString& content, const
                     if (color.isEmpty()) finalColor = catQuery.value(0).toString();
                     QString preset = catQuery.value(1).toString();
                     if (!preset.isEmpty()) {
-                        QStringList pTags = preset.split(",", Qt::SkipEmptyParts);
+                        QStringList pTags = RapidNotes::TagCodec::split(preset);
                         for (const QString& t : pTags) {
                             if (!existingTags.contains(t.trimmed())) existingTags << t.trimmed();
                         }
@@ -907,7 +909,7 @@ int DatabaseManager::addNote(const QString& title, const QString& content, const
             sql += " WHERE id = :id";
 
             updateQuery.prepare(sql);
-            updateQuery.bindValue(":tags", existingTags.join(", "));
+            updateQuery.bindValue(":tags", RapidNotes::TagCodec::joinDisplay(existingTags));
             updateQuery.bindValue(":now", currentTime);
             updateQuery.bindValue(":app", sourceApp);
             updateQuery.bindValue(":stitle", sourceTitle);
@@ -933,7 +935,7 @@ int DatabaseManager::addNote(const QString& title, const QString& content, const
                 if (color.isEmpty()) finalColor = catQuery.value(0).toString();
                 QString preset = catQuery.value(1).toString();
                 if (!preset.isEmpty()) {
-                    QStringList pTags = preset.split(",", Qt::SkipEmptyParts);
+                    QStringList pTags = RapidNotes::TagCodec::split(preset);
                     for (const QString& t : pTags) {
                         QString trimmed = t.trimmed();
                         if (!finalTags.contains(trimmed)) finalTags << trimmed;
@@ -951,7 +953,7 @@ int DatabaseManager::addNote(const QString& title, const QString& content, const
             QString tr = t.trimmed();
             if (!tr.isEmpty() && !cleanedFinalTags.contains(tr)) cleanedFinalTags << tr;
         }
-        query.bindValue(":tags", cleanedFinalTags.join(", "));
+        query.bindValue(":tags", RapidNotes::TagCodec::joinDisplay(cleanedFinalTags));
         
         query.bindValue(":color", finalColor);
         query.bindValue(":category_id", finalCategoryId == -1 ? QVariant(QMetaType::fromType<int>()) : finalCategoryId);
@@ -1366,7 +1368,7 @@ bool DatabaseManager::updateNoteState(int id, const QString& column, const QVari
                     up.exec();
                 }
                 if (column == "tags") {
-                    syncNoteTags(id, tags.split(QRegularExpression("[,，]"), Qt::SkipEmptyParts));
+                    syncNoteTags(id, RapidNotes::TagCodec::split(tags));
                 }
             }
         }
@@ -1448,7 +1450,7 @@ bool DatabaseManager::updateNoteStateBatch(const QList<int>& ids, const QString&
 
                 // 2026-05-02 补齐批量状态下的字数与标签同步
                 if (column == "tags") {
-                    syncNoteTags(id, value.toString().split(QRegularExpression("[,，]"), Qt::SkipEmptyParts));
+                    syncNoteTags(id, RapidNotes::TagCodec::split(value.toString()));
                 } else if (column == "content" || column == "item_type") {
                     QSqlQuery fetch(m_db);
                     fetch.prepare("SELECT content, item_type FROM notes WHERE id = ?");
@@ -1534,11 +1536,11 @@ bool DatabaseManager::moveNotesToCategory(const QList<int>& noteIds, int catId) 
                 fetchTags.bindValue(":id", id);
                 if (fetchTags.exec() && fetchTags.next()) {
                     QString existing = fetchTags.value(0).toString();
-                    QStringList tagList = existing.split(",", Qt::SkipEmptyParts);
-                    QStringList newTags = presetTags.split(",", Qt::SkipEmptyParts);
+                    QStringList tagList = RapidNotes::TagCodec::split(existing);
+                    QStringList newTags = RapidNotes::TagCodec::split(presetTags);
                     bool changed = false;
                     for (const QString& t : newTags) { if (!tagList.contains(t.trimmed())) { tagList.append(t.trimmed()); changed = true; } }
-                    if (changed) { QSqlQuery updateTags(m_db); updateTags.prepare("UPDATE notes SET tags = :tags WHERE id = :id"); updateTags.bindValue(":tags", tagList.join(", ")); updateTags.bindValue(":id", id); updateTags.exec(); }
+                    if (changed) { QSqlQuery updateTags(m_db); updateTags.prepare("UPDATE notes SET tags = :tags WHERE id = :id"); updateTags.bindValue(":tags", RapidNotes::TagCodec::joinDisplay(tagList)); updateTags.bindValue(":id", id); updateTags.exec(); }
                 }
             }
         }
@@ -1762,7 +1764,7 @@ QStringList DatabaseManager::getAllTags() {
     if (query.exec("SELECT tags FROM notes WHERE tags != '' AND is_deleted = 0")) {
         while (query.next()) {
             QString tagsStr = query.value(0).toString();
-            QStringList parts = tagsStr.split(QRegularExpression("[,，]"), Qt::SkipEmptyParts);
+            QStringList parts = RapidNotes::TagCodec::split(tagsStr);
             for (const QString& part : parts) {
                 QString trimmed = part.trimmed();
                 if (!trimmed.isEmpty() && !allTags.contains(trimmed)) allTags.append(trimmed);
@@ -1784,7 +1786,7 @@ QList<QVariantMap> DatabaseManager::getRecentTagsWithCounts(int limit) {
         while (query.next()) {
             QString tagsStr = query.value(0).toString();
             QDateTime updatedAt = query.value(1).toDateTime();
-            QStringList parts = tagsStr.split(QRegularExpression("[,，]"), Qt::SkipEmptyParts);
+            QStringList parts = RapidNotes::TagCodec::split(tagsStr);
             for (const QString& part : parts) {
                 QString name = part.trimmed();
                 if (name.isEmpty()) continue;
@@ -2424,7 +2426,7 @@ bool DatabaseManager::setCategoryPresetTags(int catId, const QString& tags) {
         query.bindValue(":id", catId);
         if (!query.exec()) { m_db.rollback(); return false; }
         if (!tags.isEmpty()) {
-            QStringList newTagsList = tags.split(",", Qt::SkipEmptyParts);
+            QStringList newTagsList = RapidNotes::TagCodec::split(tags);
             QSqlQuery fetchNotes(m_db);
             fetchNotes.prepare("SELECT id, tags FROM notes WHERE category_id = :catId AND is_deleted = 0");
             fetchNotes.bindValue(":catId", catId);
@@ -2432,14 +2434,14 @@ bool DatabaseManager::setCategoryPresetTags(int catId, const QString& tags) {
                 while (fetchNotes.next()) {
                     int noteId = fetchNotes.value(0).toInt();
                     QString existingTagsStr = fetchNotes.value(1).toString();
-                    QStringList existingTags = existingTagsStr.split(",", Qt::SkipEmptyParts);
+                    QStringList existingTags = RapidNotes::TagCodec::split(existingTagsStr);
                     bool changed = false;
                     for (const QString& t : newTagsList) { QString trimmed = t.trimmed(); if (!trimmed.isEmpty() && !existingTags.contains(trimmed)) { existingTags.append(trimmed); changed = true; } }
                     if (changed) { 
                         affectedIds << noteId;
                         QSqlQuery updateNote(m_db); 
                         updateNote.prepare("UPDATE notes SET tags = :tags WHERE id = :id"); 
-                        updateNote.bindValue(":tags", existingTags.join(", ")); 
+                        updateNote.bindValue(":tags", RapidNotes::TagCodec::joinDisplay(existingTags));
                         updateNote.bindValue(":id", noteId); 
                         updateNote.exec(); 
                         
@@ -3048,7 +3050,7 @@ QVariantMap DatabaseManager::getFilterStats(const QString& keyword, const QStrin
             QString itemType = typeQuery.value(0).toString();
             QString exts = typeQuery.value(1).toString();
             if (!exts.isEmpty()) {
-                QStringList parts = exts.split(",", Qt::SkipEmptyParts);
+                QStringList parts = RapidNotes::TagCodec::split(exts);
                 for (const QString& e : parts) bizTypes[e.trimmed()]++;
             } else {
                 // 回退逻辑：处理非文件类的语义化类型
@@ -3330,7 +3332,7 @@ bool DatabaseManager::addTagsToNote(int noteId, const QStringList& tags) {
     QVariantMap note = getNoteById(noteId);
     if (note.isEmpty()) return false;
     
-    QStringList existingStrList = note["tags"].toString().split(QRegularExpression("[,，]"), Qt::SkipEmptyParts);
+    QStringList existingStrList = RapidNotes::TagCodec::split(note["tags"].toString());
     QStringList finalTags;
     // 确保原有标签也经过清理
     for (const QString& t : existingStrList) {
@@ -3374,7 +3376,7 @@ bool DatabaseManager::renameTagGlobally(const QString& oldName, const QString& n
         while (query.next()) {
             int noteId = query.value(0).toInt(); 
             QString tagsStr = query.value(1).toString();
-            QStringList tagList = tagsStr.split(QRegularExpression("[,，]"), Qt::SkipEmptyParts);
+            QStringList tagList = RapidNotes::TagCodec::split(tagsStr);
             QStringList newList;
             bool changed = false;
             for (const QString& t : tagList) {
@@ -3384,7 +3386,7 @@ bool DatabaseManager::renameTagGlobally(const QString& oldName, const QString& n
             if (changed) {
                 QSqlQuery up(m_db);
                 up.prepare("UPDATE notes SET tags = ? WHERE id = ?");
-                up.addBindValue(newList.join(", "));
+                up.addBindValue(RapidNotes::TagCodec::joinDisplay(newList));
                 up.addBindValue(noteId);
                 up.exec();
             }
@@ -3433,12 +3435,12 @@ bool DatabaseManager::deleteTagGlobally(const QString& tagName) {
         if (updateNotes.exec()) {
             while (updateNotes.next()) {
                 int id = updateNotes.value(0).toInt();
-                QStringList tagList = updateNotes.value(1).toString().split(QRegularExpression("[,，]"), Qt::SkipEmptyParts);
+                QStringList tagList = RapidNotes::TagCodec::split(updateNotes.value(1).toString());
                 QStringList newList;
                 for(auto& t : tagList) if(t.trimmed() != target) newList << t.trimmed();
                 QSqlQuery up(m_db);
                 up.prepare("UPDATE notes SET tags = ? WHERE id = ?");
-                up.addBindValue(newList.join(", "));
+                up.addBindValue(RapidNotes::TagCodec::joinDisplay(newList));
                 up.addBindValue(id);
                 up.exec();
             }
@@ -3495,7 +3497,7 @@ void DatabaseManager::syncNoteTags(int noteId, const QStringList& tags) {
     // 严禁使用 "逗号+空格"，统一使用纯逗号分割。
     QSqlQuery upNotes(m_db);
     upNotes.prepare("UPDATE notes SET tags = ? WHERE id = ?");
-    upNotes.addBindValue(cleanTags.join(","));
+    upNotes.addBindValue(RapidNotes::TagCodec::join(cleanTags));
     upNotes.addBindValue(noteId);
     upNotes.exec();
 }

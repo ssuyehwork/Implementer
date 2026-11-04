@@ -77,7 +77,7 @@ bool ItemClassifier::isAbsolutePathText(const QString& text) {
     }
     return cleanPath.length() < 260 && (
         (cleanPath.length() > 2 && cleanPath[1] == ':') ||
-        cleanPath.startsWith(QStringLiteral("\\\\")) ||
+        cleanPath.startsWith(QStringLiteral("\\")) ||
         cleanPath.startsWith('/') ||
         cleanPath.startsWith(QStringLiteral("./")) ||
         cleanPath.startsWith(QStringLiteral("../")));

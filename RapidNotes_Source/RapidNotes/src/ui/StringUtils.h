@@ -596,8 +596,7 @@ public:
     /**
      * @brief 在资源管理器中定位路径，支持预处理
      */
-
-    static void locateInExplorer(const QString& path, bool select = true) {
+        static void locateInExplorer(const QString& path, bool select = true) {
 #ifdef Q_OS_WIN
         if (path.isEmpty()) return;
         // 使用 QUrl::fromUserInput 处理包含 file:/// 协议或 URL 编码字符的路径
