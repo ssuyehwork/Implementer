@@ -2,14 +2,6 @@
 #define QUICKNOTEDELEGATE_H
 
 #include <QStyledItemDelegate>
-#include <QPainter>
-#include <QDateTime>
-#include <QFileInfo>
-#include "../models/NoteModel.h"
-#include "IconHelper.h"
-#include "ToolTipOverlay.h"
-#include <QHelpEvent>
-#include <QAbstractItemView>
 
 class QuickNoteDelegate : public QStyledItemDelegate {
     Q_OBJECT
