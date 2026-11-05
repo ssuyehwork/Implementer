@@ -3309,8 +3309,7 @@ bool DatabaseManager::addTagsToNote(int noteId, const QStringList& tags) {
     if (note.isEmpty()) return false;
     
     QStringList finalTags = RapidNotes::TagCodec::split(note["tags"].toString());
-    finalTags.append(RapidNotes::TagCodec::normalize(tags));
-    finalTags = RapidNotes::TagCodec::normalize(finalTags);
+    RapidNotes::TagCodec::merge(finalTags, tags);
     
     // 2026-05-09 按照用户要求：严禁使用 "逗号+空格"，统一使用纯逗号分割。
     QString tagsString = RapidNotes::TagCodec::join(finalTags);
