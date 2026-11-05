@@ -833,7 +833,7 @@ int DatabaseManager::addNote(const QString& title, const QString& content, const
         if (!m_db.isOpen()) { qDebug() << "[DB] 错误: 数据库未打开"; return 0; }
 
         QString finalColor = color.isEmpty() ? "#2d2d2d" : color;
-        QStringList finalTags = tags;
+        QStringList finalTags = RapidNotes::TagCodec::normalize(tags);
 
         // 查重：如果内容已存在，则更新标题、标签及分类
         QSqlQuery checkQuery(m_db);
@@ -961,7 +961,7 @@ int DatabaseManager::addNote(const QString& title, const QString& content, const
             recordAccess(lastId.toInt());
             
             // 2026-05-01 按照用户要求：同步物理化存储唯一标签
-            syncNoteTags(lastId.toInt(), cleanedFinalTags);
+            syncNoteTags(lastId.toInt(), finalTags);
 
             QSqlQuery fetch(m_db);
             fetch.prepare("SELECT * FROM notes WHERE id = :id");
@@ -1051,7 +1051,7 @@ bool DatabaseManager::updateNote(int id, const QString& title, const QString& co
         
         if (success) {
             // 2026-05-01 按照用户要求：同步物理化更新唯一标签
-            syncNoteTags(id, trimmedTags);
+            syncNoteTags(id, RapidNotes::TagCodec::normalize(tags));
             markDirty();
         }
     }
