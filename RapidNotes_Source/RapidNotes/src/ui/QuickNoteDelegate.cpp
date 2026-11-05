@@ -1,6 +1,10 @@
 #include "QuickNoteDelegate.h"
 #include "QuickWindow.h"
+#include <QPainter>
+#include <QDateTime>
 #include <QFileInfo>
+#include "../models/NoteModel.h"
+#include "IconHelper.h"
 
 QuickNoteDelegate::QuickNoteDelegate(QObject* parent) : QStyledItemDelegate(parent) {}
 
