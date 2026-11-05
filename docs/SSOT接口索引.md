@@ -123,3 +123,18 @@
    - 用途：按保持纵横比与平滑缩放算法（`Qt::SmoothTransformation`）生成缩略图 QImage。
 2. `QIcon RapidNotes::ThumbnailMaker::makeThumbnailIcon(const QImage& sourceImage, const QSize& targetSize = QSize(64, 64))`
    - 用途：将缩略图转换为可直接用于 Model DecorationRole 的 QIcon。
+
+---
+
+## 7. 全局配置键名唯一真理源 (SettingsKeys) [待建立]
+
+### `RapidNotes::SettingsKeys` (`src/core/SettingsKeys.h` - 待建立)
+- **它是哪一件事实的唯一来源**：全工程 `QSettings` 组织名、应用名与配置键名字符串常量。
+- **用途与适用场景**：统一管理快捷键设置、外观窗口状态、搜索历史与系统行为配置项，彻底杜绝裸手写字符串。
+- **禁止在别处重复实现的内容**：严禁在各窗口、对话框或工具类中直接写 `"auto_start"`、`"minimize_to_tray"`、`"font_size"` 等字符串字面量。
+- **主要调用方**：`SettingsWindow`、`QuickWindow`、`SearchAppWindow`、`FloatingBall`、`FileSearchWidget`、`KeywordSearchWidget`。
+
+#### 待建立接口规范：
+1. `const QString RapidNotes::SettingsKeys::Organization`
+2. `const QString RapidNotes::SettingsKeys::Application`
+3. 各业务分类键名字段常量（如 `General_AutoStart`, `Appearance_Theme`, `Hotkeys_QuickWindow` 等）。
