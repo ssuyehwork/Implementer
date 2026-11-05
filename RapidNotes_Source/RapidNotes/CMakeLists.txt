@@ -185,6 +185,12 @@ endif()
 
 add_executable(RapidNotes ${SOURCES})
 
+# 从静态 Qt 中排除无用的 PostgreSQL 驱动，彻底消除对 libpq.dll、libssl-3-x64.dll、libintl-9.dll 的依赖
+qt_import_plugins(RapidNotes
+    INCLUDE_BY_DEFAULT
+    EXCLUDE Qt6::QPSQLDriverPlugin
+)
+
 # 显式指定 Target 级别的静态运行时
 set_property(TARGET RapidNotes PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
