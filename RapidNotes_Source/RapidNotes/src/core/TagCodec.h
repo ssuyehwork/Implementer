@@ -11,8 +11,11 @@ namespace RapidNotes {
  */
 class TagCodec {
 public:
-    // 拆分：同时支持半角逗号 `,` 和全角逗号 `，`
+    // 拆分：同时支持半角逗号 `,` 和全角逗号 `，`，自动清洗首尾空白、空项并保序去重
     static QStringList split(const QString& tagsStr);
+
+    // 规范化：对已有标签列表执行逐项 trim、剔除空项并保序去重
+    static QStringList normalize(const QStringList& tags);
 
     // 拼接：严格使用半角逗号 `,` 连接，无空格
     static QString join(const QStringList& tags);

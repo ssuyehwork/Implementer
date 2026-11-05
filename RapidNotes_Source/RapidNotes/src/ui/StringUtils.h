@@ -23,6 +23,7 @@
 #include <QByteArray>
 #include <QCoreApplication>
 #include <vector>
+#include "../core/ItemType.h"
 #include <functional>
 #include "../core/ClipboardMonitor.h"
 
@@ -335,8 +336,10 @@ public:
             QString content = note.value("content").toString();
             QByteArray blob = note.value("data_blob").toByteArray();
 
+            RapidNotes::ItemType::Type itemTypeEnum = RapidNotes::ItemType::fromString(type);
+
             // 1. 图片类型：直接复制二进制图
-            if (type == "image") {
+            if (itemTypeEnum == RapidNotes::ItemType::Type::Image) {
                 QImage img;
                 img.loadFromData(blob);
                 if (!img.isNull()) {
@@ -347,7 +350,7 @@ public:
             }
 
             // 2. 文件/文件夹/路径相关类型：复制为文件 URL (支持粘贴到资源管理器或聊天软件)
-            bool isFilePath = (type == "file" || type == "local_file" || type == "folder" || type == "local_folder" || type == "local_batch");
+            bool isFilePath = RapidNotes::ItemType::isFileOrFolder(itemTypeEnum);
             QString plainContent = htmlToPlainText(content).trimmed();
             if (!isFilePath) {
                 // 智能检测文本是否为存在的物理路径
@@ -359,7 +362,7 @@ public:
 
             if (isFilePath) {
                 QStringList rawPaths;
-                if (type == "local_batch") {
+                if (itemTypeEnum == RapidNotes::ItemType::Type::LocalBatch) {
                     QString fullPath = content;
                     if (content.startsWith("attachments/")) {
                         fullPath = QCoreApplication::applicationDirPath() + "/" + content;
@@ -481,7 +484,8 @@ public:
         QString hrHtml = "<hr style='border: 0; border-top: 1px solid #444; margin: 10px 0;'>";
         QString html;
 
-        if (type == "color") {
+        RapidNotes::ItemType::Type itemTypeEnum = RapidNotes::ItemType::fromString(type);
+        if (itemTypeEnum == RapidNotes::ItemType::Type::Color) {
             int colorRectHeight = (int)(200 * zoomFactor);
             html = QString("%1%2"
                            "<div style='margin: 20px; text-align: center;'>"
@@ -489,7 +493,7 @@ public:
                            "  <h1 style='color: white; margin-top: 20px; font-family: Consolas; font-size: 2.5em;'>%3</h1>"
                            "</div>")
                    .arg(titleHtml, hrHtml, content).arg(colorRectHeight);
-        } else if (type == "image" && !data.isEmpty()) {
+        } else if (itemTypeEnum == RapidNotes::ItemType::Type::Image && !data.isEmpty()) {
             // [OPTIMIZED] 动态计算图片预览宽度
             int imgWidth = (int)(450 * zoomFactor);
             html = QString("%1%2<div style='text-align: center;'><img src='data:image/png;base64,%3' width='%4'></div>")

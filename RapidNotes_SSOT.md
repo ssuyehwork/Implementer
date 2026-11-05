@@ -119,10 +119,13 @@
   1. `QStringList RapidNotes::TagCodec::split(const QString& tagsStr)`
      - 签名：`static QStringList split(const QString& tagsStr);`
      - 用途：拆分标签字符串，同时支持半角逗号 `,` 与全角逗号 `，`，自动清洗首尾空白、去重与过滤空项。
-  2. `QString RapidNotes::TagCodec::join(const QStringList& tags)`
+  2. `QStringList RapidNotes::TagCodec::normalize(const QStringList& tags)`
+     - 签名：`static QStringList normalize(const QStringList& tags);`
+     - 用途：对已有标签列表执行逐项 trim、剔除空项并保序去重。
+  3. `QString RapidNotes::TagCodec::join(const QStringList& tags)`
      - 签名：`static QString join(const QStringList& tags);`
      - 用途：持久化与数据存储用拼接，严格使用纯半角逗号 `,` 无空格连接。
-  3. `QString RapidNotes::TagCodec::joinDisplay(const QStringList& tags)`
+  4. `QString RapidNotes::TagCodec::joinDisplay(const QStringList& tags)`
      - 签名：`static QString joinDisplay(const QStringList& tags);`
      - 用途：界面展示与文本框回填专用，使用半角逗号加空格 `, ` 连接。
 
@@ -247,7 +250,7 @@
 | 2 | 文本类型判定规则 | `RapidNotes::ItemClassifier` | `detectIngestType`, `detectDisplayCategory`, `isUrl`, `isHexColor` | 纯内存判定，彻底与物理磁盘解耦 |
 | 3 | 路径种类与图标样式 | `RapidNotes::PathSummary` | `summarize`, `summarizeFromSemicolonString`, `getIconName`, `getIconColor` | 单文件/单文件夹/多文件/多文件夹统一图标与色值 |
 | 4 | 字数阶梯与统计清洗 | `RapidNotes::WordBucket` | `calculate` | 阶梯清洗阈值 0..1001 严格统一 |
-| 5 | 标签编解码与双向流转 | `RapidNotes::TagCodec` | `split`, `join`, `joinDisplay` | 唯一标签拆分与拼接实现，杜绝手工造轮子 |
+| 5 | 标签编解码与双向流转 | `RapidNotes::TagCodec` | `split`, `normalize`, `join`, `joinDisplay` | 唯一标签拆分、规范化与拼接实现，杜绝手工造轮子 |
 | 6 | 图片 64x64 缩略图 | `RapidNotes::ThumbnailMaker` | `makeThumbnail`, `makeThumbnailIcon` | 平滑纵横比缩略图唯一实现 |
 | 7 | 矢量图标渲染与缓存 | `IconHelper` | `getIcon` | 全局线程安全矢量渲染与缓存 |
 | 8 | 矢量图标 SVG 字典 | `SvgIcons` | `icons` | 原始矢量数据字典 |

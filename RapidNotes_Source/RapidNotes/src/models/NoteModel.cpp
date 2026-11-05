@@ -105,7 +105,8 @@ QVariant NoteModel::data(const QModelIndex& index, int role) const {
             if (ratingStr.isEmpty()) ratingStr = "无";
 
             QString preview;
-            if (note.value("item_type").toString() == "image") {
+            RapidNotes::ItemType::Type itype = RapidNotes::ItemType::fromString(note.value("item_type").toString());
+            if (itype == RapidNotes::ItemType::Type::Image) {
                 QByteArray ba = note.value("data_blob").toByteArray();
                 preview = QString("<img src='data:image/png;base64,%1' width='300'>").arg(QString(ba.toBase64()));
             } else {
@@ -171,8 +172,10 @@ QVariant NoteModel::data(const QModelIndex& index, int role) const {
             // 同时为了保证 UI 列表项不为空白，非文本项将显示内容路径或类型占位符。
             QString type = note.value("item_type").toString();
             QString content = note.value("content").toString();
-            if (type == "text" || type.isEmpty() || type == "ocr_text" || type == "captured_message" || 
-                type == "file" || type == "folder" || type == "files" || type == "folders") {
+            RapidNotes::ItemType::Type itemTypeEnum = RapidNotes::ItemType::fromString(type);
+            if (type.isEmpty() || RapidNotes::ItemType::isPureText(itemTypeEnum) ||
+                itemTypeEnum == RapidNotes::ItemType::Type::File || itemTypeEnum == RapidNotes::ItemType::Type::Folder ||
+                itemTypeEnum == RapidNotes::ItemType::Type::Files || itemTypeEnum == RapidNotes::ItemType::Type::Folders) {
                 QString plain = StringUtils::htmlToPlainText(content);
                 QString display = plain.replace('\n', ' ').replace('\r', ' ').trimmed().left(150);
                 if (!display.isEmpty()) return display;
@@ -265,10 +268,10 @@ QMimeData* NoteModel::mimeData(const QModelIndexList& indexes) const {
                     firstImage.loadFromData(blob);
                 }
                 plainTexts << "[截图]";
-            } else if (type == "file" || type == "folder" || type == "files" || type == "folders" || type == "local_file" || type == "local_folder" || type == "local_batch") {
+            } else if (RapidNotes::ItemType::isFileOrFolder(RapidNotes::ItemType::fromString(type))) {
                 // 支持文件路径导出
                 QStringList rawPaths;
-                if (type == "local_batch") {
+                if (RapidNotes::ItemType::fromString(type) == RapidNotes::ItemType::Type::LocalBatch) {
                     QString fullPath = content;
                     if (content.startsWith("attachments/")) fullPath = QCoreApplication::applicationDirPath() + "/" + content;
                     QDir dir(fullPath);

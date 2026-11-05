@@ -1,4 +1,5 @@
 #include "DatabaseManager.h"
+#include "ItemType.h"
 #include "WordBucket.h"
 #include "TagCodec.h"
 #include <QDebug>
@@ -32,10 +33,11 @@
 namespace {
     // 2026-04-09 按照用户要求：采用纯动态后缀解析架构，彻底废弃并移除所有静态白/黑名单
     QString extractFileExtensions(const QString& itemType, const QString& content) {
-        if (itemType == "link") return "Link";
+        RapidNotes::ItemType::Type type = RapidNotes::ItemType::fromString(itemType);
+        if (type == RapidNotes::ItemType::Type::Link) return "Link";
         
         // 仅处理文件/文件夹相关类型
-        if (itemType != "file" && itemType != "local_file" && itemType != "local_batch" && itemType != "folder" && itemType != "local_folder") {
+        if (!RapidNotes::ItemType::isFileOrFolder(type)) {
             return "";
         }
         
@@ -54,10 +56,6 @@ namespace {
         QStringList result = extensions.values();
         result.sort();
         return result.join(", ");
-    }
-
-    int calculateWordBucket(const QString& content, const QString& itemType) {
-        return RapidNotes::WordBucket::calculate(content, itemType);
     }
 
 }
@@ -739,7 +737,7 @@ bool DatabaseManager::createTables() {
 
                 while (fetch.next()) {
                     int id = fetch.value(0).toInt();
-                    upWC.addBindValue(calculateWordBucket(fetch.value(1).toString(), fetch.value(2).toString()));
+                    upWC.addBindValue(RapidNotes::WordBucket::calculate(fetch.value(1).toString(), fetch.value(2).toString()));
                     upWC.addBindValue(id);
                     upWC.exec();
                     
@@ -819,7 +817,7 @@ int DatabaseManager::addNote(const QString& title, const QString& content, const
 
     // [USER_REQUEST] 2026-04-08 网址自动归档：发现 link 类型时自动在“我的分类”中创建 Link 组
     int finalCategoryId = categoryId;
-    if (itemType == "link") {
+    if (RapidNotes::ItemType::fromString(itemType) == RapidNotes::ItemType::Type::Link) {
         int linkCatId = getOrCreateCategoryByName("Link", -1, "#1abc9c");
         if (linkCatId > 0) finalCategoryId = linkCatId;
     }
@@ -947,12 +945,7 @@ int DatabaseManager::addNote(const QString& title, const QString& content, const
         query.bindValue(":title", title);
         query.bindValue(":content", content);
         
-        QStringList cleanedFinalTags;
-        for (const QString& t : finalTags) {
-            QString tr = t.trimmed();
-            if (!tr.isEmpty() && !cleanedFinalTags.contains(tr)) cleanedFinalTags << tr;
-        }
-        query.bindValue(":tags", RapidNotes::TagCodec::joinDisplay(cleanedFinalTags));
+        query.bindValue(":tags", RapidNotes::TagCodec::joinDisplay(RapidNotes::TagCodec::normalize(finalTags)));
         
         query.bindValue(":color", finalColor);
         query.bindValue(":category_id", finalCategoryId == -1 ? QVariant(QMetaType::fromType<int>()) : finalCategoryId);
@@ -965,7 +958,7 @@ int DatabaseManager::addNote(const QString& title, const QString& content, const
         query.bindValue(":source_title", sourceTitle);
         query.bindValue(":remark", remark);
         query.bindValue(":exts", fileExtensions);
-        query.bindValue(":wc", calculateWordBucket(content, itemType));
+        query.bindValue(":wc", RapidNotes::WordBucket::calculate(content, itemType));
         if (query.exec()) {
             success = true;
             markDirty();
@@ -1042,14 +1035,8 @@ bool DatabaseManager::updateNote(int id, const QString& title, const QString& co
         query.bindValue(":stitle", sourceTitle);
         query.bindValue(":remark", remark);
         query.bindValue(":exts", fileExtensions);
-        query.bindValue(":wc", calculateWordBucket(content, itemType));
-        
-        QStringList trimmedTags;
-        for (const QString& t : tags) {
-            QString tr = t.trimmed();
-            if (!tr.isEmpty() && !trimmedTags.contains(tr)) trimmedTags << tr;
-        }
-        query.bindValue(":tags", RapidNotes::TagCodec::joinDisplay(trimmedTags));
+        query.bindValue(":wc", RapidNotes::WordBucket::calculate(content, itemType));
+        query.bindValue(":tags", RapidNotes::TagCodec::joinDisplay(RapidNotes::TagCodec::normalize(tags)));
         
         query.bindValue(":updated_at", currentTime);
         query.bindValue(":category_id", categoryId == -1 ? QVariant() : categoryId);
@@ -1362,7 +1349,7 @@ bool DatabaseManager::updateNoteState(int id, const QString& column, const QVari
                 if (column == "content" || column == "item_type") {
                     QSqlQuery up(m_db);
                     up.prepare("UPDATE notes SET word_count = ? WHERE id = ?");
-                    up.addBindValue(calculateWordBucket(content, itemType));
+                    up.addBindValue(RapidNotes::WordBucket::calculate(content, itemType));
                     up.addBindValue(id);
                     up.exec();
                 }
@@ -1457,7 +1444,7 @@ bool DatabaseManager::updateNoteStateBatch(const QList<int>& ids, const QString&
                     if (fetch.exec() && fetch.next()) {
                         QSqlQuery up(m_db);
                         up.prepare("UPDATE notes SET word_count = ? WHERE id = ?");
-                        up.addBindValue(calculateWordBucket(fetch.value(0).toString(), fetch.value(1).toString()));
+                        up.addBindValue(RapidNotes::WordBucket::calculate(fetch.value(0).toString(), fetch.value(1).toString()));
                         up.addBindValue(id);
                         up.exec();
                     }
@@ -3053,14 +3040,15 @@ QVariantMap DatabaseManager::getFilterStats(const QString& keyword, const QStrin
                 for (const QString& e : parts) bizTypes[e.trimmed()]++;
             } else {
                 // 回退逻辑：处理非文件类的语义化类型
-                if (itemType == "image") bizTypes["截图"]++;
-                else if (itemType == "code") bizTypes["脚本代码"]++;
-                else if (itemType == "text") bizTypes["纯文本"]++;
-                else if (itemType == "link") bizTypes["Link"]++;
-                else if (itemType == "file") bizTypes["数据库附件"]++;
-                else if (itemType == "local_file") bizTypes["本地文件"]++;
-                else if (itemType == "local_folder" || itemType == "folder") bizTypes["文件夹"]++;
-                else if (itemType == "local_batch") bizTypes["批量托管"]++;
+                RapidNotes::ItemType::Type type = RapidNotes::ItemType::fromString(itemType);
+                if (type == RapidNotes::ItemType::Type::Image) bizTypes["截图"]++;
+                else if (type == RapidNotes::ItemType::Type::Code) bizTypes["脚本代码"]++;
+                else if (type == RapidNotes::ItemType::Type::Text) bizTypes["纯文本"]++;
+                else if (type == RapidNotes::ItemType::Type::Link) bizTypes["Link"]++;
+                else if (type == RapidNotes::ItemType::Type::File) bizTypes["数据库附件"]++;
+                else if (type == RapidNotes::ItemType::Type::LocalFile) bizTypes["本地文件"]++;
+                else if (type == RapidNotes::ItemType::Type::LocalFolder || type == RapidNotes::ItemType::Type::Folder) bizTypes["文件夹"]++;
+                else if (type == RapidNotes::ItemType::Type::LocalBatch) bizTypes["批量托管"]++;
                 else bizTypes["其他"]++;
             }
         }
@@ -3331,19 +3319,9 @@ bool DatabaseManager::addTagsToNote(int noteId, const QStringList& tags) {
     QVariantMap note = getNoteById(noteId);
     if (note.isEmpty()) return false;
     
-    QStringList existingStrList = RapidNotes::TagCodec::split(note["tags"].toString());
-    QStringList finalTags;
-    // 确保原有标签也经过清理
-    for (const QString& t : existingStrList) {
-        QString trimmed = t.trimmed();
-        if (!trimmed.isEmpty() && !finalTags.contains(trimmed)) finalTags << trimmed;
-    }
-    
-    // 合并新标签
-    for (const QString& t : tags) {
-        QString trimmed = t.trimmed();
-        if (!trimmed.isEmpty() && !finalTags.contains(trimmed)) finalTags << trimmed;
-    }
+    QStringList finalTags = RapidNotes::TagCodec::split(note["tags"].toString());
+    finalTags.append(RapidNotes::TagCodec::normalize(tags));
+    finalTags = RapidNotes::TagCodec::normalize(finalTags);
     
     // 2026-05-09 按照用户要求：严禁使用 "逗号+空格"，统一使用纯逗号分割。
     QString tagsString = RapidNotes::TagCodec::join(finalTags);
@@ -3584,18 +3562,32 @@ void DatabaseManager::applyCommonFilters(QString& whereClause, QVariantList& par
             if (!typeCriteria.isEmpty()) { 
                 QStringList bizConds;
                 for (const QString& label : typeCriteria) {
-                    if (label == "截图") bizConds << "item_type = 'image'";
-                    else if (label == "脚本代码") bizConds << "item_type = 'code'";
-                    else if (label == "纯文本") bizConds << "item_type = 'text'";
-                    else if (label == "Link" || label == "网页链接") bizConds << "item_type = 'link'";
-                    else if (label == "数据库附件") bizConds << "item_type = 'file'";
-                    else if (label == "本地文件") bizConds << "item_type = 'local_file'";
+                    if (label == "截图") bizConds << QString("item_type = '%1'").arg(RapidNotes::ItemType::toString(RapidNotes::ItemType::Type::Image));
+                    else if (label == "脚本代码") bizConds << QString("item_type = '%1'").arg(RapidNotes::ItemType::toString(RapidNotes::ItemType::Type::Code));
+                    else if (label == "纯文本") bizConds << QString("item_type = '%1'").arg(RapidNotes::ItemType::toString(RapidNotes::ItemType::Type::Text));
+                    else if (label == "Link" || label == "网页链接") bizConds << QString("item_type = '%1'").arg(RapidNotes::ItemType::toString(RapidNotes::ItemType::Type::Link));
+                    else if (label == "数据库附件") bizConds << QString("item_type = '%1'").arg(RapidNotes::ItemType::toString(RapidNotes::ItemType::Type::File));
+                    else if (label == "本地文件") bizConds << QString("item_type = '%1'").arg(RapidNotes::ItemType::toString(RapidNotes::ItemType::Type::LocalFile));
                     else if (label == "文件夹") {
                         // 2026-05-03 按照用户要求：修正文件夹筛选逻辑，同步检查 item_type 与物理后缀标记
-                        bizConds << "(item_type IN ('local_folder', 'folder') OR file_extensions = '文件夹' OR file_extensions LIKE '文件夹, %' OR file_extensions LIKE '%, 文件夹' OR file_extensions LIKE '%, 文件夹, %')";
+                        bizConds << QString("(item_type IN ('%1', '%2') OR file_extensions = '文件夹' OR file_extensions LIKE '文件夹, %' OR file_extensions LIKE '%, 文件夹' OR file_extensions LIKE '%, 文件夹, %')")
+                                    .arg(RapidNotes::ItemType::toString(RapidNotes::ItemType::Type::LocalFolder),
+                                         RapidNotes::ItemType::toString(RapidNotes::ItemType::Type::Folder));
                     }
-                    else if (label == "批量托管") bizConds << "item_type = 'local_batch'";
-                    else if (label == "其他") bizConds << "(file_extensions = '' AND item_type NOT IN ('image', 'code', 'text', 'link', 'file', 'local_file', 'local_folder', 'folder', 'local_batch'))";
+                    else if (label == "批量托管") bizConds << QString("item_type = '%1'").arg(RapidNotes::ItemType::toString(RapidNotes::ItemType::Type::LocalBatch));
+                    else if (label == "其他") {
+                        QString notInList = QString("'%1', '%2', '%3', '%4', '%5', '%6', '%7', '%8', '%9'")
+                            .arg(RapidNotes::ItemType::toString(RapidNotes::ItemType::Type::Image),
+                                 RapidNotes::ItemType::toString(RapidNotes::ItemType::Type::Code),
+                                 RapidNotes::ItemType::toString(RapidNotes::ItemType::Type::Text),
+                                 RapidNotes::ItemType::toString(RapidNotes::ItemType::Type::Link),
+                                 RapidNotes::ItemType::toString(RapidNotes::ItemType::Type::File),
+                                 RapidNotes::ItemType::toString(RapidNotes::ItemType::Type::LocalFile),
+                                 RapidNotes::ItemType::toString(RapidNotes::ItemType::Type::LocalFolder),
+                                 RapidNotes::ItemType::toString(RapidNotes::ItemType::Type::Folder),
+                                 RapidNotes::ItemType::toString(RapidNotes::ItemType::Type::LocalBatch));
+                        bizConds << QString("(file_extensions = '' AND item_type NOT IN (%1))").arg(notInList);
+                    }
                     else {
                         // [OPTIMIZATION] 2026-04-08：物理移除消耗性能的 REPLACE，直接利用存储时的规范化格式 (, ext1, ext2,)
                         // 注：在 addNote 时我们已经确保 file_extensions 存储格式为 "ext1, ext2"

@@ -96,10 +96,12 @@
 
 #### 公开接口列表：
 1. `QStringList RapidNotes::TagCodec::split(const QString& tagsStr)`
-   - 用途：拆分标签字符串，同时支持半角逗号 `,` 与全角逗号 `，`，自动清洗首尾空白与空项。
-2. `QString RapidNotes::TagCodec::join(const QStringList& tags)`
+   - 用途：拆分标签字符串，同时支持半角逗号 `,` 与全角逗号 `，`，自动清洗首尾空白、空项并保序去重。
+2. `QStringList RapidNotes::TagCodec::normalize(const QStringList& tags)`
+   - 用途：对已有标签列表执行逐项 trim、剔除空项并保序去重。
+3. `QString RapidNotes::TagCodec::join(const QStringList& tags)`
    - 用途：持久化与数据存储用拼接，严格使用纯半角逗号 `,` 无空格连接。
-3. `QString RapidNotes::TagCodec::joinDisplay(const QStringList& tags)`
+4. `QString RapidNotes::TagCodec::joinDisplay(const QStringList& tags)`
    - 用途：界面展示与文本框回填专用，使用半角逗号加空格 `, ` 连接。
 
 ---
