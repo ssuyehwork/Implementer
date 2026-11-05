@@ -145,11 +145,6 @@ private:
     QStringList m_tagRemovalTargetSnapshot;
     QTimer* m_tagRemoveDebounceTimer = nullptr;
 
-    QWidget* m_dragOverlayWidget = nullptr;
-    QLabel* m_dragOverlayLabel = nullptr;
-    void showDragOverlay(int activeCount);
-    void hideDragOverlay();
-    void installRecursiveDragEventFilter(QWidget* widget);
 
 private slots:
     void onTagDeleted(const QString& text);

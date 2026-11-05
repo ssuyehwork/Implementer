@@ -1,25 +1,12 @@
 #include "FilterPanel.h"
 #include "components/ColorDot.h"
-#include "../meta/MarkedFolderService.h"
-#include <QDragEnterEvent>
-#include <QDragMoveEvent>
-#include <QDragLeaveEvent>
-#include <QDropEvent>
-#include <QMimeData>
-#include <QUrl>
-#include "ThumbnailStatusGroup.h"
-#include "DuplicateStatusGroup.h"
-#include "LinkStatusGroup.h"
-#include "NoteStatusGroup.h"
-#include "TagStatusGroup.h"
-#include "AspectRatioGroup.h"
-#include "FileSizeGroup.h"
-
 #include "ColorLabelGroup.h"
 #include "RatingGroup.h"
 #include "FileTypeGroup.h"
 #include "CreateDateGroup.h"
 #include "ModifyDateGroup.h"
+#include "NoteStatusGroup.h"
+#include "TagStatusGroup.h"
 #include "../core/AppConfig.h"
 #include <QSet>
 #include <QDate>
@@ -578,74 +565,12 @@ void FilterPanel::rebuildGroups() {
         m_containerLayout->insertWidget(m_containerLayout->count() - 1, g);
     }
 
-    // ── 7. 链接 ──────────────────────────────────────────
-    {
-        QVBoxLayout* gl = nullptr;
-        QWidget* g = buildGroup("链接", gl);
-
-        LinkStatusGroup::populate(g, gl, m_filterModel, m_currentStats, currentSt,
-            [this](QVBoxLayout* layout, const QString& label, int count, const QString& rowKey) {
-                return addFilterRow(layout, label, count, QColor(), rowKey);
-            });
-
-        m_containerLayout->insertWidget(m_containerLayout->count() - 1, g);
-    }
-
-    // ── 8. 备注 ──────────────────────────────────────────
+    // ── 7. 备注 ──────────────────────────────────────────
     {
         QVBoxLayout* gl = nullptr;
         QWidget* g = buildGroup("备注", gl);
 
         NoteStatusGroup::populate(g, gl, m_filterModel, m_currentStats, currentSt,
-            [this](QVBoxLayout* layout, const QString& label, int count, const QString& rowKey) {
-                return addFilterRow(layout, label, count, QColor(), rowKey);
-            });
-
-        m_containerLayout->insertWidget(m_containerLayout->count() - 1, g);
-    }
-
-    // ── 9. 文件大小 ──────────────────────────────────────────
-    {
-        QVBoxLayout* gl = nullptr;
-        QWidget* g = buildGroup("文件大小", gl);
-
-        FileSizeGroup::populate(g, gl, m_filterModel);
-
-        m_containerLayout->insertWidget(m_containerLayout->count() - 1, g);
-    }
-
-    // ── 11. 图像比例 ──────────────────────────────────────────
-    {
-        QVBoxLayout* gl = nullptr;
-        QWidget* g = buildGroup("图像比例", gl);
-
-        AspectRatioGroup::populate(g, gl, m_filterModel, m_currentStats, currentSt,
-            [this](QVBoxLayout* layout, const QString& label, int count, const QString& rowKey) {
-                return addFilterRow(layout, label, count, QColor(), rowKey);
-            });
-
-        m_containerLayout->insertWidget(m_containerLayout->count() - 1, g);
-    }
-
-    // ── 12. 重复状态 ───────────────────────────
-    {
-        QVBoxLayout* gl = nullptr;
-        QWidget* g = buildGroup("重复状态", gl);
-
-        DuplicateStatusGroup::populate(gl, m_filterModel, m_currentStats, currentSt,
-            [this](QVBoxLayout* layout, const QString& label, int count, const QString& rowKey) {
-                return addFilterRow(layout, label, count, QColor(), rowKey);
-            });
-
-        m_containerLayout->insertWidget(m_containerLayout->count() - 1, g);
-    }
-
-    // ── 13. 缩略图状态 ───────────────────────────
-    {
-        QVBoxLayout* gl = nullptr;
-        QWidget* g = buildGroup("缩略图状态", gl);
-
-        ThumbnailStatusGroup::populate(gl, m_filterModel, m_currentStats, currentSt,
             [this](QVBoxLayout* layout, const QString& label, int count, const QString& rowKey) {
                 return addFilterRow(layout, label, count, QColor(), rowKey);
             });
@@ -888,120 +813,8 @@ void FilterPanel::updateHeaderStatus() {
     m_btnToggleGroups->setProperty("tooltipText", allCollapsed ? "展开所有分组" : "折叠所有分组");
 }
 
-void FilterPanel::showDragOverlay(int activeCount) {
-    Q_UNUSED(activeCount);
-    if (!m_dragOverlayWidget) {
-        m_dragOverlayWidget = new QWidget(this);
-        m_dragOverlayWidget->setObjectName("DragOverlayWidget");
-        m_dragOverlayWidget->setAttribute(Qt::WA_TransparentForMouseEvents);
-
-        QVBoxLayout* layout = new QVBoxLayout(m_dragOverlayWidget);
-        layout->setContentsMargins(10, 10, 10, 10);
-        m_dragOverlayLabel = new QLabel(m_dragOverlayWidget);
-        m_dragOverlayLabel->setAlignment(Qt::AlignCenter);
-        m_dragOverlayLabel->setStyleSheet("color: #FFFFFF; font-size: 13px; font-weight: bold; line-height: 1.4;");
-        layout->addWidget(m_dragOverlayLabel);
-    }
-
-    auto activeFolders = MarkedFolderService::instance().getActiveMarked();
-    if (!activeFolders.isEmpty()) {
-        QStringList lines;
-        lines << QString("项目即将分发至 %1 个目标文件夹").arg(activeFolders.size());
-        lines << ""; // 空行打散间距
-        for (const auto& folderPath : activeFolders) {
-            QString name = QFileInfo(folderPath).fileName();
-            if (name.isEmpty()) name = folderPath;
-            lines << name;
-        }
-        m_dragOverlayLabel->setText(lines.join("\n"));
-    } else {
-        m_dragOverlayLabel->setText("尚未标记目的地");
-    }
-
-    m_dragOverlayWidget->setGeometry(rect());
-    m_dragOverlayWidget->show();
-    m_dragOverlayWidget->raise();
-}
-
-void FilterPanel::hideDragOverlay() {
-    if (m_dragOverlayWidget) {
-        m_dragOverlayWidget->hide();
-    }
-}
-
-void FilterPanel::installRecursiveDragEventFilter(QWidget* widget) {
-    if (!widget) return;
-    widget->setAcceptDrops(true);
-    widget->installEventFilter(this);
-    for (QObject* child : widget->children()) {
-        if (QWidget* childWidget = qobject_cast<QWidget*>(child)) {
-            installRecursiveDragEventFilter(childWidget);
-        }
-    }
-}
-
-void FilterPanel::dragEnterEvent(QDragEnterEvent* event) {
-    if (event->mimeData() && event->mimeData()->hasUrls()) {
-        int activeCount = MarkedFolderService::instance().getActiveMarked().size();
-        showDragOverlay(activeCount);
-        if (activeCount > 0) {
-            event->acceptProposedAction();
-        } else {
-            event->ignore();
-        }
-        return;
-    }
-    QFrame::dragEnterEvent(event);
-}
-
-void FilterPanel::dragMoveEvent(QDragMoveEvent* event) {
-    if (event->mimeData() && event->mimeData()->hasUrls()) {
-        int activeCount = MarkedFolderService::instance().getActiveMarked().size();
-        showDragOverlay(activeCount);
-        if (activeCount > 0) {
-            event->acceptProposedAction();
-        } else {
-            event->ignore();
-        }
-        return;
-    }
-    QFrame::dragMoveEvent(event);
-}
-
-void FilterPanel::dragLeaveEvent(QDragLeaveEvent* event) {
-    hideDragOverlay();
-    QFrame::dragLeaveEvent(event);
-}
-
-void FilterPanel::dropEvent(QDropEvent* event) {
-    hideDragOverlay();
-    if (event->mimeData() && event->mimeData()->hasUrls()) {
-        QStringList paths;
-        for (const QUrl& url : event->mimeData()->urls()) {
-            QString localPath = url.toLocalFile();
-            if (!localPath.isEmpty()) {
-                paths.append(localPath);
-            }
-        }
-
-        int activeCount = MarkedFolderService::instance().getActiveMarked().size();
-        if (activeCount > 0) {
-            MarkedFolderService::instance().executeTransferToMarked(paths);
-            event->acceptProposedAction();
-        } else {
-            ToolTipOverlay::instance()->showToast("尚未标记目的地，请先标记文件夹", 2500, QColor("#e81123"));
-            event->ignore();
-        }
-        return;
-    }
-    QFrame::dropEvent(event);
-}
-
 void FilterPanel::resizeEvent(QResizeEvent* event) {
     QFrame::resizeEvent(event);
-    if (m_dragOverlayWidget && m_dragOverlayWidget->isVisible()) {
-        m_dragOverlayWidget->setGeometry(rect());
-    }
 }
 
 void FilterPanel::onToggleAllGroupsClicked() {

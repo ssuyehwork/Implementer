@@ -1,12 +1,5 @@
 #include "MetaPanel.h"
 #include "ColorPicker.h"
-#include "../meta/MarkedFolderService.h"
-#include <QDragEnterEvent>
-#include <QDragMoveEvent>
-#include <QDragLeaveEvent>
-#include <QDropEvent>
-#include <QMimeData>
-#include <QUrl>
 #include "CardPainterHelper.h"
 #include "UiHelper.h"
 #include "../meta/HistoryService.h"
@@ -755,120 +748,8 @@ void MetaPanel::flushPendingTagDeletions() {
     emit tagsRemoveRequested(targetPaths, tagsToRemove);
 }
 
-void MetaPanel::showDragOverlay(int activeCount) {
-    Q_UNUSED(activeCount);
-    if (!m_dragOverlayWidget) {
-        m_dragOverlayWidget = new QWidget(this);
-        m_dragOverlayWidget->setObjectName("DragOverlayWidget");
-        m_dragOverlayWidget->setAttribute(Qt::WA_TransparentForMouseEvents);
-
-        QVBoxLayout* layout = new QVBoxLayout(m_dragOverlayWidget);
-        layout->setContentsMargins(10, 10, 10, 10);
-        m_dragOverlayLabel = new QLabel(m_dragOverlayWidget);
-        m_dragOverlayLabel->setAlignment(Qt::AlignCenter);
-        m_dragOverlayLabel->setStyleSheet("color: #FFFFFF; font-size: 13px; font-weight: bold; line-height: 1.4;");
-        layout->addWidget(m_dragOverlayLabel);
-    }
-
-    auto activeFolders = MarkedFolderService::instance().getActiveMarked();
-    if (!activeFolders.isEmpty()) {
-        QStringList lines;
-        lines << QString("项目即将分发至 %1 个目标文件夹").arg(activeFolders.size());
-        lines << ""; // 空行打散间距
-        for (const auto& folderPath : activeFolders) {
-            QString name = QFileInfo(folderPath).fileName();
-            if (name.isEmpty()) name = folderPath;
-            lines << name;
-        }
-        m_dragOverlayLabel->setText(lines.join("\n"));
-    } else {
-        m_dragOverlayLabel->setText("尚未标记目的地");
-    }
-
-    m_dragOverlayWidget->setGeometry(rect());
-    m_dragOverlayWidget->show();
-    m_dragOverlayWidget->raise();
-}
-
-void MetaPanel::hideDragOverlay() {
-    if (m_dragOverlayWidget) {
-        m_dragOverlayWidget->hide();
-    }
-}
-
-void MetaPanel::installRecursiveDragEventFilter(QWidget* widget) {
-    if (!widget) return;
-    widget->setAcceptDrops(true);
-    widget->installEventFilter(this);
-    for (QObject* child : widget->children()) {
-        if (QWidget* childWidget = qobject_cast<QWidget*>(child)) {
-            installRecursiveDragEventFilter(childWidget);
-        }
-    }
-}
-
-void MetaPanel::dragEnterEvent(QDragEnterEvent* event) {
-    if (event->mimeData() && event->mimeData()->hasUrls()) {
-        int activeCount = MarkedFolderService::instance().getActiveMarked().size();
-        showDragOverlay(activeCount);
-        if (activeCount > 0) {
-            event->acceptProposedAction();
-        } else {
-            event->ignore();
-        }
-        return;
-    }
-    QFrame::dragEnterEvent(event);
-}
-
-void MetaPanel::dragMoveEvent(QDragMoveEvent* event) {
-    if (event->mimeData() && event->mimeData()->hasUrls()) {
-        int activeCount = MarkedFolderService::instance().getActiveMarked().size();
-        showDragOverlay(activeCount);
-        if (activeCount > 0) {
-            event->acceptProposedAction();
-        } else {
-            event->ignore();
-        }
-        return;
-    }
-    QFrame::dragMoveEvent(event);
-}
-
-void MetaPanel::dragLeaveEvent(QDragLeaveEvent* event) {
-    hideDragOverlay();
-    QFrame::dragLeaveEvent(event);
-}
-
-void MetaPanel::dropEvent(QDropEvent* event) {
-    hideDragOverlay();
-    if (event->mimeData() && event->mimeData()->hasUrls()) {
-        QStringList paths;
-        for (const QUrl& url : event->mimeData()->urls()) {
-            QString localPath = url.toLocalFile();
-            if (!localPath.isEmpty()) {
-                paths.append(localPath);
-            }
-        }
-
-        int activeCount = MarkedFolderService::instance().getActiveMarked().size();
-        if (activeCount > 0) {
-            MarkedFolderService::instance().executeTransferToMarked(paths);
-            event->acceptProposedAction();
-        } else {
-            ToolTipOverlay::instance()->showToast("尚未标记目的地，请先标记文件夹", 2500, QColor("#e81123"));
-            event->ignore();
-        }
-        return;
-    }
-    QFrame::dropEvent(event);
-}
-
 void MetaPanel::resizeEvent(QResizeEvent* event) {
     QFrame::resizeEvent(event);
-    if (m_dragOverlayWidget && m_dragOverlayWidget->isVisible()) {
-        m_dragOverlayWidget->setGeometry(rect());
-    }
     adjustFlowHeights();
 }
 

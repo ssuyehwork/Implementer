@@ -25,13 +25,8 @@
 namespace RapidNotes {
 
 class SearchHistoryPanel;
-class ThumbnailStatusGroup;
-class DuplicateStatusGroup;
-class LinkStatusGroup;
 class NoteStatusGroup;
 class TagStatusGroup;
-class AspectRatioGroup;
-class FileSizeGroup;
 class ColorLabelGroup;
 class RatingGroup;
 class FileTypeGroup;
@@ -134,11 +129,6 @@ private:
 
     SearchHistoryPanel* m_historyPanel = nullptr;
 
-    QWidget* m_dragOverlayWidget = nullptr;
-    QLabel* m_dragOverlayLabel = nullptr;
-    void showDragOverlay(int activeCount);
-    void hideDragOverlay();
-    void installRecursiveDragEventFilter(QWidget* widget);
     
     void saveFilterHistory(const QString& key, const QString& text);
     QStringList getFilterHistory(const QString& key) const;

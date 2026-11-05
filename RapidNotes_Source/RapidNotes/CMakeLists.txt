@@ -196,8 +196,22 @@ set(SOURCES
     src/ui/FileSearchWindow.h
     src/ui/FileStorageWindow.cpp
     src/ui/FileStorageWindow.h
+    src/ui/ColorLabelGroup.cpp
+    src/ui/ColorLabelGroup.h
+    src/ui/CreateDateGroup.cpp
+    src/ui/CreateDateGroup.h
+    src/ui/FileTypeGroup.cpp
+    src/ui/FileTypeGroup.h
     src/ui/FilterPanel.cpp
     src/ui/FilterPanel.h
+    src/ui/ModifyDateGroup.cpp
+    src/ui/ModifyDateGroup.h
+    src/ui/NoteStatusGroup.cpp
+    src/ui/NoteStatusGroup.h
+    src/ui/RatingGroup.cpp
+    src/ui/RatingGroup.h
+    src/ui/TagStatusGroup.cpp
+    src/ui/TagStatusGroup.h
     src/ui/FilterStateModel.cpp
     src/ui/FilterStateModel.h
     src/ui/FireworksOverlay.cpp
@@ -331,8 +345,18 @@ set(SOURCES
     src/ui/ViewDragDropHelper.h
     src/ui/WritingAnimation.cpp
     src/ui/WritingAnimation.h
+    src/ui/controllers/ContentChangeWatcher.cpp
+    src/ui/controllers/ContentChangeWatcher.h
+    src/ui/controllers/ContentDataLoader.cpp
+    src/ui/controllers/ContentDataLoader.h
+    src/ui/controllers/ContentFileOpsHandler.cpp
+    src/ui/controllers/ContentFileOpsHandler.h
+    src/ui/controllers/ContentKeyHandler.cpp
+    src/ui/controllers/ContentKeyHandler.h
     src/ui/controllers/ContentPaneSplitManager.cpp
     src/ui/controllers/ContentPaneSplitManager.h
+    src/ui/controllers/ContentViewCoordinator.cpp
+    src/ui/controllers/ContentViewCoordinator.h
     src/ui/controllers/ContentSortController.cpp
     src/ui/controllers/ContentSortController.h
     src/ui/controllers/PaneActivationTracker.cpp

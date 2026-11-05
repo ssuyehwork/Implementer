@@ -32,7 +32,6 @@
 #include "../../meta/MetadataManager.h"
 #include "../../meta/FavoriteDao.h"
 #include "../../meta/FavoriteService.h"
-#include "../../meta/MarkedFolderService.h"
 #include "../../meta/LibraryService.h"
 #include "ContextMenuFactory.h"
 #include "../../crypto/EncryptionManager.h"
@@ -192,7 +191,6 @@ void ContentContextMenu::showMenu(QAbstractItemView* view, const QPoint& pos) {
             QStringList selPathsDrive = m_panel->getSelectedPaths();
             if (selPathsDrive.isEmpty() && !path.isEmpty()) selPathsDrive << path;
 
-            MarkedFolderService::instance().buildMarkAction(&menu, selPathsDrive, m_panel);
             FavoriteService::instance().buildFavoriteAction(&menu, path, m_panel);
             LibraryService::instance().buildLibraryAction(&menu, selPathsDrive, m_panel);
 
@@ -321,7 +319,6 @@ void ContentContextMenu::showMenu(QAbstractItemView* view, const QPoint& pos) {
             QStringList selPathsItem = m_panel->getSelectedPaths();
             if (selPathsItem.isEmpty() && !path.isEmpty()) selPathsItem << path;
 
-            MarkedFolderService::instance().buildMarkAction(&menu, selPathsItem, m_panel);
             FavoriteService::instance().buildFavoriteAction(&menu, path, m_panel);
             LibraryService::instance().buildLibraryAction(&menu, selPathsItem, m_panel);
 
@@ -347,12 +344,6 @@ void ContentContextMenu::showMenu(QAbstractItemView* view, const QPoint& pos) {
                 QMenu* moveMenu = menu.addMenu(UiHelper::getIcon("Export-1.svg", QColor("#EEEEEE"), 18), "移动到");
                 UiHelper::applyMenuStyle(moveMenu);
 
-                QAction* actDistribute = moveMenu->addAction(UiHelper::getIcon("Destination.svg", QColor("#EEEEEE"), 16), "一键分发 (Alt+V)");
-                connect(actDistribute, &QAction::triggered, this, [this]() {
-                    QStringList selectedPaths = m_panel->getSelectedPaths();
-                    MarkedFolderService::instance().executeTransferToMarked(selectedPaths);
-                });
-                moveMenu->addSeparator();
 
                 auto performMoveTo = [this](const QString& targetDir) {
                     QStringList selectedPaths = m_panel->getSelectedPaths();

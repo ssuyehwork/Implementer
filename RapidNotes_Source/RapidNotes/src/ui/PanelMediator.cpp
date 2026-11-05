@@ -25,7 +25,6 @@
 #include <QElapsedTimer>
 #include "../core/NavigationService.h"
 #include "../core/TrashService.h"
-#include "../meta/MarkedFolderService.h"
 #include "../core/CoreEngine.h"
 #include "../core/CentralEventHub.h"
 #include "../core/VolumeOnlineManager.h"
@@ -285,19 +284,6 @@ void PanelMediator::setupConnections() {
             }
         });
 
-        connect(shortcutController, &AppShortcutController::toggleMarkedRequested, this, [this, contentPanel]() {
-            ContentPanel* target = m_activeContentPanel ? m_activeContentPanel.data() : contentPanel;
-            if (target) {
-                QStringList sel = target->getSelectedPaths();
-                if (!sel.isEmpty()) {
-                    RapidNotes::MarkedFolderService::instance().toggleMarked(sel);
-                }
-            }
-        });
-
-        connect(shortcutController, &AppShortcutController::transferToMarkedRequested, this, []() {
-            RapidNotes::MarkedFolderService::instance().executeTransferToMarked({});
-        });
 
         connect(shortcutController, &AppShortcutController::copyNamesEnumeratedRequested, this, [this, contentPanel]() {
             ContentPanel* target = m_activeContentPanel ? m_activeContentPanel.data() : contentPanel;
