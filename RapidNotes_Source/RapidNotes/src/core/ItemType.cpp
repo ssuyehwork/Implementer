@@ -55,6 +55,12 @@ bool ItemType::isFileOrFolder(Type type) {
            type == Type::LocalBatch;
 }
 
+bool ItemType::isLegacyFiveFileTypes(Type type) {
+    return type == Type::File || type == Type::LocalFile ||
+           type == Type::LocalBatch || type == Type::Folder ||
+           type == Type::LocalFolder;
+}
+
 bool ItemType::isPureText(Type type) {
     return type == Type::Text || type == Type::Code ||
            type == Type::OcrText || type == Type::CapturedMessage;

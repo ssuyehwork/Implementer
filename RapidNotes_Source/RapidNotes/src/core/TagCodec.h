@@ -17,6 +17,9 @@ public:
     // 规范化：对已有标签列表执行逐项 trim、剔除空项并保序去重
     static QStringList normalize(const QStringList& tags);
 
+    // 合并：将 incoming 标签列表合并到 target 中，自动 trim、剔除空项并保序去重，可选输出是否产生变更
+    static void merge(QStringList& target, const QStringList& incoming, bool* changed = nullptr);
+
     // 拼接：严格使用半角逗号 `,` 连接，无空格
     static QString join(const QStringList& tags);
 

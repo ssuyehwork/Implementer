@@ -36,8 +36,8 @@ namespace {
         RapidNotes::ItemType::Type type = RapidNotes::ItemType::fromString(itemType);
         if (type == RapidNotes::ItemType::Type::Link) return "Link";
         
-        // 仅处理文件/文件夹相关类型
-        if (!RapidNotes::ItemType::isFileOrFolder(type)) {
+        // 仅处理历史5种文件/文件夹相关类型 (file, local_file, local_batch, folder, local_folder)
+        if (!RapidNotes::ItemType::isLegacyFiveFileTypes(type)) {
             return "";
         }
         
@@ -847,12 +847,9 @@ int DatabaseManager::addNote(const QString& title, const QString& content, const
             QVariantMap existingNote = getNoteById(existingId);
             QString existingTagsStr = existingNote.value("tags").toString();
             QStringList existingTags = RapidNotes::TagCodec::split(existingTagsStr);
-            for(QString& t : existingTags) t = t.trimmed();
 
             // 智能合并标签
-            for (const QString& t : std::as_const(finalTags)) {
-                if (!existingTags.contains(t.trimmed())) existingTags << t.trimmed();
-            }
+            RapidNotes::TagCodec::merge(existingTags, finalTags);
 
             // 漂移保护逻辑：如果笔记已有明确分类，则优先保留原分类，防止在自动归档时发生分类位移
             int finalCatToUse = finalCategoryId;
@@ -872,9 +869,7 @@ int DatabaseManager::addNote(const QString& title, const QString& content, const
                     QString preset = catQuery.value(1).toString();
                     if (!preset.isEmpty()) {
                         QStringList pTags = RapidNotes::TagCodec::split(preset);
-                        for (const QString& t : pTags) {
-                            if (!existingTags.contains(t.trimmed())) existingTags << t.trimmed();
-                        }
+                        RapidNotes::TagCodec::merge(existingTags, pTags);
                     }
                 }
             }
@@ -933,10 +928,7 @@ int DatabaseManager::addNote(const QString& title, const QString& content, const
                 QString preset = catQuery.value(1).toString();
                 if (!preset.isEmpty()) {
                     QStringList pTags = RapidNotes::TagCodec::split(preset);
-                    for (const QString& t : pTags) {
-                        QString trimmed = t.trimmed();
-                        if (!finalTags.contains(trimmed)) finalTags << trimmed;
-                    }
+                    RapidNotes::TagCodec::merge(finalTags, pTags);
                 }
             }
         }
@@ -945,7 +937,7 @@ int DatabaseManager::addNote(const QString& title, const QString& content, const
         query.bindValue(":title", title);
         query.bindValue(":content", content);
         
-        query.bindValue(":tags", RapidNotes::TagCodec::joinDisplay(RapidNotes::TagCodec::normalize(finalTags)));
+        query.bindValue(":tags", RapidNotes::TagCodec::joinDisplay(finalTags));
         
         query.bindValue(":color", finalColor);
         query.bindValue(":category_id", finalCategoryId == -1 ? QVariant(QMetaType::fromType<int>()) : finalCategoryId);
@@ -1525,7 +1517,7 @@ bool DatabaseManager::moveNotesToCategory(const QList<int>& noteIds, int catId) 
                     QStringList tagList = RapidNotes::TagCodec::split(existing);
                     QStringList newTags = RapidNotes::TagCodec::split(presetTags);
                     bool changed = false;
-                    for (const QString& t : newTags) { if (!tagList.contains(t.trimmed())) { tagList.append(t.trimmed()); changed = true; } }
+                    RapidNotes::TagCodec::merge(tagList, newTags, &changed);
                     if (changed) { QSqlQuery updateTags(m_db); updateTags.prepare("UPDATE notes SET tags = :tags WHERE id = :id"); updateTags.bindValue(":tags", RapidNotes::TagCodec::joinDisplay(tagList)); updateTags.bindValue(":id", id); updateTags.exec(); }
                 }
             }
@@ -2422,7 +2414,7 @@ bool DatabaseManager::setCategoryPresetTags(int catId, const QString& tags) {
                     QString existingTagsStr = fetchNotes.value(1).toString();
                     QStringList existingTags = RapidNotes::TagCodec::split(existingTagsStr);
                     bool changed = false;
-                    for (const QString& t : newTagsList) { QString trimmed = t.trimmed(); if (!trimmed.isEmpty() && !existingTags.contains(trimmed)) { existingTags.append(trimmed); changed = true; } }
+                    RapidNotes::TagCodec::merge(existingTags, newTagsList, &changed);
                     if (changed) { 
                         affectedIds << noteId;
                         QSqlQuery updateNote(m_db); 
@@ -3438,14 +3430,10 @@ void DatabaseManager::syncNoteTags(int noteId, const QStringList& tags) {
     del.addBindValue(noteId);
     del.exec();
 
-    QStringList cleanTags;
+    QStringList cleanTags = RapidNotes::TagCodec::normalize(tags);
 
     // 2. 处理每一个独立标签
-    for (const QString& tag : tags) {
-        QString name = tag.trimmed();
-        if (name.isEmpty()) continue;
-        if (!cleanTags.contains(name)) cleanTags << name;
-
+    for (const QString& name : std::as_const(cleanTags)) {
         // 确保标签在实体表中存在 (唯一性)
         int tagId = -1;
         QSqlQuery check(m_db);

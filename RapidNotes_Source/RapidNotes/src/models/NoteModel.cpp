@@ -180,8 +180,7 @@ QVariant NoteModel::data(const QModelIndex& index, int role) const {
                 QString display = plain.replace('\n', ' ').replace('\r', ' ').trimmed().left(150);
                 if (!display.isEmpty()) return display;
             }
-            RapidNotes::ItemType::Type itype = RapidNotes::ItemType::fromString(type);
-            if (itype == RapidNotes::ItemType::Type::Image) return QString("[图片]");
+            if (itemTypeEnum == RapidNotes::ItemType::Type::Image) return QString("[图片]");
             return QString();
         }
         case TitleRole:
@@ -268,10 +267,10 @@ QMimeData* NoteModel::mimeData(const QModelIndexList& indexes) const {
                     firstImage.loadFromData(blob);
                 }
                 plainTexts << "[截图]";
-            } else if (RapidNotes::ItemType::isFileOrFolder(RapidNotes::ItemType::fromString(type))) {
+            } else if (RapidNotes::ItemType::isFileOrFolder(itype)) {
                 // 支持文件路径导出
                 QStringList rawPaths;
-                if (RapidNotes::ItemType::fromString(type) == RapidNotes::ItemType::Type::LocalBatch) {
+                if (itype == RapidNotes::ItemType::Type::LocalBatch) {
                     QString fullPath = content;
                     if (content.startsWith("attachments/")) fullPath = QCoreApplication::applicationDirPath() + "/" + content;
                     QDir dir(fullPath);

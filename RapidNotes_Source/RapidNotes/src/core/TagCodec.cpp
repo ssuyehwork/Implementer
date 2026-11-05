@@ -5,13 +5,22 @@ namespace RapidNotes {
 
 QStringList TagCodec::normalize(const QStringList& tags) {
     QStringList result;
-    for (const QString& t : tags) {
+    merge(result, tags);
+    return result;
+}
+
+void TagCodec::merge(QStringList& target, const QStringList& incoming, bool* changed) {
+    bool hasChanged = false;
+    for (const QString& t : incoming) {
         QString trimmed = t.trimmed();
-        if (!trimmed.isEmpty() && !result.contains(trimmed)) {
-            result.append(trimmed);
+        if (!trimmed.isEmpty() && !target.contains(trimmed)) {
+            target.append(trimmed);
+            hasChanged = true;
         }
     }
-    return result;
+    if (changed) {
+        *changed = hasChanged;
+    }
 }
 
 QStringList TagCodec::split(const QString& tagsStr) {

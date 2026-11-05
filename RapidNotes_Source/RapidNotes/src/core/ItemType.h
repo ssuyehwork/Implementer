@@ -36,6 +36,8 @@ public:
     static Type fromString(const QString& str);
 
     static bool isFileOrFolder(Type type);
+    // 判断是否为历史 5 种文件类型集合 (file, local_file, local_batch, folder, local_folder)，不含 files/folders
+    static bool isLegacyFiveFileTypes(Type type);
     static bool isPureText(Type type);
 
 private:

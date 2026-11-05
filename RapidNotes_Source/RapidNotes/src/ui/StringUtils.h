@@ -350,7 +350,7 @@ public:
             }
 
             // 2. 文件/文件夹/路径相关类型：复制为文件 URL (支持粘贴到资源管理器或聊天软件)
-            bool isFilePath = RapidNotes::ItemType::isFileOrFolder(itemTypeEnum);
+            bool isFilePath = RapidNotes::ItemType::isLegacyFiveFileTypes(itemTypeEnum);
             QString plainContent = htmlToPlainText(content).trimmed();
             if (!isFilePath) {
                 // 智能检测文本是否为存在的物理路径
@@ -403,8 +403,8 @@ public:
             QStringList texts;
             for (const auto& note : notes) {
                 QString c = note.value("content").toString();
-                QString type = note.value("item_type").toString();
-                if (type == "image") texts << "[截图]";
+                RapidNotes::ItemType::Type itemTypeEnum = RapidNotes::ItemType::fromString(note.value("item_type").toString());
+                if (itemTypeEnum == RapidNotes::ItemType::Type::Image) texts << "[截图]";
                 else texts << htmlToPlainText(c);
             }
             ClipboardMonitor::instance().skipNext();

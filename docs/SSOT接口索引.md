@@ -21,7 +21,9 @@
    - 用途：将外部传入的字符串安全解析为强类型枚举，未识别字符串回退为 `Type::Unknown`。
 3. `bool RapidNotes::ItemType::isFileOrFolder(Type type)`
    - 用途：断言给定类型是否属于文件或文件夹类（含中间态与最终态）。
-4. `bool RapidNotes::ItemType::isPureText(Type type)`
+4. `bool RapidNotes::ItemType::isLegacyFiveFileTypes(Type type)`
+   - 用途：严格匹配历史 5 种物理路径/文件类型（File, LocalFile, LocalBatch, Folder, LocalFolder），不含 files/folders，专供 DatabaseManager::extractFileExtensions 与 StringUtils::copyNotesToClipboard。
+5. `bool RapidNotes::ItemType::isPureText(Type type)`
    - 用途：断言给定类型是否属于纯文本正文类（Text、Code、OcrText、CapturedMessage）。
 
 ---
@@ -99,9 +101,11 @@
    - 用途：拆分标签字符串，同时支持半角逗号 `,` 与全角逗号 `，`，自动清洗首尾空白、空项并保序去重。
 2. `QStringList RapidNotes::TagCodec::normalize(const QStringList& tags)`
    - 用途：对已有标签列表执行逐项 trim、剔除空项并保序去重。
-3. `QString RapidNotes::TagCodec::join(const QStringList& tags)`
+3. `void RapidNotes::TagCodec::merge(QStringList& target, const QStringList& incoming, bool* changed = nullptr)`
+   - 用途：将 incoming 标签列表合并到 target 中，自动 trim、剔除空项并保序去重，可选输出是否产生变更。
+4. `QString RapidNotes::TagCodec::join(const QStringList& tags)`
    - 用途：持久化与数据存储用拼接，严格使用纯半角逗号 `,` 无空格连接。
-4. `QString RapidNotes::TagCodec::joinDisplay(const QStringList& tags)`
+5. `QString RapidNotes::TagCodec::joinDisplay(const QStringList& tags)`
    - 用途：界面展示与文本框回填专用，使用半角逗号加空格 `, ` 连接。
 
 ---

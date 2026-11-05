@@ -3132,8 +3132,6 @@ void QuickWindow::openTagSelector() {
         currentTags = RapidNotes::TagCodec::split(note.value("tags").toString());
     }
 
-    for (QString& t : currentTags) t = t.trimmed();
-
     auto* selector = new AdvancedTagSelector(this);
     auto recentTags = DatabaseManager::instance().getRecentTagsWithCounts(20);
     auto allTags = DatabaseManager::instance().getAllTags();
