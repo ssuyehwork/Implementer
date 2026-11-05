@@ -21,14 +21,11 @@
 #include <QJsonArray>
 #include <QtConcurrent>
 #include <QThreadPool>
-#include <QMessageBox>
 #include <utility>
 #include <algorithm>
 #include "FileCryptoHelper.h"
 #include "HardwareInfoHelper.h"
 #include "ClipboardMonitor.h"
-#include "../ui/StringUtils.h"
-#include "../ui/FramelessDialog.h"
 
 namespace {
     // 2026-04-09 按照用户要求：采用纯动态后缀解析架构，彻底废弃并移除所有静态白/黑名单
