@@ -28,6 +28,7 @@
 #include "../core/DatabaseManager.h"
 #include "../core/TagCodec.h"
 #include "../core/ClipboardMonitor.h"
+#include "MainWindow.h"
 #include <QGuiApplication>
 #include <QDragEnterEvent>
 #include <QDragMoveEvent>
@@ -871,7 +872,12 @@ void QuickWindow::initUI() {
     }
     connect(btnPin, &QPushButton::toggled, this, &QuickWindow::toggleStayOnTop);
 
-    
+    QPushButton* btnWindow = createToolBtn("window", "#aaaaaa", "数据管理主界面");
+    btnWindow->setObjectName("btnWindow");
+    connect(btnWindow, &QPushButton::clicked, this, []() {
+        RapidNotes::MainWindow::instance().showAndActivate();
+    });
+
     QPushButton* btnAdd = createToolBtn("add", "#aaaaaa", "新建数据", "qw_new_idea");
     btnAdd->setObjectName("btnAdd");
     btnAdd->setStyleSheet("QPushButton::menu-indicator { width: 0px; image: none; }");
@@ -957,6 +963,8 @@ void QuickWindow::initUI() {
     toolLayout->addWidget(btnMin, 0, Qt::AlignHCenter);
     toolLayout->addSpacing(4);
     toolLayout->addWidget(btnPin, 0, Qt::AlignHCenter);
+    toolLayout->addSpacing(4);
+    toolLayout->addWidget(btnWindow, 0, Qt::AlignHCenter);
     toolLayout->addSpacing(4);
     toolLayout->addWidget(btnAdd, 0, Qt::AlignHCenter);
     toolLayout->addSpacing(4);
