@@ -116,6 +116,8 @@ set(SOURCES
     src/core/OCRManager.h
     src/core/PathSummary.cpp
     src/core/PathSummary.h
+    src/core/SearchHistoryService.cpp
+    src/core/SearchHistoryService.h
     src/core/ReminderService.cpp
     src/core/ReminderService.h
     src/core/ShortcutManager.cpp
@@ -155,6 +157,8 @@ set(SOURCES
     src/ui/CleanListView.cpp
     src/ui/CleanListView.h
     src/ui/ClickableLineEdit.h
+    src/ui/ColumnViewWidget.cpp
+    src/ui/ColumnViewWidget.h
     src/ui/ColorPickerWindow.cpp
     src/ui/ColorPickerWindow.h
     src/ui/ContentHeaderWidget.cpp

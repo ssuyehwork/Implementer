@@ -1,6 +1,5 @@
 #include "DropListView.h"
 #include "../core/ModelContract.h"
-#include "ColumnItemDelegate.h"
 #include "ViewDragDropHelper.h"
 #include <QMouseEvent>
 
