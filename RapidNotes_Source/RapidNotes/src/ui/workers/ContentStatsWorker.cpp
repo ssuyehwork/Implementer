@@ -1,6 +1,5 @@
 #include "ContentStatsWorker.h"
 #include "../UiHelper.h"
-#include "../../meta/DuplicateDetectorService.h"
 
 #include <QDateTime>
 #include <QtConcurrent/QtConcurrent>
@@ -110,8 +109,8 @@ void ContentStatsWorker::processAsync(std::vector<ItemRecord> records, bool show
             stats.duplicatePaths = cachedDuplicates;
             stats.duplicateCount = static_cast<int>(stats.duplicatePaths.size());
         } else {
-            stats.duplicatePaths = DuplicateDetectorService::findDuplicatePaths(records);
-            stats.duplicateCount = static_cast<int>(stats.duplicatePaths.size());
+            stats.duplicatePaths.clear();
+            stats.duplicateCount = 0;
         }
 
         QMetaObject::invokeMethod(QCoreApplication::instance(), [weakThis, stats = std::move(stats), reqId, currentSignature, signatureMatches]() mutable {

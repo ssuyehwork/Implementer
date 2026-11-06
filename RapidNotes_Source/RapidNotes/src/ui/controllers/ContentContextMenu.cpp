@@ -8,8 +8,6 @@
 #include "../StyleLibrary.h"
 #include "../ToolTipOverlay.h"
 #include "../ColorPicker.h"
-#include "../BatchRenameDialog.h"
-#include "../BatchCreateDialog.h"
 #include "../FramelessDialog.h"
 #include "../dialogs/FramelessInputDialog.h"
 #include "../dialogs/CreateFolderWithItemsDialog.h"
@@ -925,10 +923,6 @@ void ContentContextMenu::showMenu(QAbstractItemView* view, const QPoint& pos) {
             break;
         }
         case ContentPanel::ActionBatchCreate: {
-            BatchCreateDialog dlg(currentPath, m_panel);
-            if (dlg.exec() == QDialog::Accepted) {
-                m_panel->refreshAll();
-            }
             break;
         }
         case ContentPanel::ActionRestore: {
