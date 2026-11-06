@@ -216,6 +216,10 @@ set(SOURCES
     src/ui/NoteStatusGroup.h
     src/ui/RatingGroup.cpp
     src/ui/RatingGroup.h
+    src/ui/RatingBarLayout.cpp
+    src/ui/RatingBarLayout.h
+    src/ui/PresetTagsDialog.cpp
+    src/ui/PresetTagsDialog.h
     src/ui/TagStatusGroup.cpp
     src/ui/TagStatusGroup.h
     src/ui/FilterStateModel.cpp

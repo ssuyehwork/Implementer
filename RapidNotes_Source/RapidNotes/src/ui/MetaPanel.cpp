@@ -2,7 +2,6 @@
 #include "ColorPicker.h"
 #include "CardPainterHelper.h"
 #include "UiHelper.h"
-#include "../meta/HistoryService.h"
 #include <memory>
 #include "ToolTipOverlay.h"
 #include "Logger.h"
@@ -225,9 +224,6 @@ void MetaPanel::initUi() {
         if (!urlStr.isEmpty()) {
             QUrl url = QUrl::fromUserInput(urlStr);
             if (url.isValid() && (url.scheme().toLower() == "http" || url.scheme().toLower() == "https")) {
-                if (url.isLocalFile()) {
-                    HistoryService::instance().recordFileAccess(url.toLocalFile());
-                }
                 QDesktopServices::openUrl(url);
             } else {
                 ToolTipOverlay::instance()->showToast("无效的 Web 网址格式", 1500, QColor("#e81123"));

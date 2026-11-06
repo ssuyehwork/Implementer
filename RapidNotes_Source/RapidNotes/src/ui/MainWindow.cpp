@@ -28,7 +28,6 @@
 #include "TaskProgressStrip.h"
 #include "../core/AppConfig.h"
 #include "../core/NavigationService.h"
-#include "../core/CoreController.h"
 #include "../core/ModelContract.h"
 
 #include <QVBoxLayout>
@@ -244,15 +243,9 @@ void MainWindow::setupStatusBar(QWidget* parentWidget) {
         if (m_statusLeft) m_statusLeft->setText(msg);
     });
 
-    auto updateStatus = [this]() {
-        m_statusLeft->setText(CoreController::instance().statusText());
-        m_statusLeft->setProperty("indexing", CoreController::instance().isIndexing());
-        m_statusLeft->style()->unpolish(m_statusLeft);
-        m_statusLeft->style()->polish(m_statusLeft);
-    };
-    connect(&CoreController::instance(), &CoreController::statusTextChanged, this, updateStatus);
-    connect(&CoreController::instance(), &CoreController::isIndexingChanged, this, updateStatus);
-    updateStatus();
+    if (m_statusLeft) {
+        m_statusLeft->setText("就绪");
+    }
 
     auto createStatusBtn = [this](const QString& iconKey, const QString& tip) -> QPushButton* {
         QPushButton* btn = new QPushButton(m_statusBarWidget);
