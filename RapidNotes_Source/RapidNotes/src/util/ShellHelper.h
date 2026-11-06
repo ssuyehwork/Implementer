@@ -23,6 +23,7 @@ public:
     static bool copyPaths(const QStringList& paths) { Q_UNUSED(paths); return false; }
     static QList<AssocAppInfo> getAssociatedApps(const QString& filePath) { Q_UNUSED(filePath); return {}; }
     static bool showOpenWithDialog(const QString& filePath, QWidget* parent = nullptr) { Q_UNUSED(filePath); Q_UNUSED(parent); return false; }
+    static bool renameItem(const QString& oldPath, const QString& newPath) { Q_UNUSED(oldPath); Q_UNUSED(newPath); return false; }
 };
 
 } // namespace RapidNotes

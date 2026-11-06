@@ -21,6 +21,7 @@
 #include "Logger.h"
 #include <QApplication>
 #include <QElapsedTimer>
+#include "../core/DatabaseManager.h"
 #include "../core/NavigationService.h"
 #include "../core/TrashService.h"
 #include "../core/CoreEngine.h"
