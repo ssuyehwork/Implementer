@@ -379,6 +379,8 @@ set(SOURCES
     src/ui/controllers/ContentViewCoordinator.h
     src/ui/controllers/ContentSortController.cpp
     src/ui/controllers/ContentSortController.h
+    src/ui/controllers/ContextMenuFactory.cpp
+    src/ui/controllers/ContextMenuFactory.h
     src/ui/controllers/PaneActivationTracker.cpp
     src/ui/controllers/PaneActivationTracker.h
     src/ui/models/DiskItemModel.h

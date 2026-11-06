@@ -10,7 +10,7 @@
 #include "ViewDragDropHelper.h"
 #include "../meta/LibraryDao.h"
 #include "../meta/LibraryService.h"
-#include "../meta/DatabaseManager.h"
+#include "../core/DatabaseManager.h"
 #include <QtConcurrent/QtConcurrent>
 #include "../core/CoreEngine.h"
 #include "../core/PresetTagService.h"

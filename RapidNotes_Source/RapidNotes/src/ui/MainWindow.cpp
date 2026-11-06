@@ -554,10 +554,10 @@ bool MainWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr
 }
 
 MainWindow& MainWindow::instance() {
-    static MainWindow s_instance;
     if (s_mainWindowInstance) {
         return *s_mainWindowInstance;
     }
+    static MainWindow s_instance;
     return s_instance;
 }
 

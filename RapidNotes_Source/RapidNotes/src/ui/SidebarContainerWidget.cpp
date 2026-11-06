@@ -150,13 +150,13 @@ void SidebarContainerWidget::initUi() {
 
     connect(m_tabBar, &QTabBar::currentChanged, this, [this](int index) {
         m_stackedWidget->setCurrentIndex(index);
-        if (index == 1 && m_libraryPanel) {
+        if (m_libraryPanel) {
             m_libraryPanel->loadLibrary();
         }
         if (m_filterEdit && !m_filterEdit->text().trimmed().isEmpty()) {
             QString kw = m_filterEdit->text().trimmed();
 
-            if (index == 1 && m_libraryPanel) m_libraryPanel->filterTreeNodes(kw);
+            if (m_libraryPanel) m_libraryPanel->filterTreeNodes(kw);
 
         }
         AppConfig::instance().setValue("Sidebar/CurrentTabIndex", index);
