@@ -25,6 +25,7 @@
 #include <QElapsedTimer>
 #include "../core/NavigationService.h"
 #include "../core/TrashService.h"
+#include "../core/PermanentDeleteService.h"
 #include "../meta/MarkedFolderService.h"
 #include "../core/CoreEngine.h"
 #include "../core/CentralEventHub.h"
@@ -280,9 +281,18 @@ void PanelMediator::setupConnections() {
         connect(shortcutController, &AppShortcutController::moveToTrashRequested, this, [this, contentPanel]() {
             ContentPanel* target = m_activeContentPanel ? m_activeContentPanel.data() : contentPanel;
             if (target) {
+                bool isTrashView = (target->getCurrentCategoryType() == "trash" || target->currentPath() == "trash://");
                 QStringList sel = target->getSelectedPaths();
-                if (!sel.isEmpty()) {
-                    TrashService::instance().moveToTrash(sel, target);
+                if (isTrashView) {
+                    if (!sel.isEmpty()) {
+                        PermanentDeleteService::instance().execute(sel, target);
+                    } else {
+                        ToolTipOverlay::instance()->showToast("请先选择要永久删除的项目", 2000, QColor("#e81123"), target);
+                    }
+                } else {
+                    if (!sel.isEmpty()) {
+                        TrashService::instance().moveToTrash(sel, target);
+                    }
                 }
             }
         });
