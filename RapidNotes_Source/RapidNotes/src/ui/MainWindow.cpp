@@ -546,6 +546,11 @@ bool MainWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr
     return QMainWindow::nativeEvent(eventType, message, result);
 }
 
+MainWindow& MainWindow::instance() {
+    static MainWindow s_instance;
+    return s_instance;
+}
+
 void MainWindow::showAndActivate() {
     showNormal();
     raise();

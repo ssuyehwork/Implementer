@@ -7,7 +7,6 @@
 #include "ToolTipOverlay.h"
 #include "PresetTagsDialog.h"
 #include "ColorPicker.h"
-#include "ShellIconManager.h"
 #include "ViewDragDropHelper.h"
 #include "../meta/LibraryDao.h"
 #include "../meta/LibraryService.h"

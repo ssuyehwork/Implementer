@@ -56,7 +56,7 @@ public:
     void setPalettes(const QVector<QPair<QColor, float>>& palette);
     void setTags(const QStringList& tags);
     void setNote(const QString& note);
-    
+    void setURL(const QString& url);
     void setRating(int rating, bool fromUser = false);
     void setColor(const QString& hexColor, bool fromUser = false);
     void setPinned(bool pinned) { Q_UNUSED(pinned); }
@@ -69,7 +69,7 @@ signals:
     void tagsAddRequested(const QStringList& paths, const QStringList& tags);
     void tagsRemoveRequested(const QStringList& paths, const QStringList& tags);
     void noteEdited(const QStringList& paths, const QString& newNote);
-    
+    void linkEdited(const QStringList& paths, const QString& newLink);
     void primaryColorChanged(const QString& path, const QColor& color);
     void renameRequested(const QString& oldPath, const QString& newPath);
     void searchByColor(const QColor& color);
@@ -103,9 +103,9 @@ private:
     ElasticEdit* m_nameEdit = nullptr;
     ElasticEdit* m_noteEdit = nullptr;
 
-    
-    
-    
+    QWidget* m_linkBox = nullptr;
+    QLineEdit* m_linkEdit = nullptr;
+    QAction* m_actOpenLink = nullptr;
 
     QWidget* m_ratingColorBox = nullptr;
     QList<QPushButton*> m_starBtns;
@@ -144,7 +144,6 @@ private:
     QSet<QString> m_pendingRemovedTags;
     QStringList m_tagRemovalTargetSnapshot;
     QTimer* m_tagRemoveDebounceTimer = nullptr;
-
 
 private slots:
     void onTagDeleted(const QString& text);

@@ -34,7 +34,6 @@
 #include "ContextMenuFactory.h"
 #include "../../crypto/EncryptionManager.h"
 #include "../../core/LastOperationManager.h"
-#include "../ShellIconManager.h"
 
 #include <QMenu>
 #include <QWidgetAction>

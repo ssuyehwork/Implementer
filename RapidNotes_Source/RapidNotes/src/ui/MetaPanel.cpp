@@ -12,6 +12,10 @@
 #include <QPushButton>
 #include <QToolButton>
 #include <QHBoxLayout>
+#include <QMimeData>
+#include <QDragEnterEvent>
+#include <QDragMoveEvent>
+#include <QDropEvent>
 #include <QFileInfo>
 #include <QLabel>
 #include <QDir>
@@ -657,7 +661,7 @@ void MetaPanel::setSelectedPaths(const QStringList& paths) {
     }
     qint64 ms = timer.elapsed();
     if (ms > 2) {
-        Logger::log(QString("[Perf] MetaPanel::setSelectedPaths(%1 paths) took %2ms").arg(paths.size()).arg(ms));
+        qDebug() << QString("[Perf] MetaPanel::setSelectedPaths(%1 paths) took %2ms").arg(paths.size()).arg(ms));
     }
 }
 
@@ -893,7 +897,7 @@ void MetaPanel::setNote(const QString& note) {
 }
 
 
-void MetaPanel_disabled_setURL() {
+void MetaPanel::setURL(const QString& url) {
     if (m_isUserEditing) return;
     m_isInternalUpdating = true;
     m_linkEdit->setText(url);

@@ -28,7 +28,7 @@ bool TrashService::moveToTrash(const QStringList& paths, QWidget* parentWidget) 
     }
 
     if (!noteIds.isEmpty()) {
-        DatabaseManager::instance().batchUpdateNotes(noteIds, "is_deleted", 1);
+        DatabaseManager::instance().updateNoteStateBatch(noteIds, "is_deleted", 1);
         emit trashOperationCompleted();
         return true;
     }
@@ -39,7 +39,7 @@ bool TrashService::restoreItems(const QList<int>& trashIds, QWidget* parentWidge
     Q_UNUSED(parentWidget);
     if (trashIds.isEmpty()) return false;
 
-    DatabaseManager::instance().batchUpdateNotes(trashIds, "is_deleted", 0);
+    DatabaseManager::instance().updateNoteStateBatch(trashIds, "is_deleted", 0);
     emit trashOperationCompleted();
     return true;
 }

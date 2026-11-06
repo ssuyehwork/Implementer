@@ -52,6 +52,9 @@ public:
     ~MainWindow() override;
 
     PanelLayoutManager* layoutManager() const { return m_panelLayoutManager; }
+    void showAndActivate();
+    static MainWindow& instance();
+
 
 public slots:
     void onStatusBarStatsUpdated(int fileCount, int folderCount, int totalCount);

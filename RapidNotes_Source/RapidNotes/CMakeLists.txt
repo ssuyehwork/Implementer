@@ -130,6 +130,8 @@ set(SOURCES
     src/core/TagCodec.h
     src/core/TrashService.cpp
     src/core/TrashService.h
+    src/core/PermanentDeleteService.cpp
+    src/core/PermanentDeleteService.h
     src/core/ThumbnailMaker.cpp
     src/core/ThumbnailMaker.h
     src/core/WordBucket.cpp
