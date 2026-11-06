@@ -30,7 +30,6 @@
 #include "../core/TrashService.h"
 #include "../core/PermanentDeleteService.h"
 #include "../core/ClipboardService.h"
-#include "../meta/MediaExtractorPipeline.h"
 #include "../util/ThumbnailPipelineService.h"
 #include "../core/NavigationService.h"
 #include "../core/NavigationHistoryService.h"

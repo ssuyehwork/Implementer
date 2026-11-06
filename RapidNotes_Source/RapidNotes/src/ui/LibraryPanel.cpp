@@ -10,7 +10,6 @@
 #include "ViewDragDropHelper.h"
 #include "../meta/LibraryDao.h"
 #include "../meta/LibraryService.h"
-#include "../meta/MetaIndexService.h"
 #include "../meta/DatabaseManager.h"
 #include <QtConcurrent/QtConcurrent>
 #include "../core/CoreEngine.h"

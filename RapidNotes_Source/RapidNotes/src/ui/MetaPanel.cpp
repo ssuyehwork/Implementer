@@ -1,4 +1,5 @@
 #include "MetaPanel.h"
+#include <QDebug>
 #include "ColorPicker.h"
 #include "CardPainterHelper.h"
 #include "UiHelper.h"
@@ -661,7 +662,7 @@ void MetaPanel::setSelectedPaths(const QStringList& paths) {
     }
     qint64 ms = timer.elapsed();
     if (ms > 2) {
-        qDebug() << QString("[Perf] MetaPanel::setSelectedPaths(%1 paths) took %2ms").arg(paths.size()).arg(ms));
+        qDebug() << QString("[Perf] MetaPanel::setSelectedPaths(%1 paths) took %2ms").arg(paths.size()).arg(ms);
     }
 }
 

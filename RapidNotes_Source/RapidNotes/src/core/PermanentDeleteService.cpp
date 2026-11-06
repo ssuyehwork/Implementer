@@ -16,12 +16,16 @@ bool PermanentDeleteService::execute(const QStringList& paths, QWidget* parentWi
     Q_UNUSED(isSecureShred);
     if (paths.isEmpty()) return false;
 
+    QList<int> ids;
     for (const QString& p : paths) {
         bool ok = false;
         int id = p.startsWith("note://") ? p.mid(7).toInt(&ok) : p.toInt(&ok);
         if (ok) {
-            DatabaseManager::instance().deleteNotePermanently(id);
+            ids.append(id);
         }
+    }
+    if (!ids.isEmpty()) {
+        DatabaseManager::instance().deleteNotesBatch(ids);
     }
     emit permanentDeleteCompleted();
     return true;

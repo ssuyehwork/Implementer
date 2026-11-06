@@ -46,13 +46,20 @@
 
 namespace RapidNotes {
 
+static MainWindow* s_mainWindowInstance = nullptr;
+
 constexpr int kLayoutEdgeMargin = 5;
 constexpr int kStatusBarHorizontalMargin = 12;
 
-MainWindow::~MainWindow() = default;
+MainWindow::~MainWindow() {
+    if (s_mainWindowInstance == this) {
+        s_mainWindowInstance = nullptr;
+    }
+}
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent) {
+    s_mainWindowInstance = this;
     setWindowFlags(windowFlags() | Qt::FramelessWindowHint | Qt::WindowMinMaxButtonsHint);
     setMinimumHeight(700); // 宽度由 PanelLayoutManager::updateDynamicMinimumSize() 动态管理
     setWindowTitle("RapidNotes");
@@ -548,6 +555,9 @@ bool MainWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr
 
 MainWindow& MainWindow::instance() {
     static MainWindow s_instance;
+    if (s_mainWindowInstance) {
+        return *s_mainWindowInstance;
+    }
     return s_instance;
 }
 
