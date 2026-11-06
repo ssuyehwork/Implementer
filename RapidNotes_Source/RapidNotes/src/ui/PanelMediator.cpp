@@ -220,38 +220,17 @@ void PanelMediator::setupConnections() {
                 layoutManager->toggleImmersiveMode();
             });
         }
-        connect(shortcutController, &AppShortcutController::createNewFolderRequested, this, [this, contentPanel]() {
+        connect(shortcutController, &AppShortcutController::createCategoryRequested, this, [this, contentPanel]() {
             ContentPanel* target = m_activeContentPanel ? m_activeContentPanel.data() : contentPanel;
             if (target) {
                 target->createNewItem("folder");
             }
         });
 
-        connect(shortcutController, &AppShortcutController::createNewMdRequested, this, [this, contentPanel]() {
+        connect(shortcutController, &AppShortcutController::createNoteRequested, this, [this, contentPanel]() {
             ContentPanel* target = m_activeContentPanel ? m_activeContentPanel.data() : contentPanel;
             if (target) {
                 target->createNewItem("md");
-            }
-        });
-
-        connect(shortcutController, &AppShortcutController::extractContentRequested, this, [this, contentPanel]() {
-            ContentPanel* target = m_activeContentPanel ? m_activeContentPanel.data() : contentPanel;
-            if (target) {
-                QStringList selectedPaths = target->getSelectedPaths();
-                if (!selectedPaths.isEmpty()) {
-                    ContextMenuFactory::extractContentToClipboard(selectedPaths.first());
-                } else {
-                    ToolTipOverlay::instance()->showToast("未选择任何可提取内容的文件", 1200, QColor("#e81123"));
-                }
-            }
-        });
-
-        connect(shortcutController, &AppShortcutController::toggleRecursiveRequested, this, [this, contentPanel]() {
-            ContentPanel* target = m_activeContentPanel ? m_activeContentPanel.data() : contentPanel;
-            if (target && !target->currentPath().isEmpty() && target->currentPath() != "computer://") {
-                bool nextState = !target->isRecursive();
-                target->setIsRecursive(nextState);
-                target->loadDirectory(target->currentPath(), nextState);
             }
         });
 
@@ -271,8 +250,25 @@ void PanelMediator::setupConnections() {
             }
         });
 
+        connect(shortcutController, &AppShortcutController::toggleFavoriteRequested, this, [this, contentPanel]() {
+            ContentPanel* target = m_activeContentPanel ? m_activeContentPanel.data() : contentPanel;
+            if (target) {
+                QStringList sel = target->getSelectedPaths();
+                for (const QString& p : sel) {
+                    bool isInt = false;
+                    int noteId = p.toInt(&isInt);
+                    if (isInt) {
+                        DatabaseManager::instance().toggleNoteState(noteId, "is_favorite");
+                    }
+                }
+                if (!sel.isEmpty()) {
+                    target->refreshAll();
+                    ToolTipOverlay::instance()->showToast("已更新收藏标星状态", 1200, QColor("#2ecc71"));
+                }
+            }
+        });
 
-        connect(shortcutController, &AppShortcutController::copyNamesEnumeratedRequested, this, [this, contentPanel]() {
+        connect(shortcutController, &AppShortcutController::copyTitlesRequested, this, [this, contentPanel]() {
             ContentPanel* target = m_activeContentPanel ? m_activeContentPanel.data() : contentPanel;
             if (target) {
                 QStringList sel = target->getSelectedPaths();
@@ -295,7 +291,7 @@ void PanelMediator::setupConnections() {
 
     // 1. 路径变更与导航驱动
     connect(&NavigationService::instance(), &NavigationService::currentUrlChanged, this,
-            [this, contentPanel, addressBar, navPanel, filterPanel, searchController, titleBar](const QString& url, const QString& displayPath, bool recursive) {
+            [this, contentPanel, addressBar, filterPanel, searchController, titleBar](const QString& url, const QString& displayPath, bool recursive) {
         if (searchController) {
             searchController->clearSearch(true);
         }
@@ -310,7 +306,6 @@ void PanelMediator::setupConnections() {
         }
 
         if (addressBar) addressBar->setPath(displayPath);
-        if (navPanel) navPanel->selectPath(url == "computer://" ? "" : url);
         if (titleBar && titleBar->tabBar()) {
             titleBar->tabBar()->updateCurrentTabTitle(displayPath, url);
         }
@@ -330,12 +325,6 @@ void PanelMediator::setupConnections() {
             }
         }
     });
-
-    
-
-    
-
-        );
 
     // 安装全应用窗格激活事件过滤器
     if (!m_activationTracker) {
@@ -423,11 +412,11 @@ void PanelMediator::setupConnections() {
                     }
                 }
             } else {
-                metaPanel->setRating(meta.rating, false);
-                metaPanel->setColor(QString::fromStdWString(meta.manualColor), false);
-                metaPanel->setTags(meta.tags);
-                metaPanel->setNote(QString::fromStdWString(meta.note));
-                metaPanel->setURL(QString::fromStdWString(meta.url));
+                metaPanel->setRating(0, false);
+                metaPanel->setColor(QString(), false);
+                metaPanel->setTags(QStringList());
+                metaPanel->setNote(QString());
+                metaPanel->setURL(QString());
                 metaPanel->setPalettes(qPalettes);
                 metaPanel->setImagePreview(QPixmap());
             }
@@ -505,11 +494,11 @@ void PanelMediator::setupConnections() {
                         }
                     }
                 } else {
-                    itemRating = meta.rating;
-                    itemColor = QString::fromStdWString(meta.manualColor);
-                    itemTags = meta.tags;
-                    itemNote = QString::fromStdWString(meta.note);
-                    itemUrl = QString::fromStdWString(meta.url);
+                    itemRating = 0;
+                    itemColor = QString();
+                    itemTags = QStringList();
+                    itemNote = QString();
+                    itemUrl = QString();
 
                     if (i >= previewStartIdx && multiPreviewItems.size() < MetaPanel::kMultiPreviewMaxCards) {
                         MetaPreviewItem item;
@@ -560,7 +549,7 @@ void PanelMediator::setupConnections() {
     };
 
     auto wireContentPanel = std::make_shared<std::function<void(ContentPanel*)>>();
-    *wireContentPanel = [this, addressBar, favoritePanel, metaPanel, updateMetaPanelFromPanel, wireContentPanel](ContentPanel* panel) {
+    *wireContentPanel = [this, addressBar, metaPanel, updateMetaPanelFromPanel, wireContentPanel](ContentPanel* panel) {
         if (!panel) return;
 
         // 1. 文件双击/空格/回车/右键菜单统一文件激活动作
@@ -568,7 +557,6 @@ void PanelMediator::setupConnections() {
             if (path.isEmpty() || !QFile::exists(path)) {
                 return;
             }
-            // 无论能否在 QuickLook 中预览，凡是被双击/空格/回车尝试激活的文件全量记录历史
 
             if (!UiHelper::canPreviewFile(path)) {
                 return;
@@ -582,8 +570,105 @@ void PanelMediator::setupConnections() {
             QuickLookWindow::instance().preview(path);
         });
 
-        // 2. 收藏夹请求
-        ;
+        // 2. 状态栏与焦点响应 (仅当信息来自当前激活窗格时才刷到底栏)
+        connect(panel, &ContentPanel::statusBarMessageReady, this, [this, panel](const QString& message) {
+            if (m_activeContentPanel == panel || (!m_activeContentPanel && panel == m_contentPanel.data())) {
+                emit statusMessageRequested(message);
+            }
+        });
+
+        connect(panel, &ContentPanel::directorySelected, &NavigationService::instance(), [](const QString& path) {
+            NavigationService::instance().navigateTo(path);
+        });
+
+        connect(panel, &ContentPanel::panelActivated, this, [this, addressBar](ContentPanel* activePanel) {
+            if (m_activeContentPanel != activePanel) {
+                m_activeContentPanel = activePanel;
+                emit activeContentPanelChanged(activePanel);
+            }
+            if (addressBar) {
+                addressBar->setPath(activePanel->displayPath());
+            }
+        });
+
+        // 3. 元数据面板选中项 & 模型数据变动同步
+        if (metaPanel) {
+            connect(panel, &ContentPanel::selectionChanged, metaPanel, [this, panel, updateMetaPanelFromPanel](const QStringList&) {
+                if (m_activeContentPanel == panel || (!m_activeContentPanel && panel == m_contentPanel.data())) {
+                    updateMetaPanelFromPanel(panel);
+                }
+            });
+
+            if (panel->model()) {
+                connect(panel->model(), &QAbstractItemModel::dataChanged, metaPanel,
+                        [this, panel, updateMetaPanelFromPanel](const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles) {
+                    if (!roles.isEmpty() && !roles.contains(RatingRole) && !roles.contains(ColorRole) && !roles.contains(TagsRole) && !roles.contains(NoteRole) && !roles.contains(UrlRole)) {
+                        return;
+                    }
+
+                    auto& debounceState = m_panelMetaDebounceMap[panel];
+                    if (!debounceState.timer) {
+                        debounceState.timer = new QTimer(panel);
+                        debounceState.timer->setSingleShot(true);
+                        connect(panel, &QObject::destroyed, this, [this, panel]() {
+                            m_panelMetaDebounceMap.remove(panel);
+                        });
+                        connect(debounceState.timer, &QTimer::timeout, this, [this, panel, updateMetaPanelFromPanel]() {
+                            auto it = m_panelMetaDebounceMap.find(panel);
+                            if (it == m_panelMetaDebounceMap.end()) return;
+
+                            ContentPanel* activeP = m_activeContentPanel ? m_activeContentPanel.data() : m_contentPanel.data();
+                            if (activeP == panel) {
+                                QSet<QString> selSet;
+                                for (const QString& sp : panel->getSelectedPaths()) {
+                                    selSet.insert(QDir::cleanPath(sp).toLower());
+                                }
+
+                                bool hasOverlap = selSet.isEmpty();
+                                if (!hasOverlap) {
+                                    for (const QString& cp : it->pendingCleanPaths) {
+                                        if (selSet.contains(cp)) {
+                                            hasOverlap = true;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                if (hasOverlap) {
+                                    updateMetaPanelFromPanel(panel);
+                                }
+                            }
+                            it->pendingCleanPaths.clear();
+                        });
+                    }
+
+                    QAbstractItemModel* model = panel->model();
+                    int startRow = topLeft.row();
+                    int endRow = bottomRight.row();
+                    for (int r = startRow; r <= endRow; ++r) {
+                        QModelIndex idx = model->index(r, 0, topLeft.parent());
+                        if (idx.isValid()) {
+                            QString path = idx.data(PathRole).toString();
+                            if (!path.isEmpty()) {
+                                debounceState.pendingCleanPaths.insert(QDir::cleanPath(path).toLower());
+                            }
+                        }
+                    }
+
+                    if (!debounceState.timer->isActive()) {
+                        debounceState.timer->start(30);
+                    }
+                });
+            }
+        }
+
+        // 4. 递归绑定动态创建的副窗格
+        connect(panel, &ContentPanel::secondaryPaneCreated, this, [wireContentPanel](ContentPanel* pane) {
+            if (*wireContentPanel) {
+                (*wireContentPanel)(pane);
+            }
+        });
+    };
 
     if (contentPanel) {
         (*wireContentPanel)(contentPanel);
@@ -673,9 +758,7 @@ void PanelMediator::setupConnections() {
 
         if (metaPanel) metaPanel->setRating(rating, false);
 
-        ToolTipOverlay::instance()->showRatingToast(
-            rating, &QuickLookWindow::instance()
-        );
+        ToolTipOverlay::instance()->showRatingToast(rating);
     });
 
     // QuickLook 改颜色 -> 同步更新内容面板卡片并弹出 Toast 提示
@@ -691,9 +774,7 @@ void PanelMediator::setupConnections() {
 
         if (metaPanel) metaPanel->setColor(color, false);
 
-        ToolTipOverlay::instance()->showColorToast(
-            color, &QuickLookWindow::instance()
-        );
+        ToolTipOverlay::instance()->showColorToast(color);
     });
 
     connect(&QuickLookWindow::instance(), &QuickLookWindow::deleteRequested, this, [this, contentPanel](const QString& path) {
@@ -814,8 +895,7 @@ void PanelMediator::setupConnections() {
                 NavigationService::instance().refresh();
             }
         });
-
-        
+    }
 
     // 6. 响应元数据面板解耦信号 -> 驱动 CoreEngine 与当前激活 ContentPanel 同步
     if (metaPanel && contentPanel) {

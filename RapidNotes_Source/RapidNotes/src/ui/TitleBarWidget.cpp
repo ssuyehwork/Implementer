@@ -87,7 +87,7 @@ void TitleBarWidget::setViewModeOption(ViewModeOption mode) {
     m_currentViewMode = mode;
 }
 
-void TitleBarWidget::setDriveBarVisible(bool visible) {
+void TitleBarWidget::setSettingsBarVisible(bool visible) {
     if (!m_btnToggleDriveBar) return;
     QSignalBlocker blocker(m_btnToggleDriveBar);
     m_btnToggleDriveBar->setChecked(visible);
@@ -145,11 +145,12 @@ void TitleBarWidget::initUi(HoverEventFilter* hoverFilter) {
         emit zoomLevelChanged(value);
     });
 
-    m_btnToggleDriveBar = createTitleBtn("chevrons_down", "展开/收起插件栏");
+    m_btnToggleDriveBar = createTitleBtn("chevrons_down", "展开/收起设置栏");
     m_btnToggleDriveBar->setCheckable(true);
     m_btnToggleDriveBar->setChecked(true);
     connect(m_btnToggleDriveBar, &QPushButton::toggled, this, [this](bool checked) {
         m_btnToggleDriveBar->setIcon(UiHelper::getIcon(checked ? "chevrons_down" : "chevrons_up", QColor("#EEEEEE")));
+        emit settingsBarToggleRequested(checked);
         emit driveBarToggleRequested(checked);
     });
 
@@ -263,9 +264,8 @@ void TitleBarWidget::setupViewMenu() {
 void TitleBarWidget::setupCreateMenu() {
     QMenu* createMenu = UiHelper::createMenu(m_btnCreate);
 
-    QAction* actNewFolder = createMenu->addAction(UiHelper::getIcon("folder_filled", QColor("#EEEEEE")), "创建文件夹");
-    QAction* actNewMd     = createMenu->addAction(UiHelper::getIcon("text", QColor("#EEEEEE")), "创建 Markdown");
-    QAction* actNewTxt    = createMenu->addAction(UiHelper::getIcon("text", QColor("#EEEEEE")), "创建纯文本文件 (txt)");
+    QAction* actNewNote     = createMenu->addAction(UiHelper::getIcon("text", QColor("#EEEEEE")), "新建灵感笔记");
+    QAction* actNewCategory = createMenu->addAction(UiHelper::getIcon("folder_filled", QColor("#EEEEEE")), "新建子分类");
 
     connect(m_btnCreate, &QPushButton::clicked, this, [this, createMenu]() {
         createMenu->popup(m_btnCreate->mapToGlobal(QPoint(0, m_btnCreate->height())));
@@ -274,9 +274,8 @@ void TitleBarWidget::setupCreateMenu() {
     auto handleCreate = [this](const QString& type) {
         emit createItemRequested(type);
     };
-    connect(actNewFolder, &QAction::triggered, this, [handleCreate](){ handleCreate("folder"); });
-    connect(actNewMd,     &QAction::triggered, this, [handleCreate](){ handleCreate("md"); });
-    connect(actNewTxt,    &QAction::triggered, this, [handleCreate](){ handleCreate("txt"); });
+    connect(actNewNote,     &QAction::triggered, this, [handleCreate](){ handleCreate("note"); });
+    connect(actNewCategory, &QAction::triggered, this, [handleCreate](){ handleCreate("category"); });
 }
 
 } // namespace RapidNotes

@@ -3,6 +3,7 @@
 #endif
 #include "MainWindow.h"
 #include "TitleBarWidget.h"
+#include "SettingsBarWidget.h"
 #include "TabBarWidget.h"
 #include "NavBarWidget.h"
 
@@ -121,6 +122,7 @@ void MainWindow::initUi() {
 
     // 6. 组装至顶层主布局
     mainL->addWidget(m_titleBarWidget);
+    mainL->addWidget(m_settingsBarWidget);
     mainL->addWidget(m_navBarWidget);
     mainL->addWidget(bodyWrapper, 1);
     mainL->addWidget(m_statusBarWidget);
@@ -132,9 +134,9 @@ void MainWindow::initUi() {
 }
 
 void MainWindow::setupTopBars(QWidget* parentWidget) {
-    m_titleBarWidget = new TitleBarWidget(parentWidget, m_hoverFilter);
-    m_navBarWidget   = new NavBarWidget(parentWidget, m_hoverFilter);
-    // m_driveBarWidget removed
+    m_titleBarWidget    = new TitleBarWidget(parentWidget, m_hoverFilter);
+    m_settingsBarWidget = new SettingsBarWidget(parentWidget);
+    m_navBarWidget      = new NavBarWidget(parentWidget, m_hoverFilter);
 
     m_addressBar       = m_navBarWidget->addressBar();
     m_searchController = m_navBarWidget->searchController();
@@ -148,11 +150,15 @@ void MainWindow::setupTopBars(QWidget* parentWidget) {
     });
 
     // 顶层子部件间的纯 UI 布局显隐联动与持久化恢复
-    bool driveBarVis = AppConfig::instance().getValue("MainWindow/DriveBarVisible", false).toBool();
-    m_titleBarWidget->setDriveBarVisible(driveBarVis);
+    bool settingsBarVis = AppConfig::instance().getValue("SettingsBar/Visible", AppConfig::instance().getValue("MainWindow/DriveBarVisible", false)).toBool();
+    m_settingsBarWidget->setVisible(settingsBarVis);
+    m_titleBarWidget->setSettingsBarVisible(settingsBarVis);
 
-    connect(m_titleBarWidget, &TitleBarWidget::driveBarToggleRequested, this, [this](bool visible) {
-        AppConfig::instance().setValue("MainWindow/DriveBarVisible", visible);
+    connect(m_titleBarWidget, &TitleBarWidget::settingsBarToggleRequested, this, [this](bool visible) {
+        if (m_settingsBarWidget) {
+            m_settingsBarWidget->setVisible(visible);
+        }
+        AppConfig::instance().setValue("SettingsBar/Visible", visible);
     });
 }
 

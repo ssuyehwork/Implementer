@@ -6,6 +6,10 @@
 
 namespace RapidNotes {
 
+/**
+ * @brief 分类协议专用的全局导航路由中枢 (SSOT)
+ * 协议唯一锁死为 library://<分类id>，支持全部数据(library://-1)、未分类(library://-2)以及树状层级跳转
+ */
 class NavigationService : public QObject {
     Q_OBJECT
 
@@ -38,8 +42,8 @@ signals:
 
     /**
      * @brief 全局统一路径变更信号 (驱动各子面板单向加载数据)
-     * @param url 标准协议 URL (如 file://C:/Users 或 computer://)
-     * @param displayPath 适合 UI 面包屑展示的文本 (如 C:\Users 或 此电脑)
+     * @param url 标准协议 URL (如 library://1 或 library://-1)
+     * @param displayPath 适合 UI 面包屑展示的文本 (如 库 → 全部数据)
      */
     void currentUrlChanged(const QString& url, const QString& displayPath, bool recursive);
 

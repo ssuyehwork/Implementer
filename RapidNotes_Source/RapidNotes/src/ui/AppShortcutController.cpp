@@ -112,27 +112,25 @@ void AppShortcutController::initShortcuts() {
 
     auto registerShortcut = [this](const QKeySequence& seq, std::function<void()> fn) {
 #ifdef Q_OS_WIN
-        // Windows 平台由防抢占低级键盘钩子统一接管拦截与分发，杜绝 QShortcut 双重激活风险
         LocalShortcutInterceptor::instance().registerProtectedShortcut(seq, fn);
 #else
-        // 非 Windows 平台降级使用 Qt 标准 QShortcut
         QShortcut* sc = new QShortcut(seq, m_window);
         sc->setContext(Qt::WindowShortcut);
         connect(sc, &QShortcut::activated, this, fn);
 #endif
     };
 
-    // 1. F5: 局内刷新当前目录
+    // 1. F5: 全局刷新
     registerShortcut(QKeySequence(Qt::Key_F5), []() {
         NavigationService::instance().refresh();
     });
 
-    // 2. Ctrl+Z: 局内文件撤销
+    // 2. Ctrl+Z: 事务级撤销
     registerShortcut(QKeySequence::Undo, []() {
         if (!isEditingFocus()) UndoManager::instance().undo();
     });
 
-    // 3. Ctrl+Shift+Z / Ctrl+Y: 局内文件重做
+    // 3. Ctrl+Shift+Z / Ctrl+Y: 事务级重做
     registerShortcut(QKeySequence::Redo, []() {
         if (!isEditingFocus()) UndoManager::instance().redo();
     });
@@ -186,12 +184,12 @@ void AppShortcutController::initShortcuts() {
         }
     });
 
-    // 7. Ctrl+T: 新建标签页
+    // 7. Ctrl+T: 新建标签页（默认指向 library://-1 全部数据）
     registerShortcut(QKeySequence(Qt::CTRL | Qt::Key_T), [this]() {
         if (m_window) {
             if (auto titleBar = m_window->findChild<TitleBarWidget*>()) {
                 if (titleBar->tabBar()) {
-                    titleBar->tabBar()->addTab("此电脑", "computer://", true);
+                    titleBar->tabBar()->addTab("全部数据", "library://-1", true);
                 }
             }
         }
@@ -208,65 +206,47 @@ void AppShortcutController::initShortcuts() {
         }
     });
 
-    // 9. Ctrl+Shift+N: 新建文件夹
-    registerShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_N), [this]() {
-        if (!isEditingFocus()) {
-            emit createNewFolderRequested();
-        }
-    });
-
-    // 9.1 Ctrl+N: 新建 Markdown 文件
+    // 9. Ctrl+N: 新建灵感笔记
     registerShortcut(QKeySequence(Qt::CTRL | Qt::Key_N), [this]() {
         if (!isEditingFocus()) {
+            emit createNoteRequested();
             emit createNewMdRequested();
         }
     });
 
-    // 10. Ctrl+Shift+E: 提取文件文本内容至剪贴板
-    registerShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_E), [this]() {
+    // 10. Ctrl+Shift+N: 新建笔记分类
+    registerShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_N), [this]() {
         if (!isEditingFocus()) {
-            emit extractContentRequested();
+            emit createCategoryRequested();
+            emit createNewFolderRequested();
         }
     });
 
-    // 11. Ctrl+R: 切换递归显示子文件夹中的项目
-    registerShortcut(QKeySequence(Qt::CTRL | Qt::Key_R), [this]() {
-        if (!isEditingFocus()) {
-            emit toggleRecursiveRequested();
-        }
-    });
-
-    // 12. Ctrl+D: 局内重置所有筛选条件
+    // 11. Ctrl+D: 清空筛选
     registerShortcut(QKeySequence(Qt::CTRL | Qt::Key_D), [this]() {
         if (!isEditingFocus()) {
             emit resetFilterRequested();
         }
     });
 
-    // Ctrl+Space: 移入回收站
+    // 12. Ctrl+Space: 移入回收站
     registerShortcut(QKeySequence(Qt::CTRL | Qt::Key_Space), [this]() {
         if (!isEditingFocus()) {
             emit moveToTrashRequested();
         }
     });
 
-    // 13. Alt+B: 标记/取消标记当前选中的文件夹
+    // 13. Alt+B: 收藏标星
     registerShortcut(QKeySequence(Qt::ALT | Qt::Key_B), [this]() {
         if (!isEditingFocus()) {
-            emit toggleMarkedRequested();
+            emit toggleFavoriteRequested();
         }
     });
 
-    // 14. Alt+V: 迁移选中项目到已标记的目的地文件夹
-    registerShortcut(QKeySequence(Qt::ALT | Qt::Key_V), [this]() {
-        if (!isEditingFocus()) {
-            emit transferToMarkedRequested();
-        }
-    });
-
-    // 15. Alt+C: 复制所选项目名称（顿号分割）
+    // 14. Alt+C: 提取标题
     registerShortcut(QKeySequence(Qt::ALT | Qt::Key_C), [this]() {
         if (!isEditingFocus()) {
+            emit copyTitlesRequested();
             emit copyNamesEnumeratedRequested();
         }
     });
