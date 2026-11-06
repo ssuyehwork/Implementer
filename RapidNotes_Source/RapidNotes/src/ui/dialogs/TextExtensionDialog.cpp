@@ -1,4 +1,4 @@
-#include "dialogs/TextExtensionDialog.h"
+#include "TextExtensionDialog.h"
 #include "../UiHelper.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>

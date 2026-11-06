@@ -1,4 +1,4 @@
-#include "dialogs/CacheLocationDialog.h"
+#include "CacheLocationDialog.h"
 #include "../UiHelper.h"
 #include "../../core/AppConfig.h"
 #include <QVBoxLayout>
