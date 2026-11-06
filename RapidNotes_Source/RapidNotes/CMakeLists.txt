@@ -183,6 +183,8 @@ set(SOURCES
     src/ui/ContentPanel.h
     src/ui/DropJustifiedView.cpp
     src/ui/DropJustifiedView.h
+    src/ui/DropListView.cpp
+    src/ui/DropListView.h
     src/ui/DropTreeView.cpp
     src/ui/DropTreeView.h
     src/ui/Editor.cpp
@@ -196,6 +198,8 @@ set(SOURCES
     src/ui/FileSearchWindow.h
     src/ui/FileStorageWindow.cpp
     src/ui/FileStorageWindow.h
+    src/ui/ColorPicker.cpp
+    src/ui/ColorPicker.h
     src/ui/ColorLabelGroup.cpp
     src/ui/ColorLabelGroup.h
     src/ui/CreateDateGroup.cpp
