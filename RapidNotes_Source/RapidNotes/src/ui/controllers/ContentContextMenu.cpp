@@ -11,8 +11,6 @@
 #include "../ColorPicker.h"
 #include "../FramelessDialog.h"
 #include "../dialogs/FramelessInputDialog.h"
-#include "../dialogs/CreateFolderWithItemsDialog.h"
-#include "../dialogs/FileCompareDialog.h"
 #include "../../util/ShellHelper.h"
 #include "../../util/DeepThumbnailExtractor.h"
 #include "../../core/TrashService.h"
@@ -195,7 +193,7 @@ void ContentContextMenu::showMenu(QAbstractItemView* view, const QPoint& pos) {
             newMenuDrive->addAction(UiHelper::getIcon("folder_filled", QColor("#EEEEEE")), "创建文件夹（Ctrl+Shift+N）")->setData(ContentPanel::ActionNewFolder);
             newMenuDrive->addAction(UiHelper::getIcon("text", QColor("#EEEEEE")), "创建 Markdown（Ctrl+N）")->setData(ContentPanel::ActionNewMd);
             newMenuDrive->addAction(UiHelper::getIcon("text", QColor("#EEEEEE")), "创建纯文本文件 (txt)")->setData(ContentPanel::ActionNewTxt);
-            newMenuDrive->addAction(UiHelper::getIcon("folder", QColor("#EEEEEE")), QString("用所选项目新建文件夹(%1)").arg(driveItemCount))->setData(ContentPanel::ActionCreateFolderWithSelectedItems);
+
 
             menu.addSeparator();
 
@@ -323,7 +321,7 @@ void ContentContextMenu::showMenu(QAbstractItemView* view, const QPoint& pos) {
             newMenuItem->addAction(UiHelper::getIcon("folder_filled", QColor("#EEEEEE")), "创建文件夹（Ctrl+Shift+N）")->setData(ContentPanel::ActionNewFolder);
             newMenuItem->addAction(UiHelper::getIcon("text", QColor("#EEEEEE")), "创建 Markdown（Ctrl+N）")->setData(ContentPanel::ActionNewMd);
             newMenuItem->addAction(UiHelper::getIcon("text", QColor("#EEEEEE")), "创建纯文本文件 (txt)")->setData(ContentPanel::ActionNewTxt);
-            newMenuItem->addAction(UiHelper::getIcon("folder", QColor("#EEEEEE")), QString("用所选项目新建文件夹(%1)").arg(selItemCount))->setData(ContentPanel::ActionCreateFolderWithSelectedItems);
+
 
             menu.addSeparator();
 
@@ -446,18 +444,7 @@ void ContentContextMenu::showMenu(QAbstractItemView* view, const QPoint& pos) {
             ContextMenuFactory::buildCopyNameAction(&menu, selPaths, m_panel);
             ContextMenuFactory::buildCopyPathAction(&menu, selPaths, m_panel);
 
-            // 文件对比：仅当选中项里"文件"（排除文件夹、驱动器根目录、重复路径）数量 >= 2 时才出现
-            QStringList compareFiles;
-            for (const QString& p : selPathsItem) {
-                if (!p.isEmpty() && !QFileInfo(p).isDir()) {
-                    if (!compareFiles.contains(p)) {
-                        compareFiles << p;
-                    }
-                }
-            }
-            if (compareFiles.size() >= 2) {
-                menu.addAction(UiHelper::getIcon("Compare.svg", QColor("#EEEEEE"), 18), "文件对比")->setData(ContentPanel::ActionFileCompare);
-            }
+
 
             QMenu* moreMenu = menu.addMenu(UiHelper::getIcon("more_horizontal", QColor("#EEEEEE"), 18), "更多");
             UiHelper::applyMenuStyle(moreMenu);
@@ -721,35 +708,12 @@ void ContentContextMenu::showMenu(QAbstractItemView* view, const QPoint& pos) {
             m_panel->createNewItem("folder");
             break;
         case ContentPanel::ActionCreateFolderWithSelectedItems: {
-            QStringList selectedPaths = m_panel->getSelectedPaths();
-            if (selectedPaths.isEmpty() && !path.isEmpty()) {
-                selectedPaths << path;
-            }
-            if (!selectedPaths.isEmpty()) {
-                CreateFolderWithItemsDialog dlg(currentPath, selectedPaths, m_panel);
-                if (dlg.exec() == QDialog::Accepted) {
-                    m_panel->refreshAll();
-                }
-            }
             break;
         }
         case ContentPanel::ActionNewMd:
             m_panel->createNewItem("md");
             break;
         case ContentPanel::ActionFileCompare: {
-            QStringList selectedPaths = m_panel->getSelectedPaths();
-            QStringList compareFiles;
-            for (const QString& p : selectedPaths) {
-                if (!p.isEmpty() && !QFileInfo(p).isDir()) {
-                    if (!compareFiles.contains(p)) {
-                        compareFiles << p;
-                    }
-                }
-            }
-            if (compareFiles.size() >= 2) {
-                FileCompareDialog dlg(compareFiles, m_panel);
-                dlg.exec();
-            }
             break;
         }
         case ContentPanel::ActionNewTxt:

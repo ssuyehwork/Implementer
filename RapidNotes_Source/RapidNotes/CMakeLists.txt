@@ -80,6 +80,13 @@ set(SOURCES
     src/core/CentralEventHub.h
     src/core/ClipboardMonitor.cpp
     src/core/ClipboardMonitor.h
+    src/core/ClipboardService.cpp
+    src/core/ClipboardService.h
+    src/core/TaskProgressService.cpp
+    src/core/TaskProgressService.h
+    src/core/UndoManager.h
+    src/meta/LibraryService.cpp
+    src/meta/LibraryService.h
     src/core/CoreEngine.cpp
     src/core/CoreEngine.h
     src/core/DatabaseManager.cpp
