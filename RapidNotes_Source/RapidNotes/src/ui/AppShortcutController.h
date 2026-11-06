@@ -11,7 +11,8 @@ class SearchController;
 
 /**
  * @brief 局内（应用内）快捷键控制器
- * 基于 Qt 标准 QShortcut 实现，严格限定为 Qt::WindowShortcut 作用域，绝不侵入操作系统全局
+ * 基于 Qt 标准 QShortcut / 防抢占低级钩子实现，严格限定为局内作用域，
+ * 严格剔除一切物理文件操作，聚焦纯笔记领域语义
  */
 class AppShortcutController : public QObject {
     Q_OBJECT
@@ -26,58 +27,48 @@ public:
 
 signals:
     /**
-     * @brief Alt+Q 局内快捷键触发置顶状态翻转
+     * @brief Ctrl+N: 新建灵感笔记
      */
-    void togglePinRequested();
+    void createNoteRequested();
 
     /**
-     * @brief Tab 局内快捷键（非编辑状态）触发沉浸单栏模式切换
+     * @brief Ctrl+Shift+N: 新建笔记分类
      */
-    void toggleImmersiveRequested();
+    void createCategoryRequested();
 
     /**
-     * @brief Ctrl+Shift+N 触发新建文件夹
-     */
-    void createNewFolderRequested();
-
-    /**
-     * @brief Ctrl+N 触发新建 Markdown 文件
-     */
-    void createNewMdRequested();
-
-    /**
-     * @brief Ctrl+Shift+E 触发提取文本内容至剪贴板
-     */
-    void extractContentRequested();
-
-    /**
-     * @brief Ctrl+R 触发切换递归显示子文件夹中的项目
-     */
-    void toggleRecursiveRequested();
-
-    /**
-     * @brief Ctrl+D 触发重置所有筛选条件
-     */
-    void resetFilterRequested();
-
-    /**
-     * @brief Ctrl+Space 触发移入回收站
+     * @brief Ctrl+Space: 移入回收站
      */
     void moveToTrashRequested();
 
     /**
-     * @brief Alt+B 触发标记/取消标记当前选中的文件夹
+     * @brief Ctrl+D: 清空筛选
      */
-    void toggleMarkedRequested();
+    void resetFilterRequested();
 
     /**
-     * @brief Alt+V 触发迁移选中项目到已标记的目的地文件夹
+     * @brief Alt+B: 收藏标星 (切换选中笔记 is_favorite)
      */
-    void transferToMarkedRequested();
+    void toggleFavoriteRequested();
 
     /**
-     * @brief Alt+C 触发复制所选项目名称（顿号分割）
+     * @brief Alt+C: 提取标题 (多条选中笔记标题以顿号拼接复制到剪贴板)
      */
+    void copyTitlesRequested();
+
+    /**
+     * @brief Alt+Q: 切换置顶
+     */
+    void togglePinRequested();
+
+    /**
+     * @brief Tab: 沉浸模式 (一键折叠/展开侧面板)
+     */
+    void toggleImmersiveRequested();
+
+    // 兼容旧接口别名
+    void createNewFolderRequested();
+    void createNewMdRequested();
     void copyNamesEnumeratedRequested();
 
 protected:

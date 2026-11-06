@@ -323,6 +323,12 @@ set(SOURCES
     src/ui/SearchLineEdit.h
     src/ui/SecurityLockDialog.cpp
     src/ui/SecurityLockDialog.h
+    src/ui/SettingsBarWidget.cpp
+    src/ui/SettingsBarWidget.h
+    src/ui/dialogs/TextExtensionDialog.cpp
+    src/ui/dialogs/TextExtensionDialog.h
+    src/ui/dialogs/CacheLocationDialog.cpp
+    src/ui/dialogs/CacheLocationDialog.h
     src/ui/SettingsWindow.cpp
     src/ui/SettingsWindow.h
     src/ui/SidebarContainerWidget.cpp

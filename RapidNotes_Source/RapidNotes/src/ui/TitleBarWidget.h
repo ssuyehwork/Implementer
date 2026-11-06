@@ -37,9 +37,11 @@ public:
     void setZoomLevel(int value);
     Q_INVOKABLE void setWindowMaximized(bool maximized);
     void setViewModeOption(ViewModeOption mode);
-    void setDriveBarVisible(bool visible);
+    void setSettingsBarVisible(bool visible);
+    void setDriveBarVisible(bool visible) { setSettingsBarVisible(visible); }
 
 signals:
+    void settingsBarToggleRequested(bool visible);
     void driveBarToggleRequested(bool visible);
     void pinToggled(bool pinned);
     void zoomLevelChanged(int value);

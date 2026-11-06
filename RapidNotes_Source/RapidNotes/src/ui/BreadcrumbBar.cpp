@@ -1,43 +1,16 @@
 #include "BreadcrumbBar.h"
 #include <QMouseEvent>
-#include <QDragEnterEvent>
-#include <QDropEvent>
-#include <QMimeData>
-#include <QUrl>
-#include <QDir>
-#include <QFileInfo>
 #include <QLabel>
+#include <QSqlQuery>
+#include <QSqlError>
+#include <QDebug>
 #include "UiHelper.h"
+#include "../core/DatabaseManager.h"
 
 namespace RapidNotes {
 
-BreadcrumbNodeButton::BreadcrumbNodeButton(const QString& name, const QString& fullPath, QWidget* parent)
-    : QPushButton(name, parent), m_fullPath(fullPath) {
-    setAcceptDrops(true);
-}
-
-void BreadcrumbNodeButton::dragEnterEvent(QDragEnterEvent* event) {
-    if (event->mimeData() && event->mimeData()->hasUrls()) {
-        event->acceptProposedAction();
-    } else {
-        QPushButton::dragEnterEvent(event);
-    }
-}
-
-void BreadcrumbNodeButton::dropEvent(QDropEvent* event) {
-    if (event->mimeData() && event->mimeData()->hasUrls()) {
-        QStringList paths;
-        for (const QUrl& url : event->mimeData()->urls()) {
-            QString p = url.toLocalFile();
-            if (!p.isEmpty()) paths.append(p);
-        }
-        if (!paths.isEmpty()) {
-            emit pathsDroppedNode(paths, m_fullPath);
-            event->acceptProposedAction();
-            return;
-        }
-    }
-    QPushButton::dropEvent(event);
+BreadcrumbNodeButton::BreadcrumbNodeButton(int id, const QString& name, const QString& fullUrl, QWidget* parent)
+    : QPushButton(name, parent), m_id(id), m_fullUrl(fullUrl) {
 }
 
 BreadcrumbBar::BreadcrumbBar(QWidget* parent) : QWidget(parent) {
@@ -48,39 +21,56 @@ BreadcrumbBar::BreadcrumbBar(QWidget* parent) : QWidget(parent) {
     setCursor(Qt::PointingHandCursor);
 }
 
-void BreadcrumbBar::setPath(const QString& path) {
-    m_currentPath = path;
+void BreadcrumbBar::setPath(const QString& url) {
+    m_currentUrl = url;
     m_nodes.clear();
 
-    if (path == "computer://") {
-        m_nodes.append(PathNode("此电脑", "computer://"));
-    } else if (path.contains(" → ")) {
-        QStringList parts = path.split(" → ", Qt::SkipEmptyParts);
+    if (url.startsWith("library://")) {
+        int catId = url.mid(10).toInt();
+        if (catId == -1) {
+            // 全部数据: 呈现为 库 > 全部数据
+            m_nodes.append(PathNode(-1, "库", "library://-1"));
+            m_nodes.append(PathNode(-1, "全部数据", "library://-1"));
+        } else if (catId == -2) {
+            // 未分类: 呈现为 库 > 未分类
+            m_nodes.append(PathNode(-1, "库", "library://-1"));
+            m_nodes.append(PathNode(-2, "未分类", "library://-2"));
+        } else if (catId > 0) {
+            // 自底向上递归查找 parent_id 链条
+            QList<PathNode> chain;
+            int curr = catId;
+            QSet<int> visited;
+            while (curr > 0 && !visited.contains(curr)) {
+                visited.insert(curr);
+                QSqlQuery query(DatabaseManager::instance().database());
+                query.prepare("SELECT id, name, parent_id FROM categories WHERE id = :id");
+                query.bindValue(":id", curr);
+                if (query.exec() && query.next()) {
+                    int cId = query.value("id").toInt();
+                    QString cName = query.value("name").toString();
+                    int pId = query.value("parent_id").isNull() ? -1 : query.value("parent_id").toInt();
+                    chain.prepend(PathNode(cId, cName, QString("library://%1").arg(cId)));
+                    curr = pId;
+                } else {
+                    break;
+                }
+            }
+            // 头部固定加入“库”（点击回到全部数据）
+            m_nodes.append(PathNode(-1, "库", "library://-1"));
+            m_nodes.append(chain);
+        } else {
+            m_nodes.append(PathNode(-1, "库", "library://-1"));
+        }
+    } else if (url == "trash://") {
+        m_nodes.append(PathNode(-999, "回收站", "trash://"));
+    } else if (url.contains(" → ")) {
+        QStringList parts = url.split(" → ", Qt::SkipEmptyParts);
         for (const QString& part : parts) {
-            m_nodes.append(PathNode(part, path));
+            m_nodes.append(PathNode(-1, part, url));
         }
     } else {
-        QString normPath = QDir::toNativeSeparators(path);
-        QStringList parts = normPath.split(QDir::separator(), Qt::SkipEmptyParts);
-
-        QString currentBuildPath;
-        if (normPath.contains(":") && normPath.indexOf(":") == 1) {
-            QString drive = normPath.left(3); // "C:\"
-            m_nodes.append(PathNode(drive, drive));
-            currentBuildPath = drive;
-            
-            if (parts.size() > 0 && parts[0].contains(":")) {
-                parts.removeFirst(); 
-            }
-        }
-
-        for (qsizetype i = 0; i < parts.size(); ++i) {
-            if (!currentBuildPath.endsWith(QDir::separator())) {
-                currentBuildPath += QDir::separator();
-            }
-            currentBuildPath += parts[i];
-            m_nodes.append(PathNode(parts[i], currentBuildPath));
-        }
+        // 兜底虚拟协议显示
+        m_nodes.append(PathNode(-1, url.isEmpty() ? "全部数据" : url, url));
     }
 
     rebuildBreadcrumbs();
@@ -94,18 +84,16 @@ void BreadcrumbBar::rebuildBreadcrumbs() {
     }
 
     QFontMetrics fm(font());
-    int availableWidth = width() - 32; // 留出左右边距与容差
+    int availableWidth = width() - 32;
     if (availableWidth <= 0) availableWidth = 300;
 
-    // 计算包含所有节点时的预估总宽度
     int totalWidth = 0;
     for (int i = 0; i < m_nodes.size(); ++i) {
-        totalWidth += fm.horizontalAdvance(m_nodes[i].name) + 24; // 按钮 padding
-        if (i > 0) totalWidth += 14; // 分隔符宽度
+        totalWidth += fm.horizontalAdvance(m_nodes[i].name) + 24;
+        if (i > 0) totalWidth += 14;
     }
 
     if (totalWidth <= availableWidth || m_nodes.size() <= 2) {
-        // 未超长或节点极少：完整呈现全部路径，打上“未截断”标记
         m_isElided = false;
         for (int i = 0; i < m_nodes.size(); ++i) {
             if (i > 0) {
@@ -114,14 +102,12 @@ void BreadcrumbBar::rebuildBreadcrumbs() {
                 sep->setObjectName("BreadcrumbSep");
                 m_layout->addWidget(sep);
             }
-            addLevel(m_nodes[i].name, m_nodes[i].fullPath);
+            addLevel(m_nodes[i].id, m_nodes[i].name, m_nodes[i].url);
         }
     } else {
-        // 超长：中间超出部分截断并显示 ... 按钮，打上“已截断”标记
         m_isElided = true;
-
         int headCount = 1;
-        if (m_nodes.size() > 3) headCount = 2; // 较长路径保留前两级（例如 C:\ > Users）
+        if (m_nodes.size() > 3) headCount = 2;
 
         int visibleTailIndex = m_nodes.size() - 1;
         int usedWidth = 0;
@@ -140,7 +126,6 @@ void BreadcrumbBar::rebuildBreadcrumbs() {
         }
         visibleTailIndex++;
 
-        // 渲染头部保留节点
         for (int i = 0; i < headCount; ++i) {
             if (i > 0) {
                 QLabel* sep = new QLabel(this);
@@ -148,10 +133,9 @@ void BreadcrumbBar::rebuildBreadcrumbs() {
                 sep->setObjectName("BreadcrumbSep");
                 m_layout->addWidget(sep);
             }
-            addLevel(m_nodes[i].name, m_nodes[i].fullPath);
+            addLevel(m_nodes[i].id, m_nodes[i].name, m_nodes[i].url);
         }
 
-        // 渲染 "..." 省略按钮
         QLabel* sepEllipsis = new QLabel(this);
         sepEllipsis->setPixmap(UiHelper::getIcon("chevron_right", QColor("#AAAAAA"), 12).pixmap(12, 12));
         sepEllipsis->setObjectName("BreadcrumbSep");
@@ -163,13 +147,12 @@ void BreadcrumbBar::rebuildBreadcrumbs() {
         connect(btnMore, &QPushButton::clicked, this, &BreadcrumbBar::blankAreaClicked);
         m_layout->addWidget(btnMore);
 
-        // 渲染尾部保留节点
         for (int i = visibleTailIndex; i < m_nodes.size(); ++i) {
             QLabel* sep = new QLabel(this);
             sep->setPixmap(UiHelper::getIcon("chevron_right", QColor("#AAAAAA"), 12).pixmap(12, 12));
             sep->setObjectName("BreadcrumbSep");
             m_layout->addWidget(sep);
-            addLevel(m_nodes[i].name, m_nodes[i].fullPath);
+            addLevel(m_nodes[i].id, m_nodes[i].name, m_nodes[i].url);
         }
     }
 
@@ -191,21 +174,14 @@ void BreadcrumbBar::clearButtons() {
     }
 }
 
-void BreadcrumbBar::addLevel(const QString& name, const QString& fullPath) {
-    BreadcrumbNodeButton* btn = new BreadcrumbNodeButton(name, fullPath, this);
+void BreadcrumbBar::addLevel(int id, const QString& name, const QString& url) {
+    BreadcrumbNodeButton* btn = new BreadcrumbNodeButton(id, name, url, this);
     btn->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
     btn->setFixedHeight(24);
     btn->setObjectName("BreadcrumbNodeBtn");
 
-    btn->setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(btn, &QPushButton::clicked, [this, fullPath]() {
-        emit pathClicked(fullPath);
-    });
-    connect(btn, &QPushButton::customContextMenuRequested, [this, btn, fullPath](const QPoint& pos) {
-        emit favoriteToggleRequested(fullPath, btn->mapToGlobal(pos));
-    });
-    connect(btn, &BreadcrumbNodeButton::pathsDroppedNode, this, [this](const QStringList& paths, const QString& targetPath) {
-        emit pathsDroppedNode(paths, targetPath);
+    connect(btn, &QPushButton::clicked, [this, url]() {
+        emit pathClicked(url);
     });
 
     m_layout->addWidget(btn);

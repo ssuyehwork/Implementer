@@ -59,6 +59,8 @@ public:
 
     void silentWarmup() {}
     void showToast(const QString& text, int timeout = 1500, const QColor& borderColor = QColor("#2ecc71"), QWidget* targetWidget = nullptr) { Q_UNUSED(borderColor); Q_UNUSED(targetWidget); if (targetWidget) { showText(targetWidget->mapToGlobal(QPoint(targetWidget->width() / 2, 10)), text, timeout); } else { showText(QCursor::pos(), text, timeout); } }
+    void showRatingToast(int rating, QWidget* targetWidget = nullptr) { showToast(QString("评分: %1 星").arg(rating), 1200, QColor("#f1c40f"), targetWidget); }
+    void showColorToast(const QString& colorHex, QWidget* targetWidget = nullptr) { showToast(QString("颜色标记: %1").arg(colorHex), 1200, QColor(colorHex.isEmpty() ? "#B0B0B0" : colorHex), targetWidget); }
 
     static void hideTip() {
         QToolTip::hideText();

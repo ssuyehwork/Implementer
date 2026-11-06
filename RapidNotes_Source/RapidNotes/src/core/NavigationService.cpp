@@ -1,7 +1,7 @@
 #include "NavigationService.h"
 #include "NavigationHistoryService.h"
-#include <QDir>
-#include <QFileInfo>
+#include "DatabaseManager.h"
+#include <QSqlQuery>
 
 namespace RapidNotes {
 
@@ -10,55 +10,66 @@ NavigationService& NavigationService::instance() {
     return s_instance;
 }
 
-NavigationService::NavigationService(QObject* parent) : QObject(parent) {
-
+NavigationService::NavigationService(QObject* parent) : QObject(parent), m_currentUrl("library://-1") {
 }
 
 QString NavigationService::normalizeUrl(const QString& rawUrl) const {
-    if (rawUrl.isEmpty()) return "computer://";
+    if (rawUrl.isEmpty()) return "library://-1";
 
     QString url = rawUrl.trimmed();
-    if (url.startsWith("file://", Qt::CaseInsensitive)) {
-        url = url.mid(7);
+    if (url == "computer://" || url == "库" || url == "全部数据" || url == "library://") {
+        return "library://-1";
     }
 
-    if (url == "computer://" || url == "trash://" || url.contains("://")) {
+    if (url.startsWith("library://") || url == "trash://") {
         return url;
     }
 
-    QString clean = QDir::fromNativeSeparators(QDir::cleanPath(url));
-    if (clean.endsWith(':')) {
-        clean += "/";
+    if (url.startsWith("category://")) {
+        return QString("library://%1").arg(url.mid(11));
     }
-    return clean;
+
+    // 若传入的是纯数字字符串，转化为 library://<id>
+    bool isInt = false;
+    int idVal = url.toInt(&isInt);
+    if (isInt) {
+        return QString("library://%1").arg(idVal);
+    }
+
+    return url;
 }
 
 QString NavigationService::currentDisplayPath() const {
-    if (m_currentUrl == "computer://") return "此电脑";
     if (m_currentUrl == "trash://") return "回收站";
 
     if (m_currentUrl.startsWith("library://")) {
         int catId = m_currentUrl.mid(10).toInt();
         if (catId == -1) return "库 → 全部数据";
         if (catId == -2) return "库 → 未分类";
+
+        QString catName = DatabaseManager::instance().getCategoryNameById(catId);
+        if (!catName.isEmpty()) {
+            return QString("库 → %1").arg(catName);
+        }
         return "库";
     }
 
-    if (m_currentUrl.startsWith("smartfolder://")) return "库";
-
-    if (m_currentUrl.contains("://")) return m_currentUrl;
-    return QDir::toNativeSeparators(m_currentUrl);
+    return m_currentUrl;
 }
 
 bool NavigationService::isVirtualProtocol() const {
-    return m_currentUrl.contains("://");
+    return true;
 }
 
 bool NavigationService::canGoUp() const {
-    if (m_currentUrl.isEmpty() || m_currentUrl == "computer://" || m_currentUrl == "trash://") {
+    if (m_currentUrl.isEmpty() || m_currentUrl == "library://-1" || m_currentUrl == "library://-2" || m_currentUrl == "trash://") {
         return false;
     }
-    return true;
+    if (m_currentUrl.startsWith("library://")) {
+        int catId = m_currentUrl.mid(10).toInt();
+        return catId > 0;
+    }
+    return false;
 }
 
 void NavigationService::emitNavState() {
@@ -76,8 +87,6 @@ void NavigationService::navigateTo(const QString& rawUrl, bool recordHistory, bo
 
     QString normalized = normalizeUrl(rawUrl);
 
-    // 路径跳转幂等性守卫 (No-op Protection)：
-    // 若目标路径与当前路径一致（大小写不敏感对比）且非递归状态变更，直接返回，阻断无意义的视图重载与筛选面板重置
     if (QString::compare(normalized, m_currentUrl, Qt::CaseInsensitive) == 0 && !recursive) {
         return;
     }
@@ -97,11 +106,7 @@ void NavigationService::navigateTo(const QString& rawUrl, bool recordHistory, bo
     }
 
     m_currentUrl = normalized;
-
-    if (!isVirtualProtocol()) {
-        NavigationHistoryService::instance().appendPath(normalized);
-        NavigationHistoryService::recordRecentVisitedFolder(QDir::toNativeSeparators(m_currentUrl).toStdWString());
-    }
+    NavigationHistoryService::instance().appendPath(normalized);
 
     emit currentUrlChanged(m_currentUrl, currentDisplayPath(), recursive);
     emitNavState();
@@ -134,21 +139,24 @@ QString NavigationService::takePendingGoUpChildPath() {
 void NavigationService::goUp() {
     if (!canGoUp()) return;
 
-    QString departingPath = m_currentUrl;
-    QDir dir(m_currentUrl);
-    if (dir.isRoot()) {
-        m_pendingGoUpChildPath.clear();
-        navigateTo("computer://");
-        return;
+    if (m_currentUrl.startsWith("library://")) {
+        int catId = m_currentUrl.mid(10).toInt();
+        if (catId > 0) {
+            QSqlQuery query(DatabaseManager::instance().database());
+            query.prepare("SELECT parent_id FROM categories WHERE id = :id");
+            query.bindValue(":id", catId);
+            if (query.exec() && query.next()) {
+                int parentId = query.value(0).isNull() ? -1 : query.value(0).toInt();
+                if (parentId > 0) {
+                    navigateTo(QString("library://%1").arg(parentId));
+                    return;
+                }
+            }
+        }
     }
 
-    if (dir.cdUp()) {
-        m_pendingGoUpChildPath = departingPath;
-        navigateTo(dir.absolutePath());
-    } else {
-        m_pendingGoUpChildPath.clear();
-        navigateTo("computer://");
-    }
+    // 默认回到全部数据
+    navigateTo("library://-1");
 }
 
 void NavigationService::refresh() {

@@ -26,7 +26,7 @@ class AddressBar;
 class TaskProgressStrip;
 class SearchController; 
 class TitleBarWidget;
-
+class SettingsBarWidget;
 class NavBarWidget;
 
 
@@ -82,6 +82,7 @@ private:
     void updateStatusBarButtonHighlights();
 
     TitleBarWidget* m_titleBarWidget = nullptr;
+    SettingsBarWidget* m_settingsBarWidget = nullptr;
     NavBarWidget* m_navBarWidget = nullptr;
     
     QVBoxLayout* m_bodyLayout = nullptr;
