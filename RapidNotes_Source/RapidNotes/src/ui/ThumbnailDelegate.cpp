@@ -89,7 +89,8 @@ void ThumbnailDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opt
 
     // ① 绘制内容摘要 Cover (RapidNotes 笔记摘要)
     QString noteSummary = index.data(NoteRole).toString();
-    if (!noteSummary.isEmpty() || path.startsWith("note://")) {
+    QString itemPath = (m_pathRole != -1) ? index.data(m_pathRole).toString() : QString();
+    if (!noteSummary.isEmpty() || itemPath.startsWith("note://")) {
         CardPainterHelper::drawNoteSummary(painter, l.coverRect, noteSummary);
     } else {
         CardPainterHelper::drawCardCover(painter, l.coverRect, isSelected, hasThumb, thumb, 

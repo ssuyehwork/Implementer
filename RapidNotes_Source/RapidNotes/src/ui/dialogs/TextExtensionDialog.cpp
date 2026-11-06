@@ -10,7 +10,8 @@ namespace RapidNotes {
 
 TextExtensionDialog::TextExtensionDialog(QWidget* parent)
     : FramelessDialog("文本扩展名设置", parent) {
-    setVisibleButtons(Close);
+    if (m_maxBtn) m_maxBtn->hide();
+    if (m_minBtn) m_minBtn->hide();
     resize(560, 480);
     setMinimumSize(480, 400);
 
