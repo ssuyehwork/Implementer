@@ -3,7 +3,6 @@
 
 #include "LibraryPanel.h"
 
-#include "../meta/HistoryService.h"
 #include "../meta/LibrarySyncService.h"
 #include "ContentPanel.h"
 #include "controllers/ContentPaneSplitManager.h"
@@ -51,10 +50,7 @@ PanelMediator* PanelMediator::instance() {
 
 PanelMediator::PanelMediator(const PanelMediatorComponents& components, QObject* parent)
     : QObject(parent),
-      m_navPanel(components.navPanel),
-      m_favoritePanel(components.favoritePanel),
       m_libraryPanel(components.libraryPanel),
-      m_markedPanel(components.markedPanel),
       m_contentPanel(components.contentPanel),
       m_metaPanel(components.metaPanel),
       m_filterPanel(components.filterPanel),
@@ -73,7 +69,6 @@ PanelMediator::~PanelMediator() {
 }
 
 void PanelMediator::setupConnections() {
-    NavPanel* navPanel = m_navPanel;
 
     // 🚀【Tab页在新标签中打开路由】：从 NavigationService 接收在 Tab 栏打开请求，解耦控制器下钻
     connect(&NavigationService::instance(), &NavigationService::requestOpenInNewTab, this, [this](const QString& url) {
@@ -81,9 +76,7 @@ void PanelMediator::setupConnections() {
             m_titleBar->tabBar()->openInNewTab(url);
         }
     });
-    FavoritePanel* favoritePanel = m_favoritePanel;
     LibraryPanel* libraryPanel = m_libraryPanel;
-    MarkedPanel* markedPanel = m_markedPanel;
     ContentPanel* contentPanel = m_contentPanel;
     MetaPanel* metaPanel = m_metaPanel;
     FilterPanel* filterPanel = m_filterPanel;
@@ -580,7 +573,6 @@ void PanelMediator::setupConnections() {
                 return;
             }
             // 无论能否在 QuickLook 中预览，凡是被双击/空格/回车尝试激活的文件全量记录历史
-            HistoryService::instance().recordFileAccess(path);
 
             if (!UiHelper::canPreviewFile(path)) {
                 return;

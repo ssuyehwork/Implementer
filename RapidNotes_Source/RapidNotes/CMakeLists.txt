@@ -65,6 +65,7 @@ include_directories(
     src/ui/controllers
     src/core
     src/util
+    src/meta
 )
 
 # 源代码列表
@@ -106,6 +107,9 @@ set(SOURCES
     src/core/MessageCaptureHandler.cpp
     src/core/MessageCaptureHandler.h
     src/core/ModelContract.h
+    src/meta/LibrarySyncService.h
+    src/meta/LibraryDao.h
+    src/util/ShellHelper.h
     src/core/NavigationHistoryService.cpp
     src/core/NavigationHistoryService.h
     src/core/NavigationService.cpp
@@ -220,6 +224,8 @@ set(SOURCES
     src/ui/RatingBarLayout.h
     src/ui/PresetTagsDialog.cpp
     src/ui/PresetTagsDialog.h
+    src/ui/TagPillContainer.cpp
+    src/ui/TagPillContainer.h
     src/ui/TagStatusGroup.cpp
     src/ui/TagStatusGroup.h
     src/ui/FilterStateModel.cpp

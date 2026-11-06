@@ -57,6 +57,9 @@ public:
         QToolTip::showText(globalPos + QPoint(15, 15), wrappedText, nullptr, {}, timeout);
     }
 
+    void silentWarmup() {}
+    void showToast(const QString& text, int timeout = 1500, const QColor& borderColor = QColor("#2ecc71"), QWidget* targetWidget = nullptr) { Q_UNUSED(borderColor); Q_UNUSED(targetWidget); showText(QCursor::pos(), text, timeout); }
+
     static void hideTip() {
         QToolTip::hideText();
     }

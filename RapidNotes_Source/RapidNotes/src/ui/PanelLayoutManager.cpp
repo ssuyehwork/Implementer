@@ -38,73 +38,62 @@ void PanelLayoutManager::initLayout() {
     if (!m_mainSplitter) return;
 
     m_mainSplitter->setStretchFactor(0, 0);
-    m_mainSplitter->setStretchFactor(1, 0);
-    m_mainSplitter->setStretchFactor(2, 1);
+    m_mainSplitter->setStretchFactor(1, 1);
+    m_mainSplitter->setStretchFactor(2, 0);
     m_mainSplitter->setStretchFactor(3, 0);
-    m_mainSplitter->setStretchFactor(4, 0);
 
     bool isImmersive = AppConfig::instance().getValue("MainWindow/IsImmersiveMode", false).toBool();
 
-    // 【顺序修正】：先恢复分栏尺寸比例，再按配置做面板显隐——
-    // 避免"先显隐搅乱比例、restoreState 再纠正"这个中间态被画出来（黑块/单列内容区闪烁的根因）
     QByteArray state = AppConfig::instance().getValue("MainWindow/SplitterState").toByteArray();
     if (!state.isEmpty() && !isImmersive) {
         m_mainSplitter->restoreState(state);
     } else if (!isImmersive) {
         QList<int> sizes;
-        sizes << kBasePanelWidth << kBasePanelWidth << kContentBaseWidth << kBasePanelWidth << kBasePanelWidth;
+        sizes << kBasePanelWidth << kContentBaseWidth << kBasePanelWidth << kBasePanelWidth;
         m_mainSplitter->setSizes(sizes);
     }
     m_mainSplitter->setHandleWidth(kSplitterHandleWidth);
 
     if (isImmersive) {
-        if (m_navPanel) m_navPanel->setVisible(false);
         if (m_sidebarContainer) m_sidebarContainer->setVisible(false);
         if (m_metaPanel) m_metaPanel->setVisible(false);
         if (m_filterPanel) m_filterPanel->setVisible(false);
-        emit panelVisibilityChanged("nav", false);
-        emit panelVisibilityChanged("favorite", false);
+        emit panelVisibilityChanged("sidebar", false);
         emit panelVisibilityChanged("meta", false);
         emit panelVisibilityChanged("filter", false);
     } else {
-        bool navVis = AppConfig::instance().getValue("MainWindow/NavVisible", true).toBool();
-        bool favVis = AppConfig::instance().getValue("MainWindow/FavoriteVisible", true).toBool();
+        bool sideVis = AppConfig::instance().getValue("MainWindow/SidebarVisible", true).toBool();
         bool metaVis = AppConfig::instance().getValue("MainWindow/MetaVisible", true).toBool();
         bool filterVis = AppConfig::instance().getValue("MainWindow/FilterVisible", true).toBool();
 
-        if (m_navPanel) m_navPanel->setVisible(navVis);
-        if (m_sidebarContainer) m_sidebarContainer->setVisible(favVis);
+        if (m_sidebarContainer) m_sidebarContainer->setVisible(sideVis);
         if (m_metaPanel) m_metaPanel->setVisible(metaVis);
         if (m_filterPanel) m_filterPanel->setVisible(filterVis);
 
-        emit panelVisibilityChanged("nav", navVis);
-        emit panelVisibilityChanged("favorite", favVis);
+        emit panelVisibilityChanged("sidebar", sideVis);
         emit panelVisibilityChanged("meta", metaVis);
         emit panelVisibilityChanged("filter", filterVis);
     }
 
-    // 🚀 初始化完成当场强制焊死最小宽度保护，防止 5 栏被挤压崩溃
     updateDynamicMinimumSize();
 }
 
 void PanelLayoutManager::resetSplitterLayout() {
     if (!m_mainSplitter) return;
 
-    if (m_navPanel) m_navPanel->show();
     if (m_sidebarContainer) m_sidebarContainer->show();
     if (m_contentPanel) m_contentPanel->show();
     if (m_metaPanel) m_metaPanel->show();
     if (m_filterPanel) m_filterPanel->show();
 
     QList<int> sizes;
-    sizes << kBasePanelWidth << kBasePanelWidth << kContentBaseWidth << kBasePanelWidth << kBasePanelWidth;
+    sizes << kBasePanelWidth << kContentBaseWidth << kBasePanelWidth << kBasePanelWidth;
     m_mainSplitter->setSizes(sizes);
 
     m_mainSplitter->setStretchFactor(0, 0);
-    m_mainSplitter->setStretchFactor(1, 0);
-    m_mainSplitter->setStretchFactor(2, 1);
+    m_mainSplitter->setStretchFactor(1, 1);
+    m_mainSplitter->setStretchFactor(2, 0);
     m_mainSplitter->setStretchFactor(3, 0);
-    m_mainSplitter->setStretchFactor(4, 0);
 
     AppConfig::instance().remove("MainWindow/SplitterState");
     AppConfig::instance().remove("MainWindow/PanelVisibility");
@@ -115,8 +104,7 @@ void PanelLayoutManager::resetSplitterLayout() {
 }
 
 void PanelLayoutManager::setPanelVisible(const QString& panelId, bool visible) {
-    if (panelId == "nav" && m_navPanel) m_navPanel->setVisible(visible);
-    else if (panelId == "favorite" && m_sidebarContainer) m_sidebarContainer->setVisible(visible);
+    if ((panelId == "sidebar" || panelId == "favorite" || panelId == "nav") && m_sidebarContainer) m_sidebarContainer->setVisible(visible);
     else if (panelId == "content" && m_contentPanel) m_contentPanel->setVisible(true);
     else if (panelId == "meta" && m_metaPanel) m_metaPanel->setVisible(visible);
     else if (panelId == "filter" && m_filterPanel) m_filterPanel->setVisible(visible);
@@ -127,8 +115,7 @@ void PanelLayoutManager::setPanelVisible(const QString& panelId, bool visible) {
 }
 
 bool PanelLayoutManager::isPanelVisible(const QString& panelId) const {
-    if (panelId == "nav" && m_navPanel) return !m_navPanel->isHidden();
-    if (panelId == "favorite" && m_sidebarContainer) return !m_sidebarContainer->isHidden();
+    if ((panelId == "sidebar" || panelId == "favorite" || panelId == "nav") && m_sidebarContainer) return !m_sidebarContainer->isHidden();
     if (panelId == "content" && m_contentPanel) return !m_contentPanel->isHidden();
     if (panelId == "meta" && m_metaPanel) return !m_metaPanel->isHidden();
     if (panelId == "filter" && m_filterPanel) return !m_filterPanel->isHidden();
@@ -136,15 +123,13 @@ bool PanelLayoutManager::isPanelVisible(const QString& panelId) const {
 }
 
 bool PanelLayoutManager::isImmersiveMode() const {
-    return !isPanelVisible("nav") &&
-           !isPanelVisible("favorite") &&
+    return !isPanelVisible("sidebar") &&
            !isPanelVisible("meta") &&
            !isPanelVisible("filter");
 }
 
 void PanelLayoutManager::savePreImmersiveState() {
-    AppConfig::instance().setValue("MainWindow/PreImmersiveNavVisible", isPanelVisible("nav"));
-    AppConfig::instance().setValue("MainWindow/PreImmersiveFavoriteVisible", isPanelVisible("favorite"));
+    AppConfig::instance().setValue("MainWindow/PreImmersiveSidebarVisible", isPanelVisible("sidebar"));
     AppConfig::instance().setValue("MainWindow/PreImmersiveMetaVisible", isPanelVisible("meta"));
     AppConfig::instance().setValue("MainWindow/PreImmersiveFilterVisible", isPanelVisible("filter"));
     if (m_mainSplitter) {
@@ -154,18 +139,16 @@ void PanelLayoutManager::savePreImmersiveState() {
 }
 
 void PanelLayoutManager::restorePreImmersiveState() {
-    bool navVis = AppConfig::instance().getValue("MainWindow/PreImmersiveNavVisible", true).toBool();
-    bool favVis = AppConfig::instance().getValue("MainWindow/PreImmersiveFavoriteVisible", true).toBool();
+    bool sideVis = AppConfig::instance().getValue("MainWindow/PreImmersiveSidebarVisible", true).toBool();
     bool metaVis = AppConfig::instance().getValue("MainWindow/PreImmersiveMetaVisible", true).toBool();
     bool filterVis = AppConfig::instance().getValue("MainWindow/PreImmersiveFilterVisible", true).toBool();
     QByteArray preSplitterState = AppConfig::instance().getValue("MainWindow/PreImmersiveSplitterState").toByteArray();
 
-    if (!navVis && !favVis && !metaVis && !filterVis) {
-        navVis = favVis = metaVis = filterVis = true;
+    if (!sideVis && !metaVis && !filterVis) {
+        sideVis = metaVis = filterVis = true;
     }
 
-    if (m_navPanel) m_navPanel->setVisible(navVis);
-    if (m_sidebarContainer) m_sidebarContainer->setVisible(favVis);
+    if (m_sidebarContainer) m_sidebarContainer->setVisible(sideVis);
     if (m_metaPanel) m_metaPanel->setVisible(metaVis);
     if (m_filterPanel) m_filterPanel->setVisible(filterVis);
 
@@ -175,8 +158,7 @@ void PanelLayoutManager::restorePreImmersiveState() {
     }
 
     updateDynamicMinimumSize();
-    emit panelVisibilityChanged("nav", navVis);
-    emit panelVisibilityChanged("favorite", favVis);
+    emit panelVisibilityChanged("sidebar", sideVis);
     emit panelVisibilityChanged("meta", metaVis);
     emit panelVisibilityChanged("filter", filterVis);
 }
@@ -186,14 +168,12 @@ void PanelLayoutManager::toggleImmersiveMode() {
         restorePreImmersiveState();
     } else {
         savePreImmersiveState();
-        if (m_navPanel) m_navPanel->setVisible(false);
         if (m_sidebarContainer) m_sidebarContainer->setVisible(false);
         if (m_metaPanel) m_metaPanel->setVisible(false);
         if (m_filterPanel) m_filterPanel->setVisible(false);
 
         updateDynamicMinimumSize();
-        emit panelVisibilityChanged("nav", false);
-        emit panelVisibilityChanged("favorite", false);
+        emit panelVisibilityChanged("sidebar", false);
         emit panelVisibilityChanged("meta", false);
         emit panelVisibilityChanged("filter", false);
     }
@@ -216,8 +196,7 @@ void PanelLayoutManager::populatePanelMenu(QMenu* menu) {
         });
     };
 
-    addToggleAction("显示目录导航", "nav", m_navPanel);
-    addToggleAction("显示收藏夹", "favorite", m_sidebarContainer);
+    addToggleAction("显示库面板", "sidebar", m_sidebarContainer);
     addToggleAction("显示内容区", "content", m_contentPanel, false);
     addToggleAction("显示元数据栏", "meta", m_metaPanel);
     addToggleAction("显示筛选栏", "filter", m_filterPanel);
@@ -238,7 +217,6 @@ void PanelLayoutManager::updateDynamicMinimumSize() {
     if (!m_mainWindow) return;
 
     int visibleCount = 0;
-    if (m_navPanel && !m_navPanel->isHidden()) visibleCount++;
     if (m_sidebarContainer && !m_sidebarContainer->isHidden()) visibleCount++;
     if (m_contentPanel && !m_contentPanel->isHidden()) visibleCount++;
     if (m_metaPanel && !m_metaPanel->isHidden()) visibleCount++;
@@ -255,8 +233,7 @@ void PanelLayoutManager::updateDynamicMinimumSize() {
 
 void PanelLayoutManager::saveLayoutState() {
     AppConfig::instance().setValue("MainWindow/IsImmersiveMode", isImmersiveMode());
-    AppConfig::instance().setValue("MainWindow/NavVisible", isPanelVisible("nav"));
-    AppConfig::instance().setValue("MainWindow/FavoriteVisible", isPanelVisible("favorite"));
+    AppConfig::instance().setValue("MainWindow/SidebarVisible", isPanelVisible("sidebar"));
     AppConfig::instance().setValue("MainWindow/MetaVisible", isPanelVisible("meta"));
     AppConfig::instance().setValue("MainWindow/FilterVisible", isPanelVisible("filter"));
     if (m_mainSplitter && !isImmersiveMode()) {

@@ -1,6 +1,5 @@
 #include "ContentContextMenu.h"
 #include "../ContentPanel.h"
-#include "../../meta/HistoryService.h"
 #include "../TitleBarWidget.h"
 #include "../TabBarWidget.h"
 #include "ContentSortController.h"
@@ -640,7 +639,6 @@ void ContentContextMenu::showMenu(QAbstractItemView* view, const QPoint& pos) {
                     QString filePath = idx.data(PathRole).toString();
                     if (!filePath.isEmpty() && QFileInfo::exists(filePath)) {
                         targetPaths << filePath;
-                        HistoryService::instance().recordFileAccess(filePath);
                         QDesktopServices::openUrl(QUrl::fromLocalFile(filePath));
                     }
                 }

@@ -27,7 +27,6 @@
 
 #include "../core/AppConfig.h"
 #include "../core/CoreEngine.h"
-#include "../core/CoreController.h"
 #include "../core/TrashService.h"
 #include "../core/PermanentDeleteService.h"
 #include "../core/ClipboardService.h"
@@ -1105,7 +1104,7 @@ void ContentPanel::recalculateAndEmitStats() {
 }
 
 void ContentPanel::refreshVisibleThumbnails() {
-    if (!m_model || CoreController::isShuttingDown()) return;
+    if (!m_model) return;
 
     if (m_viewCoordinator) m_viewCoordinator->refreshVisibleThumbnails();
 }

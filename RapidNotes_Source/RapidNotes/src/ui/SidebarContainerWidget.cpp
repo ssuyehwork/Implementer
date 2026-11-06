@@ -96,9 +96,7 @@ void SidebarContainerWidget::initUi() {
     m_libraryPanel = new LibraryPanel(this);
     // m_markedPanel removed
 
-    m_stackedWidget->addWidget(m_favoritePanel);
     m_stackedWidget->addWidget(m_libraryPanel);
-    m_stackedWidget->addWidget(m_markedPanel);
 
     m_mainLayout->addWidget(m_stackedWidget, 1);
 
@@ -137,9 +135,6 @@ void SidebarContainerWidget::initUi() {
 
     connect(m_filterEdit, &QLineEdit::textChanged, this, [this](const QString& text) {
         QString kw = text.trimmed();
-        if (m_favoritePanel) {
-            m_favoritePanel->filterTreeNodes(kw);
-        }
         if (m_libraryPanel) {
             if (m_libraryPanel->delegate()) {
                 m_libraryPanel->delegate()->setFilterKeyword(kw);
@@ -148,9 +143,6 @@ void SidebarContainerWidget::initUi() {
             if (m_libraryPanel->treeView() && m_libraryPanel->treeView()->viewport()) {
                 m_libraryPanel->treeView()->viewport()->update();
             }
-        }
-        if (m_markedPanel) {
-            m_markedPanel->filterTreeNodes(kw);
         }
     });
 
@@ -163,9 +155,9 @@ void SidebarContainerWidget::initUi() {
         }
         if (m_filterEdit && !m_filterEdit->text().trimmed().isEmpty()) {
             QString kw = m_filterEdit->text().trimmed();
-            if (index == 0 && m_favoritePanel) m_favoritePanel->filterTreeNodes(kw);
+
             if (index == 1 && m_libraryPanel) m_libraryPanel->filterTreeNodes(kw);
-            if (index == 2 && m_markedPanel) m_markedPanel->filterTreeNodes(kw);
+
         }
         AppConfig::instance().setValue("Sidebar/CurrentTabIndex", index);
         AppConfig::instance().sync();
