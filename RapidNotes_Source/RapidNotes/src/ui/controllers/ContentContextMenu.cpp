@@ -1,3 +1,4 @@
+#include "../dialogs/FramelessConfirmDialog.h"
 #include "ContentContextMenu.h"
 #include "../ContentPanel.h"
 #include "../TitleBarWidget.h"
@@ -339,7 +340,8 @@ void ContentContextMenu::showMenu(QAbstractItemView* view, const QPoint& pos) {
                 UiHelper::applyMenuStyle(moveMenu);
 
 
-                auto performMoveTo = [this](const QString& targetDir) {
+                std::function<void(const QString&)> performMoveTo;
+                performMoveTo = [this](const QString& targetDir) {
                     QStringList selectedPaths = m_panel->getSelectedPaths();
                     if (selectedPaths.isEmpty()) return;
 

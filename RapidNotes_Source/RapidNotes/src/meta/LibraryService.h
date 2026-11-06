@@ -2,6 +2,8 @@
 
 #include <QObject>
 #include <QStringList>
+#include <QMenu>
+#include <QAction>
 #include "LibraryDao.h"
 
 namespace RapidNotes {
@@ -36,6 +38,13 @@ public:
         Q_UNUSED(id);
         Q_UNUSED(paths);
         return true;
+    }
+
+    QAction* buildLibraryAction(QMenu* parentMenu, const QStringList& targetPaths, QObject* receiver = nullptr) {
+        Q_UNUSED(parentMenu);
+        Q_UNUSED(targetPaths);
+        Q_UNUSED(receiver);
+        return nullptr;
     }
 
 signals:
