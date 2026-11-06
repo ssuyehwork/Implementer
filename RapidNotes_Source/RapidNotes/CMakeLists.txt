@@ -128,6 +128,8 @@ set(SOURCES
     src/core/ShortcutManager.h
     src/core/TagCodec.cpp
     src/core/TagCodec.h
+    src/core/TrashService.cpp
+    src/core/TrashService.h
     src/core/ThumbnailMaker.cpp
     src/core/ThumbnailMaker.h
     src/core/WordBucket.cpp
