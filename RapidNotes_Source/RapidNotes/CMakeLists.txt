@@ -73,7 +73,6 @@ set(SOURCES
     src/core/AES.cpp
     src/core/AES.h
     src/core/AppConfig.h
-    src/core/SmartFolderRecord.h
     src/core/ActionRecorder.cpp
     src/core/ActionRecorder.h
     src/core/CentralEventHub.cpp
