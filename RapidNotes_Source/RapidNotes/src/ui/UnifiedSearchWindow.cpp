@@ -210,13 +210,13 @@ public:
     UnifiedFileSearchHistoryChip(const QString& text, QWidget* parent = nullptr) : QFrame(parent), m_text(text) {
         setAttribute(Qt::WA_StyledBackground); setCursor(Qt::PointingHandCursor); setObjectName("PathChip");
         auto* layout = new QHBoxLayout(this); layout->setContentsMargins(10, 6, 10, 6); layout->setSpacing(10);
-        auto* lbl = new QLabel(text); lbl->setStyleSheet("border: none; background: transparent; color: #DDD; font-size: 13px;");
+        auto* lbl = new QLabel(text); lbl->setObjectName("UnifiedSearchWindow_lbl_1");
         layout->addWidget(lbl); layout->addStretch();
         auto* btnDel = new QPushButton(); btnDel->setIcon(IconHelper::getIcon("close", "#666", 16)); btnDel->setIconSize(QSize(10, 10)); btnDel->setFixedSize(16, 16);
-        btnDel->setStyleSheet("QPushButton { background-color: transparent; border-radius: 4px; padding: 0px; } QPushButton:hover { background-color: #3e3e42; }"); // 2026-03-xx 统一悬停色
+        btnDel->setObjectName("UnifiedSearchWindow_btnDel_2"); // 2026-03-xx 统一悬停色
         connect(btnDel, &QPushButton::clicked, this, [this](){ emit deleted(m_text); });
         layout->addWidget(btnDel);
-        setStyleSheet("#PathChip { background-color: transparent; border: none; border-radius: 4px; } #PathChip:hover { background-color: #3e3e42; }"); // 2026-03-xx 统一悬停色
+        setObjectName("UnifiedSearchWindow_this_1"); // 2026-03-xx 统一悬停色
     }
     void mousePressEvent(QMouseEvent* e) override { if(e->button() == Qt::LeftButton) emit clicked(m_text); QFrame::mousePressEvent(e); }
 signals:
@@ -236,21 +236,21 @@ public:
         setAttribute(Qt::WA_TranslucentBackground);
         auto* rootLayout = new QVBoxLayout(this); rootLayout->setContentsMargins(12, 12, 12, 12);
         auto* container = new QFrame(); container->setObjectName("PopupContainer");
-        container->setStyleSheet("#PopupContainer { background-color: #252526; border: 1px solid #444; border-radius: 10px; }");
+        container->setObjectName("UnifiedSearchWindow_container_3");
         rootLayout->addWidget(container);
         auto* layout = new QVBoxLayout(container); layout->setContentsMargins(12, 12, 12, 12); layout->setSpacing(10);
         auto* top = new QHBoxLayout(); auto* icon = new QLabel();
         icon->setPixmap(IconHelper::getIcon("clock", "#888").pixmap(14, 14));
         top->addWidget(icon);
         auto* title = new QLabel(m_type == Path ? "最近扫描路径" : "最近搜索文件名");
-        title->setStyleSheet("color: #888; font-weight: bold; font-size: 11px;");
+        title->setObjectName("UnifiedSearchWindow_title_4");
         top->addWidget(title); top->addStretch();
         auto* clearBtn = new QPushButton("清空");
-        clearBtn->setStyleSheet("QPushButton { background: transparent; color: #666; border: none; font-size: 11px; } QPushButton:hover { color: #E74C3C; }");
+        clearBtn->setObjectName("UnifiedSearchWindow_clearBtn_5");
         connect(clearBtn, &QPushButton::clicked, [this](){ m_parent->clearHistory(m_type == Path); refreshUI(); });
         top->addWidget(clearBtn); layout->addLayout(top);
         auto* scroll = new QScrollArea(); scroll->setWidgetResizable(true);
-        scroll->setStyleSheet("QScrollArea { background-color: transparent; border: none; }");
+        scroll->setObjectName("UnifiedSearchWindow_scroll_6");
         m_chipsWidget = new QWidget(); m_vLayout = new QVBoxLayout(m_chipsWidget);
         m_vLayout->setContentsMargins(0, 0, 0, 0); m_vLayout->setSpacing(2); m_vLayout->addStretch();
         scroll->setWidget(m_chipsWidget); layout->addWidget(scroll);
@@ -271,7 +271,7 @@ protected:
         QStringList history = m_parent->getHistory(m_type == Path);
         if(history.isEmpty()) {
             auto* lbl = new QLabel("暂无历史记录"); lbl->setAlignment(Qt::AlignCenter);
-            lbl->setStyleSheet("color: #555; font-style: italic; margin: 20px;");
+            lbl->setObjectName("UnifiedSearchWindow_lbl_7");
             m_vLayout->insertWidget(0, lbl);
         } else {
             for(const QString& val : std::as_const(history)) {
@@ -315,10 +315,10 @@ void FileSearchContentWidget::initUI() {
     m_pathInput->installEventFilter(this);
     connect(m_pathInput, &QLineEdit::returnPressed, this, &FileSearchContentWidget::onPathReturnPressed);
     auto* btnScan = new QToolButton(); btnScan->setIcon(IconHelper::getIcon("scan", "#1abc9c", 18)); btnScan->setFixedSize(38, 38);
-    btnScan->setCursor(Qt::PointingHandCursor); btnScan->setStyleSheet("QToolButton { border: 1px solid #444; background: #2D2D30; border-radius: 6px; }");
+    btnScan->setCursor(Qt::PointingHandCursor); btnScan->setObjectName("UnifiedSearchWindow_btnScan_8");
     connect(btnScan, &QToolButton::clicked, this, &FileSearchContentWidget::onPathReturnPressed);
     auto* btnBrowse = new QToolButton(); btnBrowse->setFixedSize(38, 38); btnBrowse->setIcon(IconHelper::getIcon("folder", "#ffffff", 18));
-    btnBrowse->setStyleSheet("QToolButton { background-color: #007ACC; border-radius: 6px; }");
+    btnBrowse->setObjectName("UnifiedSearchWindow_btnBrowse_9");
     connect(btnBrowse, &QToolButton::clicked, this, &FileSearchContentWidget::selectFolder);
     pathLayout->addWidget(m_pathInput); pathLayout->addWidget(btnScan); pathLayout->addWidget(btnBrowse);
     layout->addLayout(pathLayout);
@@ -332,9 +332,9 @@ void FileSearchContentWidget::initUI() {
     searchLayout->addWidget(m_searchInput); searchLayout->addWidget(m_extInput);
     layout->addLayout(searchLayout);
     auto* infoLayout = new QHBoxLayout();
-    m_infoLabel = new QLabel("等待操作..."); m_infoLabel->setStyleSheet("color: #888; font-size: 12px;");
+    m_infoLabel = new QLabel("等待操作..."); m_infoLabel->setObjectName("UnifiedSearchWindow_m_infoLabel_10");
     m_showHiddenCheck = new QCheckBox("显示隐性文件");
-    m_showHiddenCheck->setStyleSheet("QCheckBox { color: #888; font-size: 12px; }");
+    m_showHiddenCheck->setObjectName("UnifiedSearchWindow_m_showHiddenCheck_11");
     connect(m_showHiddenCheck, &QCheckBox::toggled, this, &FileSearchContentWidget::refreshList);
     infoLayout->addWidget(m_infoLabel); infoLayout->addWidget(m_showHiddenCheck); infoLayout->addStretch();
     layout->addLayout(infoLayout);
@@ -529,7 +529,7 @@ void UnifiedSearchWindow::initUI() {
 
     // 左侧边栏
     auto* leftSide = new QWidget(); auto* leftLayout = new QVBoxLayout(leftSide); leftLayout->setContentsMargins(0, 0, 10, 0);
-    auto* leftHeader = new QLabel("收藏夹 (可拖入)"); leftHeader->setStyleSheet("color: #888; font-weight: bold; font-size: 12px;");
+    auto* leftHeader = new QLabel("收藏夹 (可拖入)"); leftHeader->setObjectName("UnifiedSearchWindow_leftHeader_12");
     leftLayout->addWidget(leftHeader);
     m_folderSidebar = new FolderSidebarListWidget(); leftLayout->addWidget(m_folderSidebar);
     auto* btnAddFav = new QPushButton("收藏当前路径"); btnAddFav->setFixedHeight(30);
@@ -557,7 +557,7 @@ void UnifiedSearchWindow::initUI() {
 
     // 右侧边栏
     auto* rightSide = new QWidget(); auto* rightLayout = new QVBoxLayout(rightSide); rightLayout->setContentsMargins(10, 0, 0, 0);
-    auto* rightHeader = new QLabel("文件收藏 (可拖入)"); rightHeader->setStyleSheet("color: #888; font-weight: bold; font-size: 12px;");
+    auto* rightHeader = new QLabel("文件收藏 (可拖入)"); rightHeader->setObjectName("UnifiedSearchWindow_rightHeader_13");
     rightLayout->addWidget(rightHeader);
     m_fileCollectionSidebar = new FileCollectionSidebarWidget(); rightLayout->addWidget(m_fileCollectionSidebar);
     auto* btnMerge = new QPushButton("合并收藏内容"); btnMerge->setFixedHeight(30);

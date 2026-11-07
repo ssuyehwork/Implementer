@@ -54,7 +54,7 @@ void FileStorageWindow::initUI() {
     contentLayout->addWidget(m_statusList);
 
     auto* tipLabel = new QLabel("文件将直接复制到 attachments 文件夹");
-    tipLabel->setStyleSheet("color: #666; font-size: 10px;");
+    tipLabel->setObjectName("FileStorageWindow_tipLabel_1");
     tipLabel->setAlignment(Qt::AlignCenter);
     contentLayout->addWidget(tipLabel);
 }
@@ -67,13 +67,13 @@ void FileStorageWindow::initUI() {
 void FileStorageWindow::dragEnterEvent(QDragEnterEvent* event) {
     if (event->mimeData()->hasUrls()) {
         event->acceptProposedAction();
-        m_dropHint->setStyleSheet("QPushButton#DropArea { color: #f1c40f; font-size: 12px; border: 2px dashed #f1c40f; border-radius: 8px; padding: 20px; background-color: rgba(241, 196, 15, 0.05); }");
+        m_dropHint->setObjectName("FileStorageWindow_m_dropHint_2");
     }
 }
 
 void FileStorageWindow::dragLeaveEvent(QDragLeaveEvent* event) {
     Q_UNUSED(event);
-    m_dropHint->setStyleSheet("QPushButton#DropArea { color: #888; font-size: 12px; border: 2px dashed #444; border-radius: 8px; padding: 20px; background: #181818; outline: none; }");
+    m_dropHint->setObjectName("FileStorageWindow_m_dropHint_3");
 }
 
 void FileStorageWindow::dropEvent(QDropEvent* event) {
@@ -88,7 +88,7 @@ void FileStorageWindow::dropEvent(QDropEvent* event) {
             processStorage(paths);
         }
     }
-    m_dropHint->setStyleSheet("QPushButton#DropArea { color: #888; font-size: 12px; border: 2px dashed #444; border-radius: 8px; padding: 20px; background: #181818; outline: none; }");
+    m_dropHint->setObjectName("FileStorageWindow_m_dropHint_3");
 }
 
 void FileStorageWindow::processStorage(const QStringList& paths) {

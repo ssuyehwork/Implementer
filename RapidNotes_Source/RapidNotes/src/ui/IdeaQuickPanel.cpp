@@ -79,63 +79,7 @@ IdeaQuickPanel::IdeaQuickPanel(QWidget* parent)
     cardLayout->setSpacing(8);
 
     // ── 全局样式 ───────────────────────────────────
-    card->setStyleSheet(R"(
-        QWidget#iqpCard {
-            background-color: #1E1E1E;
-            border-radius: 10px;
-            border: 1px solid #383838;
-        }
-
-        QLineEdit#iqpSearch {
-            background-color: #252526;
-            border: 1px solid #3A3A3A;
-            border-radius: 6px;
-            padding: 5px 10px 5px 32px;
-            color: #E8E8E8;
-            font-size: 13px;
-        }
-        QLineEdit#iqpSearch:focus {
-            border-color: #4a90e2;
-            background-color: #2A2A2A;
-        }
-        QLineEdit#iqpSearch::placeholder {
-            color: #555;
-        }
-
-        QListWidget#iqpList {
-            background: transparent;
-            border: none;
-            outline: none;
-            color: #CCC;
-        }
-        QListWidget#iqpList::item {
-            border-bottom: 1px solid #252525;
-            padding: 4px 6px;
-            border-radius: 5px;
-        }
-        QListWidget#iqpList::item:hover {
-            background-color: #2A2D30;
-        }
-        QListWidget#iqpList::item:selected {
-            background-color: #094771;
-            color: #FFFFFF;
-        }
-
-        QScrollBar:vertical {
-            background: transparent;
-            width: 5px;
-            margin: 4px 0;
-        }
-        QScrollBar::handle:vertical {
-            background: #444;
-            border-radius: 2px;
-            min-height: 24px;
-        }
-        QScrollBar::add-line:vertical,
-        QScrollBar::sub-line:vertical { height: 0; }
-        QScrollBar::add-page:vertical,
-        QScrollBar::sub-page:vertical { background: none; }
-    )");
+    card->setObjectName("IdeaQuickPanel_card_1");
 
     // ── Header 行 ─────────────────────────────────
     {
@@ -143,8 +87,7 @@ IdeaQuickPanel::IdeaQuickPanel(QWidget* parent)
         headerRow->setContentsMargins(4, 0, 4, 0);
 
         auto* iconLabel = new QLabel("⚡");
-        iconLabel->setStyleSheet(
-            "color: #3A90FF; font-size: 14px; background: transparent; border: none;");
+        iconLabel->setObjectName("IdeaQuickPanel_iconLabel_2");
 
         auto* titleLabel = new QLabel("灵感快取");
         titleLabel->setStyleSheet(
@@ -152,8 +95,7 @@ IdeaQuickPanel::IdeaQuickPanel(QWidget* parent)
             "background: transparent; border: none;");
 
         m_countLabel = new QLabel();
-        m_countLabel->setStyleSheet(
-            "color: #555; font-size: 11px; background: transparent; border: none;");
+        m_countLabel->setObjectName("IdeaQuickPanel_m_countLabel_3");
         m_countLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
         headerRow->addWidget(iconLabel);
@@ -193,8 +135,7 @@ IdeaQuickPanel::IdeaQuickPanel(QWidget* parent)
     // ── 底部提示行 ─────────────────────────────────
     {
         auto* hintLabel = new QLabel("按 更新时间 排序");
-        hintLabel->setStyleSheet(
-            "color: #3A3A3A; font-size: 10px; background: transparent; border: none;");
+        hintLabel->setObjectName("IdeaQuickPanel_hintLabel_4");
         hintLabel->setAlignment(Qt::AlignCenter);
         cardLayout->addWidget(hintLabel);
     }

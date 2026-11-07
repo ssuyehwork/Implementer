@@ -30,7 +30,7 @@ HotkeyEdit::HotkeyEdit(QWidget* parent) : QLineEdit(parent) {
     setReadOnly(true);
     setPlaceholderText("按键设置...");
     setAlignment(Qt::AlignCenter);
-    setStyleSheet("QLineEdit { background: #1a1a1a; color: #4a90e2; font-weight: bold; border-radius: 4px; padding: 4px; border: 1px solid #333; }");
+    setObjectName("SettingsWindow_this_1");
 }
 
 void HotkeyEdit::setKeyData(uint mods, uint vk) {
@@ -157,7 +157,7 @@ void SettingsWindow::initUi() {
     scrollArea->setFrameShape(QFrame::NoFrame);
     scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     scrollArea->setWidget(m_contentStack);
-    scrollArea->setStyleSheet("QScrollArea { background: transparent; } QScrollBar:vertical { width: 8px; background: transparent; }");
+    scrollArea->setObjectName("SettingsWindow_scrollArea_1");
 
     auto* rightLayout = new QVBoxLayout();
     rightLayout->setContentsMargins(20, 20, 20, 20);
@@ -196,7 +196,7 @@ QWidget* SettingsWindow::createSecurityPage() {
     layout->setSpacing(20);
 
     m_lblPwdStatus = new QLabel("当前状态：未设置锁定窗口密码");
-    m_lblPwdStatus->setStyleSheet("color: #888; font-size: 14px;");
+    m_lblPwdStatus->setObjectName("SettingsWindow_m_lblPwdStatus_2");
     layout->addWidget(m_lblPwdStatus);
 
     m_btnSetPwd = new QPushButton("设置锁定窗口密码");
@@ -220,7 +220,7 @@ QWidget* SettingsWindow::createSecurityPage() {
 
     layout->addSpacing(10);
     m_checkIdleLock = new QCheckBox("30秒全系统闲置后自动锁定应用");
-    m_checkIdleLock->setStyleSheet("color: #ccc; font-size: 14px;");
+    m_checkIdleLock->setObjectName("SettingsWindow_m_checkIdleLock_3");
     
     // 2026-03-xx 按照用户要求：取消勾选自动锁定功能时需要进行密码验证
     connect(m_checkIdleLock, &QCheckBox::clicked, this, [this](bool checked) {
@@ -282,12 +282,12 @@ QWidget* SettingsWindow::createActivationPage() {
         
         auto* lblActivated = new QLabel(QString("<div align='center'><b style='color: #2ecc71; font-size: 16px;'>✅ 已成功激活</b><br><br><span style='color: #a0a0a0; font-size: 16px; font-family: monospace; letter-spacing: 2px;'>%1</span></div>").arg(masked));
         lblActivated->setAlignment(Qt::AlignCenter);
-        lblActivated->setStyleSheet("background: #1a1a1a; border: 1px solid #2ecc71; border-radius: 4px; padding: 20px;");
+        lblActivated->setObjectName("SettingsWindow_lblActivated_4");
         layout->addWidget(lblActivated);
         
         auto* lblThanks = new QLabel("感谢您的支持！");
         lblThanks->setAlignment(Qt::AlignCenter);
-        lblThanks->setStyleSheet("color: #aaa; font-size: 13px; margin-top: 5px;");
+        lblThanks->setObjectName("SettingsWindow_lblThanks_5");
         layout->addWidget(lblThanks);
 
         layout->addSpacing(30);
@@ -328,7 +328,7 @@ QWidget* SettingsWindow::createActivationPage() {
     m_editSecretKey->installEventFilter(this);
     m_editSecretKey->setEchoMode(QLineEdit::Password);
     m_editSecretKey->setPlaceholderText("请输入激活密钥...");
-    m_editSecretKey->setStyleSheet("QLineEdit { height: 36px; padding: 0 10px; background: #1a1a1a; color: #fff; border: 1px solid #333; border-radius: 4px; }");
+    m_editSecretKey->setObjectName("SettingsWindow_m_editSecretKey_6");
     layout->addWidget(m_editSecretKey);
 
     // 2026-03-xx 按照用户要求：正版化彻底移除“激活尝试次数”的所有相关显示
@@ -342,7 +342,7 @@ QWidget* SettingsWindow::createActivationPage() {
 
     auto* lblContact = new QLabel("联系激活：<b style='color: #4a90e2;'>Telegram：TLG_888</b>");
     lblContact->setAlignment(Qt::AlignCenter);
-    lblContact->setStyleSheet("color: #aaa; font-size: 13px; margin-top: 5px;");
+    lblContact->setObjectName("SettingsWindow_lblContact_7");
     layout->addWidget(lblContact);
 
     layout->addWidget(new QLabel("<span style='color: #666; font-size: 11px;'>提示：输入正确的密钥并激活。</span>"));
@@ -363,7 +363,7 @@ QWidget* SettingsWindow::createDeviceInfoPage() {
 
     m_editDeviceInfo = new QPlainTextEdit();
     m_editDeviceInfo->setReadOnly(true);
-    m_editDeviceInfo->setStyleSheet("QPlainTextEdit { background: #1a1a1a; color: #3a90ff; border: 1px solid #333; border-radius: 4px; padding: 12px; font-family: 'Consolas', monospace; font-size: 13px; }");
+    m_editDeviceInfo->setObjectName("SettingsWindow_m_editDeviceInfo_8");
     
     // 获取设备信息
     QString diskSn = HardwareInfoHelper::getDiskPhysicalSerialNumber();
@@ -386,7 +386,7 @@ QWidget* SettingsWindow::createDeviceInfoPage() {
     layout->addWidget(btnCopy);
 
     auto* tip = new QLabel("提示：若激活遇到问题，请将上述信息复制并发送给管理员。");
-    tip->setStyleSheet("color: #666; font-size: 12px;");
+    tip->setObjectName("SettingsWindow_tip_9");
     layout->addWidget(tip);
 
     layout->addStretch();
@@ -443,12 +443,12 @@ void SettingsWindow::onVerifySecretKey() {
                 
                 auto* lblActivated = new QLabel(QString("<div align='center'><b style='color: #2ecc71; font-size: 16px;'>✅ 已成功激活</b><br><br><span style='color: #a0a0a0; font-size: 16px; font-family: monospace; letter-spacing: 2px;'>%1</span></div>").arg(masked));
                 lblActivated->setAlignment(Qt::AlignCenter);
-                lblActivated->setStyleSheet("background: #1a1a1a; border: 1px solid #2ecc71; border-radius: 4px; padding: 20px;");
+                lblActivated->setObjectName("SettingsWindow_lblActivated_4");
                 layout->addWidget(lblActivated);
                 
                 auto* lblThanks = new QLabel("感谢您的支持！");
                 lblThanks->setAlignment(Qt::AlignCenter);
-                lblThanks->setStyleSheet("color: #aaa; font-size: 13px; margin-top: 5px;");
+                lblThanks->setObjectName("SettingsWindow_lblThanks_5");
                 layout->addWidget(lblThanks);
                 
                 layout->addStretch();
@@ -493,7 +493,7 @@ QWidget* SettingsWindow::createAppShortcutPage() {
     
     auto* scroll = new QScrollArea();
     scroll->setWidgetResizable(true);
-    scroll->setStyleSheet("QScrollArea { border: none; background: transparent; }");
+    scroll->setObjectName("SettingsWindow_scroll_12");
     
     auto* container = new QWidget();
     auto* vLayout = new QVBoxLayout(container);
@@ -505,7 +505,7 @@ QWidget* SettingsWindow::createAppShortcutPage() {
         if (info.category != currentCat) {
             currentCat = info.category;
             auto* catLabel = new QLabel(currentCat);
-            catLabel->setStyleSheet("color: #3a90ff; font-weight: bold; margin-top: 15px; border-bottom: 1px solid #333;");
+            catLabel->setObjectName("SettingsWindow_catLabel_13");
             vLayout->addWidget(catLabel);
         }
         
@@ -531,28 +531,28 @@ QWidget* SettingsWindow::createGeneralPage() {
     layout->setSpacing(15);
 
     m_checkAutoStart = new QCheckBox("开机自动启动");
-    m_checkAutoStart->setStyleSheet("color: #ccc; font-size: 14px;");
+    m_checkAutoStart->setObjectName("SettingsWindow_m_checkAutoStart_14");
     layout->addWidget(m_checkAutoStart);
 
     layout->addSpacing(10);
     // [NEW] CapsLock 映射 Enter 选项
     m_checkCapsLockToEnter = new QCheckBox("将 CapsLock (大写锁定) 替代 Enter (回车键)");
-    m_checkCapsLockToEnter->setStyleSheet("color: #ccc; font-size: 14px;");
+    m_checkCapsLockToEnter->setObjectName("SettingsWindow_m_checkCapsLockToEnter_15");
     layout->addWidget(m_checkCapsLockToEnter);
     
     auto* capsTip = new QLabel("提示：开启后，单独按下 CapsLock 将触发回车键功能（全局生效）；\n若需要切换大写锁定状态，请使用组合键：Ctrl + CapsLock。");
     capsTip->setWordWrap(true);
-    capsTip->setStyleSheet("color: #666; font-size: 12px; line-height: 1.4; padding-left: 24px;");
+    capsTip->setObjectName("SettingsWindow_capsTip_16");
     layout->addWidget(capsTip);
 
     layout->addSpacing(10);
     // 2026-03-xx 按照用户要求：烟花特效与 ToolTip 提示实现单选逻辑（支持全不选）
     m_checkFireworks = new QCheckBox("启用复制烟花特效 (Ctrl + C 时触发)");
-    m_checkFireworks->setStyleSheet("color: #ccc; font-size: 14px;");
+    m_checkFireworks->setObjectName("SettingsWindow_m_checkFireworks_17");
     layout->addWidget(m_checkFireworks);
 
     m_checkCopyToolTip = new QCheckBox("启用复制 ToolTip 提示 (显示简短文字)");
-    m_checkCopyToolTip->setStyleSheet("color: #ccc; font-size: 14px;");
+    m_checkCopyToolTip->setObjectName("SettingsWindow_m_checkCopyToolTip_18");
     layout->addWidget(m_checkCopyToolTip);
 
     connect(m_checkFireworks, &QCheckBox::clicked, this, [this](bool checked){
@@ -566,7 +566,7 @@ QWidget* SettingsWindow::createGeneralPage() {
     layout->addWidget(new QLabel("浏览器采集进程白名单 (每行一个 .exe)："));
     m_editBrowserExes = new QPlainTextEdit();
     m_editBrowserExes->setPlaceholderText("例如:\nchrome.exe\nmsedge.exe");
-    m_editBrowserExes->setStyleSheet("QPlainTextEdit { background: #1a1a1a; color: #eee; border: 1px solid #333; border-radius: 4px; padding: 5px; }");
+    m_editBrowserExes->setObjectName("SettingsWindow_m_editBrowserExes_19");
     m_editBrowserExes->setFixedHeight(120);
     layout->addWidget(m_editBrowserExes);
 

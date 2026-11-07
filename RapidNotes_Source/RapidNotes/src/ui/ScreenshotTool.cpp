@@ -271,7 +271,7 @@ ScreenshotToolbar::ScreenshotToolbar(ScreenshotTool* tool)
     QFrame* divider = new QFrame();
     divider->setFrameShape(QFrame::VLine);
     divider->setFrameShadow(QFrame::Plain);
-    divider->setStyleSheet("background-color: #555;");
+    divider->setObjectName("ScreenshotTool_divider_1");
     divider->setFixedWidth(1);
     divider->setFixedHeight(20);
     layout->addWidget(divider);
@@ -293,7 +293,7 @@ ScreenshotToolbar::ScreenshotToolbar(ScreenshotTool* tool)
     m_horizontalDivider = new QFrame();
     m_horizontalDivider->setFrameShape(QFrame::HLine);
     m_horizontalDivider->setFrameShadow(QFrame::Plain);
-    m_horizontalDivider->setStyleSheet("background-color: #555;");
+    m_horizontalDivider->setObjectName("ScreenshotTool_m_horizontalDivider_2");
     m_horizontalDivider->setFixedHeight(1);
     m_horizontalDivider->setVisible(false);
     mainLayout->addWidget(m_horizontalDivider);
@@ -347,7 +347,7 @@ void ScreenshotToolbar::createOptionWidget() {
     // 2026-04-xx 按照宪法规范修正格式
     m_outlineBtn->setProperty("tooltipText", "虚心 （Hollow）");
     m_outlineBtn->installEventFilter(this);
-    m_outlineBtn->setStyleSheet("QPushButton { border: 1px solid #555; border-radius: 4px; } QPushButton:checked { background-color: #3e3e42; border-color: #007ACC; }"); // 2026-03-xx 统一选中色
+    m_outlineBtn->setObjectName("ScreenshotTool_m_outlineBtn_3"); // 2026-03-xx 统一选中色
     
     m_solidBtn = new QPushButton();
     m_solidBtn->setCheckable(true);
@@ -356,7 +356,7 @@ void ScreenshotToolbar::createOptionWidget() {
     // 2026-04-xx 按照宪法规范修正格式
     m_solidBtn->setProperty("tooltipText", "实心 （Solid）");
     m_solidBtn->installEventFilter(this);
-    m_solidBtn->setStyleSheet("QPushButton { border: 1px solid #555; border-radius: 4px; } QPushButton:checked { background-color: #3e3e42; border-color: #007ACC; }"); // 2026-03-xx 统一选中色
+    m_solidBtn->setObjectName("ScreenshotTool_m_solidBtn_4"); // 2026-03-xx 统一选中色
 
     auto* fillGroup = new QButtonGroup(this);
     fillGroup->addButton(m_outlineBtn);
@@ -370,7 +370,7 @@ void ScreenshotToolbar::createOptionWidget() {
     // 3. 文字选项 (Text) - 采用独立胶囊布局 (Independent capsule layout)
     m_textOptionWidget = new QWidget(m_optionWidget);
     m_textOptionWidget->setAttribute(Qt::WA_TranslucentBackground);
-    m_textOptionWidget->setStyleSheet("background: transparent; border: none;");
+    m_textOptionWidget->setObjectName("ScreenshotTool_m_textOptionWidget_5");
     auto* textOptionLayout = new QHBoxLayout(m_textOptionWidget);
     textOptionLayout->setContentsMargins(0, 0, 0, 0); textOptionLayout->setSpacing(4);
 
@@ -379,7 +379,7 @@ void ScreenshotToolbar::createOptionWidget() {
         capsule->setFixedHeight(28);
         if (width > 0) capsule->setFixedWidth(width);
         capsule->setAttribute(Qt::WA_StyledBackground);
-        capsule->setStyleSheet("background-color: #3D3D3D; border-radius: 6px; border: none;");
+        capsule->setObjectName("ScreenshotTool_capsule_6");
         auto* l = new QHBoxLayout(capsule);
         l->setContentsMargins(4, 0, 4, 0);
         l->setSpacing(0);
@@ -392,7 +392,7 @@ void ScreenshotToolbar::createOptionWidget() {
     // 2026-04-xx 按照宪法规范修正格式
     m_boldBtn->setProperty("tooltipText", "加粗 （Bold）");
     m_boldBtn->installEventFilter(this);
-    m_boldBtn->setStyleSheet("QPushButton { background: transparent; border: none; border-radius: 4px; } QPushButton:hover { background-color: #3e3e42; } QPushButton:checked { background-color: #3e3e42; }"); // 2026-03-xx 统一悬停/选中色
+    m_boldBtn->setObjectName("ScreenshotTool_m_boldBtn_7"); // 2026-03-xx 统一悬停/选中色
     m_boldBtn->setChecked(m_tool->m_currentBold);
     connect(m_boldBtn, &QPushButton::toggled, [this](bool checked){ m_tool->setBold(checked); });
     textOptionLayout->addWidget(createCapsule(m_boldBtn, 32));
@@ -402,7 +402,7 @@ void ScreenshotToolbar::createOptionWidget() {
     // 2026-04-xx 按照宪法规范修正格式
     m_italicBtn->setProperty("tooltipText", "倾斜 （Italic）");
     m_italicBtn->installEventFilter(this);
-    m_italicBtn->setStyleSheet("QPushButton { background: transparent; border: none; border-radius: 4px; } QPushButton:hover { background-color: #3e3e42; } QPushButton:checked { background-color: #3e3e42; }"); // 2026-03-xx 统一悬停/选中色
+    m_italicBtn->setObjectName("ScreenshotTool_m_italicBtn_8"); // 2026-03-xx 统一悬停/选中色
     m_italicBtn->setChecked(m_tool->m_currentItalic);
     connect(m_italicBtn, &QPushButton::toggled, [this](bool checked){ m_tool->setItalic(checked); });
     textOptionLayout->addWidget(createCapsule(m_italicBtn, 32));
@@ -412,32 +412,7 @@ void ScreenshotToolbar::createOptionWidget() {
     fontCombo->setAttribute(Qt::WA_StyledBackground);
     fontCombo->setAttribute(Qt::WA_TranslucentBackground);
     fontCombo->view()->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    fontCombo->setStyleSheet(R"(
-        QComboBox { background-color: #3D3D3D; color: white; border: 1px solid transparent; border-radius: 6px; padding-left: 8px; }
-        QComboBox::drop-down { width: 0px; border: none; }
-        QComboBox QAbstractItemView { 
-            background-color: #3D3D3D; 
-            color: white;
-            selection-background-color: transparent;
-            border: 1px solid #555; 
-            border-radius: 6px; 
-            outline: none;
-            padding: 2px;
-        }
-        QComboBox QAbstractItemView::item { 
-            height: 18px; 
-            border-radius: 3px; 
-            padding: 0px 4px; 
-            margin: 1px 2px;
-            color: white;
-            border: none;
-        }
-        QComboBox QAbstractItemView::item:selected { 
-            background-color: #007ACC; 
-            color: white; 
-        }
-        QScrollBar:vertical { width: 0px; background: transparent; }
-    )");
+    fontCombo->setObjectName("ScreenshotTool_fontCombo_1");
     connect(fontCombo, &QComboBox::currentTextChanged, [this](const QString& font){ m_tool->setFontFamily(font); });
     fontCombo->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
     fontCombo->view()->window()->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
@@ -450,32 +425,7 @@ void ScreenshotToolbar::createOptionWidget() {
     sizeCombo->setAttribute(Qt::WA_StyledBackground);
     sizeCombo->setAttribute(Qt::WA_TranslucentBackground);
     sizeCombo->view()->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    sizeCombo->setStyleSheet(R"(
-        QComboBox { background-color: #3D3D3D; color: white; border: 1px solid transparent; border-radius: 6px; padding-left: 8px; }
-        QComboBox::drop-down { width: 0px; border: none; }
-        QComboBox QAbstractItemView { 
-            background-color: #3D3D3D; 
-            color: white;
-            selection-background-color: transparent;
-            border: 1px solid #555; 
-            border-radius: 6px; 
-            outline: none;
-            padding: 2px;
-        }
-        QComboBox QAbstractItemView::item { 
-            height: 18px; 
-            border-radius: 3px; 
-            padding: 0px 4px; 
-            margin: 1px 2px;
-            color: white;
-            border: none;
-        }
-        QComboBox QAbstractItemView::item:selected { 
-            background-color: #007ACC; 
-            color: white; 
-        }
-        QScrollBar:vertical { width: 0px; background: transparent; }
-    )");
+    sizeCombo->setObjectName("ScreenshotTool_sizeCombo_2");
     connect(sizeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), [this, sizeCombo](int index){ m_tool->setFontSize(sizeCombo->itemData(index).toInt()); });
     sizeCombo->view()->window()->setAttribute(Qt::WA_TranslucentBackground);
     sizeCombo->view()->window()->setWindowFlags(Qt::Popup | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
@@ -488,7 +438,7 @@ void ScreenshotToolbar::createOptionWidget() {
     m_textDivider = new QFrame();
     m_textDivider->setFrameShape(QFrame::VLine);
     m_textDivider->setFrameShadow(QFrame::Plain);
-    m_textDivider->setStyleSheet("background-color: #555;");
+    m_textDivider->setObjectName("ScreenshotTool_m_textDivider_9");
     m_textDivider->setFixedWidth(1);
     m_textDivider->setFixedHeight(16);
     layout->addSpacing(4);
@@ -509,7 +459,7 @@ void ScreenshotToolbar::createOptionWidget() {
     QFrame* colorDivider = new QFrame();
     colorDivider->setFrameShape(QFrame::VLine);
     colorDivider->setFrameShadow(QFrame::Plain);
-    colorDivider->setStyleSheet("background-color: #555;");
+    colorDivider->setObjectName("ScreenshotTool_colorDivider_10");
     colorDivider->setFixedWidth(1);
     colorDivider->setFixedHeight(16);
     layout->addSpacing(4);
@@ -537,7 +487,7 @@ void ScreenshotToolbar::createOptionWidget() {
     QFrame* colorDividerRight = new QFrame();
     colorDividerRight->setFrameShape(QFrame::VLine);
     colorDividerRight->setFrameShadow(QFrame::Plain);
-    colorDividerRight->setStyleSheet("background-color: #555;");
+    colorDividerRight->setObjectName("ScreenshotTool_colorDividerRight_11");
     colorDividerRight->setFixedWidth(1);
     colorDividerRight->setFixedHeight(16);
     layout->addSpacing(4);
@@ -546,7 +496,7 @@ void ScreenshotToolbar::createOptionWidget() {
 
     // 6. 最近颜色展示区 (填满红色方框区域)
     auto* recentContainer = new QWidget(m_optionWidget);
-    recentContainer->setStyleSheet("background: transparent; border: none;");
+    recentContainer->setObjectName("ScreenshotTool_recentContainer_12");
     m_recentLayout = new QHBoxLayout(recentContainer);
     m_recentLayout->setContentsMargins(0, 0, 0, 0); m_recentLayout->setSpacing(4);
     layout->addWidget(recentContainer);
@@ -597,7 +547,7 @@ void ScreenshotToolbar::createOptionWidget() {
     connect(m_paletteBtn, &QPushButton::clicked, [this, fullColors]{
         QMenu* menu = new QMenu(this);
         IconHelper::setupMenu(menu);
-        menu->setStyleSheet("QMenu { background-color: #2D2D2D; border: 1px solid #555; padding: 4px; }");
+        menu->setObjectName("ScreenshotTool_menu_13");
         QWidget* gridContainer = new QWidget; QGridLayout* grid = new QGridLayout(gridContainer);
         grid->setContentsMargins(4, 4, 4, 4); grid->setSpacing(4);
         int row = 0, col = 0;
@@ -619,10 +569,7 @@ void ScreenshotToolbar::createOptionWidget() {
     m_removeColorBtn->setProperty("tooltipText", "移除选中的最近颜色");
     m_removeColorBtn->installEventFilter(this);
     m_removeColorBtn->setCursor(Qt::PointingHandCursor);
-    m_removeColorBtn->setStyleSheet(R"(
-        QPushButton { color: #999; background: transparent; border: none; font-size: 16px; font-weight: bold; }
-        QPushButton:hover { color: #ff5555; }
-    )");
+    m_removeColorBtn->setObjectName("ScreenshotTool_m_removeColorBtn_3");
     connect(m_removeColorBtn, &QPushButton::clicked, [this]{
         QColor current = m_tool->m_currentColor;
         for (int i = 0; i < m_recentLayout->count(); ++i) {
@@ -645,10 +592,7 @@ void ScreenshotToolbar::showArrowMenu() {
     QMenu menu(this);
     IconHelper::setupMenu(&menu);
     // 使用 QWidgetAction 替代 QMenu::setIconSize 以获得更好的版本兼容性和视觉控制
-    menu.setStyleSheet(R"(
-        QMenu { background-color: #2D2D2D; border: 1px solid #555; padding: 2px; }
-        QMenu::item { padding: 0px; }
-    )");
+    menu.setObjectName("ScreenshotTool_this_4");
 
     auto addAct = [&](ArrowStyle s) {
         QWidgetAction* action = new QWidgetAction(&menu);
@@ -657,10 +601,7 @@ void ScreenshotToolbar::showArrowMenu() {
         btn->setIcon(IconFactory::createArrowStyleIcon(s));
         btn->setIconSize(QSize(100, 24));
         btn->setCursor(Qt::PointingHandCursor);
-        btn->setStyleSheet(R"(
-            QPushButton { background-color: transparent; border: none; border-radius: 4px; }
-            QPushButton:hover { background-color: #3e3e42; } // 2026-03-xx 统一悬停色
-        )");
+        btn->setObjectName("ScreenshotTool_btn_5");
         connect(btn, &QPushButton::clicked, [this, s, &menu]{ 
             m_tool->setArrowStyle(s); 
             updateArrowButtonIcon(s); 

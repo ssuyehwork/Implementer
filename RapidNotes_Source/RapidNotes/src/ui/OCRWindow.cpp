@@ -49,14 +49,14 @@ void OCRWindow::initUI() {
     auto* btnBrowse = new QPushButton(" 本地浏览");
     btnBrowse->setIcon(IconHelper::getIcon("folder", "#ffffff"));
     btnBrowse->setFixedHeight(36);
-    btnBrowse->setStyleSheet("QPushButton { background: #4a90e2; color: white; border-radius: 4px; padding: 0 10px; text-align: left; } QPushButton:hover { background: #3e3e42; }"); // 2026-03-xx 统一悬停色
+    btnBrowse->setObjectName("OCRWindow_btnBrowse_1"); // 2026-03-xx 统一悬停色
     connect(btnBrowse, &QPushButton::clicked, this, &OCRWindow::onBrowseAndRecognize);
     leftLayout->addWidget(btnBrowse);
 
     auto* btnPaste = new QPushButton(" 粘贴识别");
     btnPaste->setIcon(IconHelper::getIcon("copy", "#ffffff"));
     btnPaste->setFixedHeight(36);
-    btnPaste->setStyleSheet("QPushButton { background: #2ecc71; color: white; border-radius: 4px; padding: 0 10px; text-align: left; } QPushButton:hover { background: #27ae60; }");
+    btnPaste->setObjectName("OCRWindow_btnPaste_2");
     connect(btnPaste, &QPushButton::clicked, this, &OCRWindow::onPasteAndRecognize);
     leftLayout->addWidget(btnPaste);
 
@@ -65,7 +65,7 @@ void OCRWindow::initUI() {
     auto* btnClear = new QPushButton(" 清空列表");
     btnClear->setIcon(IconHelper::getIcon("trash", "#e74c3c")); // 2026-03-13 统一 Trash 图标颜色为红色
     btnClear->setFixedHeight(36);
-    btnClear->setStyleSheet("QPushButton { background: #333; color: #ccc; border: 1px solid #444; border-radius: 4px; padding: 0 10px; text-align: left; } QPushButton:hover { background: #444; color: #fff; }");
+    btnClear->setObjectName("OCRWindow_btnClear_3");
     connect(btnClear, &QPushButton::clicked, this, &OCRWindow::onClearResults);
     leftLayout->addWidget(btnClear);
 
@@ -74,7 +74,7 @@ void OCRWindow::initUI() {
     auto* btnCopy = new QPushButton(" 复制文字");
     btnCopy->setIcon(IconHelper::getIcon("copy", "#ffffff"));
     btnCopy->setFixedHeight(36);
-    btnCopy->setStyleSheet("QPushButton { background: #3d3d3d; color: #eee; border: 1px solid #4a4a4a; border-radius: 4px; padding: 0 10px; text-align: left; } QPushButton:hover { background: #4d4d4d; }");
+    btnCopy->setObjectName("OCRWindow_btnCopy_4");
     connect(btnCopy, &QPushButton::clicked, this, &OCRWindow::onCopyResult);
     leftLayout->addWidget(btnCopy);
 
@@ -88,7 +88,7 @@ void OCRWindow::initUI() {
     middleLayout->setSpacing(5);
 
     auto* listLabel = new QLabel("上传的项目");
-    listLabel->setStyleSheet("color: #888; font-size: 11px; font-weight: bold;");
+    listLabel->setObjectName("OCRWindow_listLabel_5");
     middleLayout->addWidget(listLabel);
 
     m_itemList = new QListWidget();
@@ -112,7 +112,7 @@ void OCRWindow::initUI() {
     rightLayout->setSpacing(5);
 
     auto* resultLabel = new QLabel("识别结果");
-    resultLabel->setStyleSheet("color: #888; font-size: 11px; font-weight: bold;");
+    resultLabel->setObjectName("OCRWindow_resultLabel_6");
     rightLayout->addWidget(resultLabel);
 
     
@@ -120,7 +120,7 @@ void OCRWindow::initUI() {
     m_progressBar = new QProgressBar();
     m_progressBar->setTextVisible(true);
     m_progressBar->setAlignment(Qt::AlignCenter);
-    m_progressBar->setStyleSheet("QProgressBar { border: none; background: #333; border-radius: 4px; height: 6px; text-align: center; color: transparent; } QProgressBar::chunk { background-color: #4a90e2; border-radius: 4px; }");
+    m_progressBar->setObjectName("OCRWindow_m_progressBar_7");
     m_progressBar->hide();
     rightLayout->addWidget(m_progressBar);
 
@@ -129,7 +129,7 @@ void OCRWindow::initUI() {
     m_ocrResult->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_ocrResult->setReadOnly(true);
     m_ocrResult->setPlaceholderText("选择左侧项目查看识别结果...");
-    m_ocrResult->setStyleSheet("QTextEdit { background: #1a1a1a; border: 1px solid #333; border-radius: 6px; color: #eee; font-size: 13px; padding: 10px; line-height: 1.4; }");
+    m_ocrResult->setObjectName("OCRWindow_m_ocrResult_8");
     rightLayout->addWidget(m_ocrResult);
 
     mainHLayout->addWidget(rightPanel);

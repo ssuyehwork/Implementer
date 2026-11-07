@@ -26,13 +26,13 @@ CategoryLockWidget::CategoryLockWidget(QWidget* parent) : QWidget(parent) {
     // 2. 提示文字 (精简至 13px)
     auto* titleLabel = new QLabel("输入密码查看内容");
     // [USER_REQUEST] 2026-03-xx 按照用户要求：标题文字改为绿色 #00A650
-    titleLabel->setStyleSheet("color: #00A650; font-size: 13px; font-weight: bold; background: transparent;");
+    titleLabel->setObjectName("CategoryLockWidget_titleLabel_1");
     titleLabel->setAlignment(Qt::AlignCenter);
     layout->addWidget(titleLabel);
 
     // 3. 密码提示 (精简至 11px)
     m_hintLabel = new QLabel("密码提示: ");
-    m_hintLabel->setStyleSheet("color: #555555; font-size: 11px; background: transparent;");
+    m_hintLabel->setObjectName("CategoryLockWidget_m_hintLabel_2");
     m_hintLabel->setAlignment(Qt::AlignCenter);
     layout->addWidget(m_hintLabel);
 
@@ -58,7 +58,7 @@ CategoryLockWidget::CategoryLockWidget(QWidget* parent) : QWidget(parent) {
     mainLayout->addWidget(container);
 
     // 移除强制背景色，使其自然融合到父容器 (#1e1e1e) 中
-    setStyleSheet("background: transparent;");
+    setObjectName("CategoryLockWidget_this_1");
 }
 
 void CategoryLockWidget::setCategory(int id, const QString& hint) {

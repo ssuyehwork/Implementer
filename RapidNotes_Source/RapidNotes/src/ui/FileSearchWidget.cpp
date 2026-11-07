@@ -343,15 +343,10 @@ void FileSearchWidget::initUI() {
 
     auto* infoLayout = new QHBoxLayout();
     m_infoLabel = new QLabel("等待操作...");
-    m_infoLabel->setStyleSheet("color: #888888; font-size: 12px;");
+    m_infoLabel->setObjectName("FileSearchWidget_m_infoLabel_1");
     
     m_showHiddenCheck = new QCheckBox("显示隐性文件");
-    m_showHiddenCheck->setStyleSheet(R"(
-        QCheckBox { color: #888; font-size: 12px; spacing: 5px; }
-        QCheckBox::indicator { width: 15px; height: 15px; border: 1px solid #444; border-radius: 3px; background: #2D2D30; }
-        QCheckBox::indicator:checked { background-color: #007ACC; border-color: #007ACC; }
-        QCheckBox::indicator:hover { border-color: #666; }
-    )");
+    m_showHiddenCheck->setObjectName("FileSearchWidget_m_showHiddenCheck_1");
     connect(m_showHiddenCheck, &QCheckBox::toggled, this, &FileSearchWidget::refreshList);
 
     infoLayout->addWidget(m_infoLabel);
@@ -362,7 +357,7 @@ void FileSearchWidget::initUI() {
     auto* listHeaderLayout = new QHBoxLayout();
     listHeaderLayout->setContentsMargins(0, 0, 0, 0);
     auto* listTitle = new QLabel("搜索结果");
-    listTitle->setStyleSheet("color: #888; font-size: 11px; font-weight: bold; border: none; background: transparent;");
+    listTitle->setObjectName("FileSearchWidget_listTitle_2");
     
     auto* btnCopyAll = new QToolButton();
     btnCopyAll->setIcon(IconHelper::getIcon("copy", "#1abc9c", 14));
@@ -437,7 +432,7 @@ void FileSearchWidget::onPathReturnPressed() {
         startScan(p);
     } else {
         m_infoLabel->setText("路径不存在");
-        m_pathInput->setStyleSheet("border: 1px solid #FF3333;");
+        m_pathInput->setObjectName("FileSearchWidget_m_pathInput_3");
     }
 }
 

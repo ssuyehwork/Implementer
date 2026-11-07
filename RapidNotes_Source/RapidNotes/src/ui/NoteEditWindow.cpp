@@ -202,7 +202,7 @@ void NoteEditWindow::initUI() {
     auto* mainContainer = new QWidget();
     mainContainer->setObjectName("MainContainer");
     // 2026-04-xx 按照用户要求，修改容器为顶部直角，仅保留底部圆角
-    mainContainer->setStyleSheet("QWidget#MainContainer { background-color: #1E1E1E; border-top-left-radius: 0px; border-top-right-radius: 0px; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; }");
+    mainContainer->setObjectName("NoteEditWindow_mainContainer_1");
     windowLayout->addWidget(mainContainer);
 
     auto* outerLayout = new QVBoxLayout(mainContainer);
@@ -213,7 +213,7 @@ void NoteEditWindow::initUI() {
     m_titleBar = new QWidget();
     m_titleBar->setFixedHeight(32); 
     // 2026-04-xx 按照用户要求，将标题栏修改成直角
-    m_titleBar->setStyleSheet("background-color: #252526; border-radius: 0px; border-bottom: 1px solid #333;");
+    m_titleBar->setObjectName("NoteEditWindow_m_titleBar_2");
     auto* tbLayout = new QHBoxLayout(m_titleBar);
     // 2026-04-xx 按照用户要求，将左右两侧的按钮/图标与边缘保持 5 像素间距
     tbLayout->setContentsMargins(5, 0, 5, 0); 
@@ -224,7 +224,7 @@ void NoteEditWindow::initUI() {
     tbLayout->addWidget(titleIcon);
 
     m_winTitleLabel = new QLabel(m_noteId > 0 ? "编辑笔记" : "记录灵感");
-    m_winTitleLabel->setStyleSheet("font-weight: bold; color: #ddd; font-size: 13px; margin-left: 5px;");
+    m_winTitleLabel->setObjectName("NoteEditWindow_m_winTitleLabel_3");
     tbLayout->addWidget(m_winTitleLabel);
     tbLayout->addStretch();
 
@@ -270,7 +270,7 @@ void NoteEditWindow::initUI() {
     btnClose->setIconSize(QSize(18, 18));
     btnClose->setFixedSize(24, 24);
     // 2026-04-xx 按照用户要求：关闭按钮悬停锁定红色系
-    btnClose->setStyleSheet("QPushButton { background: #E81123; border: none; border-radius: 4px; padding: 0px; } QPushButton:hover { background-color: #D71520; }");
+    btnClose->setObjectName("NoteEditWindow_btnClose_4");
     connect(btnClose, &QPushButton::clicked, this, &QWidget::close);
 
     tbLayout->addWidget(m_btnStayOnTop);
@@ -281,7 +281,7 @@ void NoteEditWindow::initUI() {
 
     // 主内容区使用 Splitter
     m_splitter = new QSplitter(Qt::Horizontal);
-    m_splitter->setStyleSheet("QSplitter::handle { background-color: #252526; width: 2px; } QSplitter::handle:hover { background-color: #4FACFE; }");
+    m_splitter->setObjectName("NoteEditWindow_m_splitter_5");
 
     // 左侧面板
     QWidget* leftContainer = new QWidget();
@@ -401,7 +401,7 @@ void NoteEditWindow::setupLeftPanel(QVBoxLayout* layout) {
     layout->addWidget(colorGrid);
     
     m_defaultColorCheck = new QCheckBox("设为默认颜色");
-    m_defaultColorCheck->setStyleSheet("QCheckBox { color: #858585; font-size: 12px; margin-top: 5px; }");
+    m_defaultColorCheck->setObjectName("NoteEditWindow_m_defaultColorCheck_6");
     layout->addWidget(m_defaultColorCheck);
 
     layout->addStretch(); 
@@ -412,7 +412,7 @@ void NoteEditWindow::setupLeftPanel(QVBoxLayout* layout) {
     saveBtn->setCursor(Qt::PointingHandCursor);
     saveBtn->setFixedHeight(50);
     // 2026-03-xx 按照用户要求，统一保存按钮圆角为 4px
-    saveBtn->setStyleSheet("QPushButton { background-color: #4FACFE; color: white; border: none; border-radius: 4px; font-weight: bold; font-size: 13px; } QPushButton:hover { background-color: #357abd; }");
+    saveBtn->setObjectName("NoteEditWindow_saveBtn_7");
     connect(saveBtn, &QPushButton::clicked, this, &NoteEditWindow::saveNote);
     layout->addWidget(saveBtn);
 }
@@ -435,7 +435,7 @@ void NoteEditWindow::setupRightPanel(QVBoxLayout* layout) {
     headerLayout->setSpacing(1);
 
     QLabel* titleLabel = new QLabel("详细内容");
-    titleLabel->setStyleSheet("color: #888; font-size: 11px; font-weight: bold;");
+    titleLabel->setObjectName("NoteEditWindow_titleLabel_8");
     headerLayout->addWidget(titleLabel);
     headerLayout->addStretch();
 
@@ -468,7 +468,7 @@ void NoteEditWindow::setupRightPanel(QVBoxLayout* layout) {
     QFrame* sep1 = new QFrame();
     sep1->setFixedWidth(1);
     sep1->setFixedHeight(16);
-    sep1->setStyleSheet("background-color: #333; margin-left: 2px; margin-right: 2px;");
+    sep1->setObjectName("NoteEditWindow_sep1_9");
     toolBar->addWidget(sep1);
 
     addTool("list_ul", "无序列表", [this](){ m_contentEdit->toggleList(false); });
@@ -480,7 +480,7 @@ void NoteEditWindow::setupRightPanel(QVBoxLayout* layout) {
     QFrame* sep2 = new QFrame();
     sep2->setFixedWidth(1);
     sep2->setFixedHeight(16);
-    sep2->setStyleSheet("background-color: #333; margin-left: 2px; margin-right: 2px;");
+    sep2->setObjectName("NoteEditWindow_sep2_10");
     toolBar->addWidget(sep2);
 
     // 高亮颜色
@@ -512,30 +512,30 @@ void NoteEditWindow::setupRightPanel(QVBoxLayout* layout) {
     // 搜索栏 (默认隐藏)
     m_searchBar = new QWidget();
     m_searchBar->setVisible(false);
-    m_searchBar->setStyleSheet("background-color: #252526; border-radius: 6px; padding: 2px;");
+    m_searchBar->setObjectName("NoteEditWindow_m_searchBar_11");
     auto* sbLayout = new QHBoxLayout(m_searchBar);
     sbLayout->setContentsMargins(5, 2, 5, 2);
     m_searchEdit = new QLineEdit();
     m_searchEdit->setPlaceholderText("查找内容...");
-    m_searchEdit->setStyleSheet("border: none; background: transparent; color: #fff;");
+    m_searchEdit->setObjectName("NoteEditWindow_m_searchEdit_12");
     connect(m_searchEdit, &QLineEdit::returnPressed, [this](){ m_contentEdit->findText(m_searchEdit->text()); });
     
     QPushButton* btnPrev = new QPushButton();
     btnPrev->setIcon(IconHelper::getIcon("nav_prev", "#ccc"));
     btnPrev->setFixedSize(24, 24);
-    btnPrev->setStyleSheet("background: transparent; border: none;");
+    btnPrev->setObjectName("NoteEditWindow_btnPrev_13");
     connect(btnPrev, &QPushButton::clicked, [this](){ m_contentEdit->findText(m_searchEdit->text(), true); });
     
     QPushButton* btnNext = new QPushButton();
     btnNext->setIcon(IconHelper::getIcon("nav_next", "#ccc"));
     btnNext->setFixedSize(24, 24);
-    btnNext->setStyleSheet("background: transparent; border: none;");
+    btnNext->setObjectName("NoteEditWindow_btnNext_14");
     connect(btnNext, &QPushButton::clicked, [this](){ m_contentEdit->findText(m_searchEdit->text(), false); });
     
     QPushButton* btnCls = new QPushButton();
     btnCls->setIcon(IconHelper::getIcon("close", "#ccc"));
     btnCls->setFixedSize(24, 24);
-    btnCls->setStyleSheet("background: transparent; border: none;");
+    btnCls->setObjectName("NoteEditWindow_btnCls_15");
     connect(btnCls, &QPushButton::clicked, [this](){ m_searchBar->hide(); });
 
     sbLayout->addWidget(m_searchEdit);
@@ -601,18 +601,18 @@ void NoteEditWindow::toggleMaximize() {
         showNormal();
         if (windowLayout) windowLayout->setContentsMargins(15, 15, 15, 15);
         // 2026-04-xx 按照用户要求，恢复后容器顶部仍保持直角，仅底部圆角
-        if (mainContainer) mainContainer->setStyleSheet("QWidget#MainContainer { background-color: #1E1E1E; border-top-left-radius: 0px; border-top-right-radius: 0px; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; }");
+        if (mainContainer) mainContainer->setObjectName("NoteEditWindow_mainContainer_1");
         m_maxBtn->setIcon(IconHelper::getIcon("maximize", "#aaaaaa", 18));
         // 2026-04-xx 按照用户要求，恢复后标题栏仍保持直角
-        m_titleBar->setStyleSheet("background-color: #252526; border-radius: 0px; border-bottom: 1px solid #333;");
+        m_titleBar->setObjectName("NoteEditWindow_m_titleBar_2");
     } else {
         m_normalGeometry = geometry();
         showMaximized();
         if (windowLayout) windowLayout->setContentsMargins(0, 0, 0, 0);
-        if (mainContainer) mainContainer->setStyleSheet("QWidget#MainContainer { background-color: #1E1E1E; border-radius: 0px; }");
+        if (mainContainer) mainContainer->setObjectName("NoteEditWindow_mainContainer_18");
         // 2026-04-xx 按照用户要求，将 svg 图标 “restore” 替换成 “restore_window”
         m_maxBtn->setIcon(IconHelper::getIcon("restore_window", "#aaaaaa", 18));
-        m_titleBar->setStyleSheet("background-color: #252526; border-radius: 0px; border-bottom: 1px solid #333;");
+        m_titleBar->setObjectName("NoteEditWindow_m_titleBar_2");
     }
     m_isMaximized = !m_isMaximized;
     update();

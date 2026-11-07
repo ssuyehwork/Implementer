@@ -25,7 +25,7 @@ TagEditDialog::TagEditDialog(const QString& currentTags, QWidget* parent)
     layout->setSpacing(12);
 
     auto* lbl = new QLabel("标签 (胶囊化展示):");
-    lbl->setStyleSheet("color: #aaa; font-size: 13px; font-weight: bold;");
+    lbl->setObjectName("TagEditDialog_lbl_1");
     layout->addWidget(lbl);
 
     // 2. 集成胶囊标签编辑器
@@ -39,7 +39,7 @@ TagEditDialog::TagEditDialog(const QString& currentTags, QWidget* parent)
     layout->addWidget(m_tagEditor);
 
     auto* tips = new QLabel("提示：双击空白区域可打开高级标签面板");
-    tips->setStyleSheet("color: #666; font-size: 11px;");
+    tips->setObjectName("TagEditDialog_tips_2");
     layout->addWidget(tips);
 
     layout->addStretch();
@@ -51,14 +51,14 @@ TagEditDialog::TagEditDialog(const QString& currentTags, QWidget* parent)
     auto* btnCancel = new QPushButton("取消");
     btnCancel->setFixedSize(80, 32);
     btnCancel->setCursor(Qt::PointingHandCursor);
-    btnCancel->setStyleSheet("QPushButton { background-color: #333; color: #EEE; border: none; border-radius: 4px; } QPushButton:hover { background-color: #3e3e42; }"); // 2026-03-xx 统一悬停色
+    btnCancel->setObjectName("TagEditDialog_btnCancel_3"); // 2026-03-xx 统一悬停色
     connect(btnCancel, &QPushButton::clicked, this, &QDialog::reject);
     btnLayout->addWidget(btnCancel);
 
     auto* btnOk = new QPushButton("确定");
     btnOk->setFixedSize(80, 32);
     btnOk->setCursor(Qt::PointingHandCursor);
-    btnOk->setStyleSheet("QPushButton { background-color: #4a90e2; color: white; border: none; border-radius: 4px; font-weight: bold; } QPushButton:hover { background-color: #3e3e42; }"); // 2026-03-xx 统一悬停色
+    btnOk->setObjectName("TagEditDialog_btnOk_4"); // 2026-03-xx 统一悬停色
     connect(btnOk, &QPushButton::clicked, this, [this](){
         emit tagsConfirmed(getTags());
         accept();

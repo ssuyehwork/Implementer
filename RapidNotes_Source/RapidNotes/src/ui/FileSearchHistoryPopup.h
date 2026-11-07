@@ -33,7 +33,7 @@ public:
         layout->setSpacing(10);
         
         auto* lbl = new QLabel(text);
-        lbl->setStyleSheet("border: none; background: transparent; color: #DDD; font-size: 13px;");
+        lbl->setObjectName("FileSearchHistoryPopup_lbl_1");
         layout->addWidget(lbl);
         layout->addStretch();
         
@@ -87,9 +87,7 @@ public:
         
         auto* container = new QFrame();
         container->setObjectName("PopupContainer");
-        container->setStyleSheet(
-            "#PopupContainer { background-color: #252526; border: 1px solid #444; border-radius: 10px; }"
-        );
+        container->setObjectName("FileSearchHistoryPopup_container_1");
         rootLayout->addWidget(container);
 
         auto* shadow = new QGraphicsDropShadowEffect(container);
@@ -108,7 +106,7 @@ public:
 
         auto* icon = new QLabel();
         icon->setPixmap(IconHelper::getIcon("clock", "#888").pixmap(14, 14));
-        icon->setStyleSheet("border: none; background: transparent;");
+        icon->setObjectName("FileSearchHistoryPopup_icon_3");
 //         icon->setToolTip(StringUtils::wrapToolTip(titleStr));
         top->addWidget(icon);
 
@@ -120,7 +118,7 @@ public:
         clearBtn->setFixedSize(20, 20);
         clearBtn->setCursor(Qt::PointingHandCursor);
 //         clearBtn->setToolTip(StringUtils::wrapToolTip("清空历史记录"));
-        clearBtn->setStyleSheet("QPushButton { background: transparent; border: none; border-radius: 4px; } QPushButton:hover { background-color: #3e3e42; }"); // 2026-03-xx 统一悬停色
+        clearBtn->setObjectName("FileSearchHistoryPopup_clearBtn_4"); // 2026-03-xx 统一悬停色
         connect(clearBtn, &QPushButton::clicked, [this](){
             if (m_type == Path) m_searchWidget->clearHistory();
             else if (m_type == Filename) m_searchWidget->clearSearchHistory();
@@ -140,7 +138,7 @@ public:
         scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
         m_chipsWidget = new QWidget();
-        m_chipsWidget->setStyleSheet("background-color: transparent;");
+        m_chipsWidget->setObjectName("FileSearchHistoryPopup_m_chipsWidget_5");
         m_vLayout = new QVBoxLayout(m_chipsWidget);
         m_vLayout->setContentsMargins(0, 0, 0, 0);
         m_vLayout->setSpacing(2);
@@ -178,7 +176,7 @@ protected:
         if(history.isEmpty()) {
             auto* lbl = new QLabel("暂无历史记录");
             lbl->setAlignment(Qt::AlignCenter);
-            lbl->setStyleSheet("color: #555; font-style: italic; margin: 20px; border: none;");
+            lbl->setObjectName("FileSearchHistoryPopup_lbl_6");
             m_vLayout->insertWidget(0, lbl);
         } else {
             for(const QString& val : std::as_const(history)) {

@@ -192,40 +192,7 @@ SearchAppWindow::~SearchAppWindow() {
 
 void SearchAppWindow::setupStyles() {
     m_tabWidget = new QTabWidget();
-    m_tabWidget->setStyleSheet(R"(
-        QTabWidget::pane {
-            border: 1px solid #333;
-            background: #1e1e1e;
-            margin-top: -1px;
-            border-top-left-radius: 0px;
-            border-top-right-radius: 4px;
-            border-bottom-left-radius: 4px;
-            border-bottom-right-radius: 4px;
-        }
-        QTabBar::tab {
-            background: #2D2D30;
-            color: #AAA;
-            padding: 10px 20px;
-            border: 1px solid #333;
-            border-bottom: 1px solid #333;
-            border-top-left-radius: 6px;
-            border-top-right-radius: 6px;
-            margin-right: 2px;
-        }
-        QTabBar::tab:hover {
-            background: #3E3E42;
-            color: #EEE;
-        }
-        QTabBar::tab:selected {
-            background: #1e1e1e;
-            color: #007ACC;
-            border-bottom: 1px solid #1e1e1e;
-            font-weight: bold;
-        }
-        QTabBar {
-            border-bottom: 1px solid #333;
-        }
-    )");
+    m_tabWidget->setObjectName("SearchAppWindow_m_tabWidget_1");
 
     setStyleSheet(R"(
         QWidget {
@@ -278,7 +245,7 @@ void SearchAppWindow::initUI() {
     leftIcon->setPixmap(IconHelper::getIcon("folder", "#888").pixmap(14, 14));
     leftHeader->addWidget(leftIcon);
     auto* leftTitle = new QLabel("收藏夹 (可拖入)");
-    leftTitle->setStyleSheet("color: #888; font-weight: bold; font-size: 12px;");
+    leftTitle->setObjectName("SearchAppWindow_leftTitle_1");
     leftHeader->addWidget(leftTitle);
     leftHeader->addStretch();
     leftLayout->addLayout(leftHeader);
@@ -297,7 +264,7 @@ void SearchAppWindow::initUI() {
 
     auto* btnAddFav = new QPushButton("收藏当前路径");
     btnAddFav->setFixedHeight(32);
-    btnAddFav->setStyleSheet("QPushButton { background-color: #2D2D30; border: 1px solid #444; color: #AAA; border-radius: 4px; font-size: 12px; } QPushButton:hover { background-color: #3E3E42; color: #FFF; }");
+    btnAddFav->setObjectName("SearchAppWindow_btnAddFav_2");
     connect(btnAddFav, &QPushButton::clicked, [this](){
         QString path;
         if (m_tabWidget->currentIndex() == 0) {
@@ -337,7 +304,7 @@ void SearchAppWindow::initUI() {
     rightIcon->setPixmap(IconHelper::getIcon("Favorite", "#888").pixmap(14, 14));
     rightHeader->addWidget(rightIcon);
     auto* rightTitle = new QLabel("文件收藏");
-    rightTitle->setStyleSheet("color: #888; font-weight: bold; font-size: 12px;");
+    rightTitle->setObjectName("SearchAppWindow_rightTitle_3");
     rightHeader->addWidget(rightTitle);
     rightHeader->addStretch();
     rightLayout->addLayout(rightHeader);
