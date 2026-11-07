@@ -329,3 +329,34 @@
    - **标头空白区域防误触**：点击标头文字、数字或空白处时，事件被框架直接消费（`return true`），绝对不得像普通分类那样触发数据选中、高亮或内容列表刷新；
    - **分类子项自由交互**：展开后的各个具体分类子项（如 RapidNotes、Link 等）保持纯粹独立的业务行为（单选/多选高亮、数据筛选、右键上下文菜单、拖拽移动与状态联动）；
    - **职责单一与扩展性**：标头仅负责视觉分组与折叠状态组织，不挂载任何实体业务数据，彻底杜绝数据与容器的耦合混淆。
+---
+
+---
+
+## 14. QuarkMeta 迁移合并至 RapidNotes 核心设计理念与数据真理源 (QuarkMeta Merge Architecture & Data SSOT)
+
+> 本章节记录将 QuarkMeta 的界面与架构能力迁移合并至 RapidNotes 的根本目的与最高设计理念，作为后续一切界面适配、业务解耦与数据重构的唯一真理源 (SSOT)。
+
+### 14.1 根本目的与业务定位 (Core Purpose & Dual-Mode Roles)
+将 QuarkMeta 合并到 RapidNotes 里的根本目的：**通过 QuarkMeta 成熟的 MainWindow 界面与多维视图管理能力，更高效、更专业地集中管控 QuickWindow 日常记录与沉淀的笔记数据**。
+1. **轻量日常速记 (QuickWindow)**：作为常驻桌面的轻量悬浮入口，专注高效便携的灵感捕获、随手记事与全文快速检索；
+2. **专业集中管控 (MainWindow)**：由 QuickWindow 工具栏窗口按钮唤起，提供多标签页、多窗格分屏、分类层级树、元数据检查与多维即时筛选等专业级管理大盘；
+3. **数据一体双模共治**：两者外在交互形态虽异，但内在完全对齐、管理且共享同一份笔记数据。
+
+### 14.2 彻底放弃“物理路径”理念 (Abolishment of Physical Path Concept)
+QuarkMeta 原版面向本地磁盘物理文件系统（磁盘驱动器、物理路径树、文件冲突、目录监听等），而在合并至 RapidNotes 后，**所有物理路径相关理念必须彻底放弃，全面转变为纯数据库管理**：
+1. **路由与导航纯化**：
+   - 彻底废除物理磁盘路径（如 `C:\...`、`D:\...`）；
+   - 导航协议与面包屑层级严格统一为虚拟数据库路由协议 `library://<categoryId>`（如 `library://-1` 对应全部笔记，`library://-2` 对应未分类，`library://<id>` 对应各级分类）；
+2. **面板架构收敛与解耦**：
+   - 彻底剔除盘符栏 (`DriveBarWidget`)、物理收藏夹 (`FavoritePanel`)、标记分发 (`MarkedPanel` / `MarkedFolderService`) 以及物理目录树 (`NavPanel`)；
+   - 侧边栏仅保留面向分类数据库表（`categories`）的 `LibraryPanel`；
+3. **交互实体转变**：
+   - 彻底移除磁盘扫描、物理文件碰撞提示 (`FileCollisionDialog`)、文件系统拖拽分发逻辑；
+   - 视图中所有卡片展示、星级评分、颜色标记、重命名、拖拽移动与回收站软删除，其实体**严格且仅为数据库中的笔记记录 (`notes`)**。
+
+### 14.3 唯一存储真理源：`inspiration.db` (Storage SSOT)
+1. **唯一数据库**：所管理的数据库**绝非 QuarkMeta 原有的 `QuarkMeta.store` 数据库**，而是 RapidNotes 自身的 **`inspiration.db`** 数据库（主要包括 `notes` 表与 `categories` 表）；
+2. **零数据冗余与严禁侧车**：
+   - 严禁引入或残留 `QuarkMeta.store`、`.QuarkMeta.json` 侧车文件；
+   - 严禁在界面层自建第二份缓存副本或重复持久化层，所有数据读取与变更必须单向穿透至 RapidNotes 现有的 `DatabaseManager` 与领域服务中。
