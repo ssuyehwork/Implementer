@@ -189,7 +189,7 @@ void ContentContextMenu::showMenu(QAbstractItemView* view, const QPoint& pos) {
             int driveItemCount = selPathsDrive.size() > 0 ? static_cast<int>(selPathsDrive.size()) : 1;
             QMenu* newMenuDrive = menu.addMenu(UiHelper::getIcon("add", QColor("#EEEEEE"), 18), "新建...");
             UiHelper::applyMenuStyle(newMenuDrive);
-            newMenuDrive->addAction(UiHelper::getIcon("folder_filled", QColor("#EEEEEE")), "创建文件夹（Ctrl+Shift+N）")->setData(ContentPanel::ActionNewFolder);
+            newMenuDrive->addAction(UiHelper::getIcon("folder_filled", QColor("#EEEEEE")), "新建分类（Ctrl+Shift+N）")->setData(ContentPanel::ActionNewFolder);
             newMenuDrive->addAction(UiHelper::getIcon("text", QColor("#EEEEEE")), "创建 Markdown（Ctrl+N）")->setData(ContentPanel::ActionNewMd);
             newMenuDrive->addAction(UiHelper::getIcon("text", QColor("#EEEEEE")), "创建纯文本文件 (txt)")->setData(ContentPanel::ActionNewTxt);
 
@@ -237,7 +237,7 @@ void ContentContextMenu::showMenu(QAbstractItemView* view, const QPoint& pos) {
             menu.addSeparator();
             menu.addAction(UiHelper::getIcon("refresh", QColor("#EEEEEE"), 18), "刷新（F5）")->setData(ContentPanel::ActionRefresh);
         } else {
-            menu.addAction(UiHelper::getIcon(isFolder ? "folder" : "open", QColor("#EEEEEE"), 18), isFolder ? "打开文件夹" : "打开")->setData(ContentPanel::ActionOpen);
+            menu.addAction(UiHelper::getIcon(isFolder ? "folder" : "open", QColor("#EEEEEE"), 18), isFolder ? "打开分类" : "打开")->setData(ContentPanel::ActionOpen);
             if (isFolder) {
                 ContextMenuFactory::buildTabCascadeMenu(&menu, path, m_panel);
             } else {
@@ -316,7 +316,7 @@ void ContentContextMenu::showMenu(QAbstractItemView* view, const QPoint& pos) {
             int selItemCount = selPathsItem.size() > 0 ? static_cast<int>(selPathsItem.size()) : 1;
             QMenu* newMenuItem = menu.addMenu(UiHelper::getIcon("add", QColor("#EEEEEE"), 18), "新建...");
             UiHelper::applyMenuStyle(newMenuItem);
-            newMenuItem->addAction(UiHelper::getIcon("folder_filled", QColor("#EEEEEE")), "创建文件夹（Ctrl+Shift+N）")->setData(ContentPanel::ActionNewFolder);
+            newMenuItem->addAction(UiHelper::getIcon("folder_filled", QColor("#EEEEEE")), "新建分类（Ctrl+Shift+N）")->setData(ContentPanel::ActionNewFolder);
             newMenuItem->addAction(UiHelper::getIcon("text", QColor("#EEEEEE")), "创建 Markdown（Ctrl+N）")->setData(ContentPanel::ActionNewMd);
             newMenuItem->addAction(UiHelper::getIcon("text", QColor("#EEEEEE")), "创建纯文本文件 (txt)")->setData(ContentPanel::ActionNewTxt);
 
@@ -418,11 +418,11 @@ void ContentContextMenu::showMenu(QAbstractItemView* view, const QPoint& pos) {
                     moveMenu->addSeparator();
                 }
 
-                QAction* actBrowseMove = moveMenu->addAction(UiHelper::getIcon("folder", QColor("#EEEEEE"), 16), "浏览选择文件夹...");
+                QAction* actBrowseMove = moveMenu->addAction(UiHelper::getIcon("folder", QColor("#EEEEEE"), 16), "浏览选择分类...");
                 connect(actBrowseMove, &QAction::triggered, this, [this, performMoveTo]() {
                     QString selectedDir = QFileDialog::getExistingDirectory(
                         m_panel,
-                        "选择移动的目标文件夹",
+                        "选择移动的目标分类",
                         m_panel->currentPath(),
                         QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks
                     );
@@ -502,7 +502,7 @@ void ContentContextMenu::showMenu(QAbstractItemView* view, const QPoint& pos) {
             if (isWritablePhysical) {
                 QMenu* newMenu = menu.addMenu(UiHelper::getIcon("add", QColor("#EEEEEE"), 18), "新建...");
                 UiHelper::applyMenuStyle(newMenu);
-                newMenu->addAction(UiHelper::getIcon("folder_filled", QColor("#EEEEEE")), "创建文件夹（Ctrl+Shift+N）")->setData(ContentPanel::ActionNewFolder);
+                newMenu->addAction(UiHelper::getIcon("folder_filled", QColor("#EEEEEE")), "新建分类（Ctrl+Shift+N）")->setData(ContentPanel::ActionNewFolder);
                 newMenu->addAction(UiHelper::getIcon("text", QColor("#EEEEEE")), "创建 Markdown（Ctrl+N）")->setData(ContentPanel::ActionNewMd);
                 newMenu->addAction(UiHelper::getIcon("text", QColor("#EEEEEE")), "创建纯文本文件 (txt)")->setData(ContentPanel::ActionNewTxt);
 

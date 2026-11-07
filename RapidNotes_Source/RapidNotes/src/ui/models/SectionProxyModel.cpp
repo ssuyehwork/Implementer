@@ -185,7 +185,7 @@ QVariant SectionProxyModel::data(const QModelIndex& index, int role) const {
 
     if (role == SectionHeaderTextRole) {
         if (entry.type == RowType::FolderHeader) {
-            return QString("文件夹 (%1)").arg(m_folderCount);
+            return QString("分类 (%1)").arg(m_folderCount);
         }
         if (entry.type == RowType::FileHeader) {
             return QString("文件 (%1)").arg(m_fileCount);

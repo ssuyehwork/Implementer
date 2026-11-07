@@ -1,37 +1,1905 @@
-/* 全局深色主题 */
-QWidget {
+/* 全局基础样式 */
+QMainWindow, QDialog { background-color: #1E1E1E; color: #EEEEEE; }
+QWidget#CentralWidget { background-color: #1E1E1E; }
+
+/* 标题栏与导航栏切割线 */
+#TitleBar {
     background-color: #1E1E1E;
-    color: #D4D4D4;
-    font-family: "Segoe UI", "Microsoft YaHei";
-    outline: none; /* 移除点击时的虚线焦点框 */
+    border-bottom: 1px solid #333333;
 }
 
-/* 现代滚动条样式 */
-QScrollBar:vertical {
-    border: none;
+/* 浏览器多标签页 TabBarWidget 专属精细样式 (严格消除 QWidget 级联边框) */
+QWidget#TabBarWidget {
     background: transparent;
-    width: 8px;
+    border: none;
+}
+QPushButton#NewTabBtn {
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    padding: 0px;
+    outline: none;
+}
+QPushButton#NewTabBtn:hover {
+    background-color: #3E3E42;
+}
+
+QWidget#TabItem {
+    background-color: #1E1E1E;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border: 1px solid transparent;
+    border-bottom: none;
+}
+QWidget#TabItem:hover {
+    background-color: #252526;
+}
+QWidget#TabItem[active="true"] {
+    background-color: #2D2D2D;
+    border: 1px solid #3E3E42;
+    border-bottom: none;
+}
+
+QLabel#TabIconLabel {
+    background: transparent;
+    border: none;
+    padding: 0px;
     margin: 0px;
 }
+QLabel#TabTitleLabel {
+    background: transparent;
+    border: none;
+    padding: 0px;
+    margin: 0px;
+    color: #AAAAAA;
+    font-size: 12px;
+}
+QLabel#TabTitleLabel[active="true"] {
+    color: #FFFFFF;
+}
 
-QScrollBar::handle:vertical {
-    background: #444;
-    min-height: 30px;
+QPushButton#TabCloseBtn {
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    padding: 0px;
+    outline: none;
+}
+QPushButton#TabCloseBtn:hover {
+    background-color: #555555;
+}
+
+/* 卡片 5px 实体物理切缝 + Dual-mode 深色风格 */
+QSplitter {
+    background: transparent;
+    border: none;
+}
+/* MetaPanel 色彩选择圆点按钮基础样式 */
+QPushButton#MetaPanelColorBtn {
+    border-radius: 8px;
+    border: 1px solid transparent;
+}
+QPushButton#MetaPanelColorBtn:hover {
+    border-color: #FFFFFF;
+}
+QPushButton#MetaPanelColorBtn[active="true"] {
+    border: 2px solid #FFFFFF;
+}
+
+/* 元数据评级色彩选择小圆点基础静态样式 */
+QPushButton#MetaRatingColorBtn {
+    border-radius: 9px;
+    border: none;
+}
+
+/* 导航树形视图分支宽度静态定义 */
+QTreeView#NavTreeView::branch {
+    width: 20px;
+}
+QSplitter::handle:horizontal {
+    background-color: #1E1E1E;
+    width: 5px;
+}
+QSplitter::handle:horizontal:hover {
+    background-color: #378ADD;
+}
+
+/* 核心容器样式 - 彻底消除 margin，由 QSplitter 5px 句柄原生提供栏间 5px 物理间距，确保面板精确呈现 230px 物理满额宽度 */
+#SidebarContainer, #SidebarContainerWidget, #ListContainer, #EditorContainer, #MetadataContainer, #FilterContainer {
+    background-color: #1E1E1E;
+    border: 1px solid #333333;
+    border-radius: 0px;
+    color: #EEEEEE;
+    margin: 0px;
+    padding: 0px;
+}
+
+/* LibraryPanel 搜索过滤框与容器外联 QSS 选择器 */
+QWidget#LibraryFilterContainer {
+    background-color: transparent;
+    border-top: 1px solid #2D2D2D;
+}
+QLineEdit#LibraryFilterEdit {
+    background: #2D2D2D;
+    color: #CCCCCC;
+    border: 1px solid #444444;
+    border-radius: 4px;
+    padding: 0px 6px;
+    font-size: 11px;
+}
+QLineEdit#LibraryFilterEdit:focus {
+    border-color: #378ADD;
+    color: #FFFFFF;
+}
+
+#FavoriteContainer, #LibraryContainer {
+    background-color: #1E1E1E;
+    border: none;
+    margin: 0px;
+    padding: 0px;
+}
+
+#EditorContainer[isHostPanel="true"] {
+    border: none;
+}
+
+
+/* 容器标题栏样式 (回归绝对直角设计) */
+#ContainerHeader {
+    background-color: #252526;
+    border-bottom: 1px solid #333333;
+    border-top-left-radius: 0px;
+    border-top-right-radius: 0px;
+}
+
+/* 批次二：顶层窗口与导航栏外联选择器 */
+QLabel#TitleLogoLabel {
+    background: transparent;
+    border: none;
+}
+
+QLabel#ContentHeaderTitle[activePane="true"] {
+    color: #ff551c;
+    font-weight: bold;
+}
+QLabel#AppNameLabel {
+    color: #ff551c;
+    font-size: 12px;
+    font-weight: bold;
+}
+QWidget#BodyWrapper {
+    background: transparent;
+}
+QPushButton#NavControlBtn {
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+}
+QPushButton#NavControlBtn:hover {
+    background: #3E3E42;
+}
+QPushButton#NavControlBtn:pressed {
+    background: #4E4E52;
+}
+QPushButton#NavControlBtn:disabled {
+    opacity: 0.3;
+}
+QPushButton#TitleControlBtn {
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    padding: 0;
+    outline: none;
+}
+QPushButton#TitleControlBtn:focus {
+    outline: none;
+    border: none;
+}
+QPushButton#TitleControlBtn:hover {
+    background: #3E3E42;
+}
+QPushButton#TitleControlBtn:pressed {
+    background: #4E4E52;
+}
+QPushButton#TitleCloseBtn {
+    background-color: #e81123;
+    border: none;
+    border-radius: 4px;
+    padding: 0;
+}
+QPushButton#TitleCloseBtn:hover {
+    background-color: #e81123;
+}
+QPushButton#TitleCloseBtn:pressed {
+    background-color: #A50000;
+}
+QSlider#SizeSlider {
+    background: transparent;
+    margin-right: 5px;
+}
+QSlider#SizeSlider::groove:horizontal {
+    height: 3px;
+    background: #3F3F3F;
+    border-radius: 2px;
+}
+QSlider#SizeSlider::sub-page:horizontal {
+    background: #378ADD;
+    border-radius: 2px;
+}
+QSlider#SizeSlider::handle:horizontal {
+    width: 10px;
+    height: 10px;
+    background: #8E8E93;
+    border-radius: 5px;
+    margin: -3px 0;
+}
+QSlider#SizeSlider::handle:horizontal:hover {
+    background: #CCCCCC;
+}
+QWidget#DriveBar {
+    background-color: #252526;
+    border-bottom: 1px solid #333333;
+}
+QPushButton#BtnTagManager {
+    background-color: #252526;
+    border: 1px solid #333333;
+    border-radius: 4px;
+    padding: 0 12px;
+    color: #888888;
+    font-weight: bold;
+    font-size: 13px;
+}
+QPushButton#BtnTagManager:hover {
+    background-color: #3E3E42;
+    border-color: #1abc9c;
+    color: #FFFFFF;
+}
+QPushButton#BtnTagManager:pressed {
+    background-color: #4E4E52;
+}
+
+QWidget#AddressContainer {
+    background: #1E1E1E;
+    border: 1px solid #333333;
+    border-radius: 6px;
+}
+QWidget#AddressContainer[focused='true'] {
+    border: 1px solid #3498db;
+}
+QStackedWidget#AddressPathStack {
+    background: transparent;
+    border: none;
+}
+QLineEdit#AddressPathEdit {
+    background: transparent;
+    border: none;
+    color: #EEEEEE;
+    padding-left: 8px;
+}
+QPushButton#BtnRefreshAddress {
+    background: transparent;
+    border: none;
+    border-left: 1px solid #333333;
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+QPushButton#BreadcrumbNodeBtn {
+    background: transparent;
+    border: none;
+    outline: none;
+    border-radius: 4px;
+    color: #CCCCCC;
+    font-size: 12px;
+    padding: 0 4px;
+}
+QPushButton#BreadcrumbNodeBtn:hover {
+    background: #3E3E42;
+    color: #FFFFFF;
+}
+QPushButton#BreadcrumbNodeBtn:pressed {
+    background: #4E4E52;
+}
+QLabel#BreadcrumbSep {
+    background: transparent;
+    border: none;
+    padding: 0 1px;
+}
+
+QWidget#SearchContainer {
+    background-color: #1E1E1E;
+    border: 1px solid #333333;
+    border-radius: 6px;
+}
+QWidget#SearchContainer[focused='true'] {
+    border: 1px solid #378ADD;
+}
+QLineEdit#SearchEdit {
+    background: transparent;
+    border: none;
+    color: #EEEEEE;
+    padding-left: 4px;
+    padding-right: 24px;
+    font-size: 12px;
+}
+QPushButton#BtnSearchAddress {
+    background: transparent;
+    border: none;
+    border-right: 1px solid #333333;
+    border-top-left-radius: 6px;
+    border-bottom-left-radius: 6px;
+}
+QLineEdit#SearchEdit QToolButton {
+    border: none;
+    background: transparent;
+}
+QLineEdit#SearchEdit QToolButton:hover {
+    background-color: #3E3E42;
+    border-radius: 3px;
+}
+
+QLabel#StatusBarLeft {
+    font-size: 11px;
+    color: #888888;
+    background: transparent;
+    padding-top: 1px;
+    padding-bottom: 1px;
+    min-height: 20px;
+}
+QLabel#StatusBarLeft[indexing='true'] {
+    font-size: 11px;
+    color: #378ADD;
+    background: transparent;
+    font-weight: bold;
+    padding-top: 1px;
+    padding-bottom: 1px;
+    min-height: 20px;
+}
+
+/* 批次二重构样式：对话框与弹窗类外联 QSS 选择器 */
+QWidget#DialogContainer {
+    background-color: #1E1E1E;
+    border: 1px solid #333333;
+    border-radius: 6px;
+}
+QWidget#DialogContentArea {
+    background: transparent;
+    border: none;
+}
+QLabel#FramelessTitleLabel {
+    color: #AAAAAA;
+    font-size: 12px;
+    font-weight: bold;
+    border: none;
+}
+QPushButton#FramelessTitleBtn {
+    background-color: transparent;
+    border: none;
+    border-radius: 4px;
+    padding: 0;
+}
+QPushButton#FramelessTitleBtn:hover {
+    background-color: #3E3E42;
+}
+QPushButton#FramelessTitleBtn:pressed {
+    background-color: #555555;
+}
+QPushButton#FramelessPinBtn {
+    background-color: transparent;
+    border: none;
+    border-radius: 4px;
+}
+QPushButton#FramelessPinBtn:hover {
+    background-color: #3E3E42;
+}
+QPushButton#FramelessPinBtn:checked {
+    background-color: rgba(255, 85, 28, 0.2);
+}
+QPushButton#FramelessCloseBtn {
+    background-color: #E81123;
+    border: none;
+    border-radius: 4px;
+}
+QPushButton#FramelessCloseBtn:hover {
+    background-color: #E81123;
+}
+QPushButton#FramelessCloseBtn:pressed {
+    background-color: #A50000;
+}
+
+
+QPushButton#TagManagerSideBtn {
+    background: transparent;
+    color: #CCCCCC;
+    border: none;
+    text-align: left;
+    padding-left: 10px;
+    border-radius: 4px;
+    font-size: 11px;
+}
+QPushButton#TagManagerSideBtn:hover {
+    background-color: #2D2D30;
+    color: #FFFFFF;
+}
+QPushButton#TagManagerSideBtn:checked {
+    background-color: #3E3E42;
+    color: #3498DB;
+    font-weight: bold;
+}
+QPushButton#TagManagerTagBtn {
+    background: transparent;
+    border: 1px solid #333333;
+    color: #BBBBBB;
+    border-radius: 4px;
+    padding: 3px 10px;
+    font-size: 11px;
+    text-align: left;
+}
+QPushButton#TagManagerTagBtn:hover {
+    border-color: #1C97EA;
+    color: #1C97EA;
+    background-color: #2D2D30;
+}
+
+QPushButton#ColorPickerPresetBtn {
+    border: 1px solid #444444;
+    border-radius: 4px;
+}
+QPushButton#ColorPickerPresetBtn:hover {
+    border: 1px solid #AAAAAA;
+}
+QSlider#ColorPickerToleranceSlider::groove:horizontal {
+    height: 3px;
+    background: #444444;
+    border-radius: 2px;
+}
+QSlider#ColorPickerToleranceSlider::handle:horizontal {
+    width: 12px;
+    height: 12px;
+    background: #EEEEEE;
+    border-radius: 6px;
+    margin: -5px 0;
+}
+QSlider#ColorPickerToleranceSlider::sub-page:horizontal {
+    background: #378ADD;
+    border-radius: 2px;
+}
+
+
+
+QLabel#ProgressStatusLabel {
+    color: #EEEEEE;
+    font-size: 13px;
+}
+
+QLabel#ConflictImgLabel {
+    background-color: #2D2D30;
+    border-radius: 6px;
+}
+QLabel#ConflictBadge {
+    background-color: rgba(0, 0, 0, 0.6);
+    color: #FFFFFF;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 11px;
+}
+
+QPlainTextEdit#QLPlainTextEdit {
+    background: transparent;
+    border: none;
+    color: #D4D4D4;
+    font-family: 'Consolas', 'Monaco', 'PingFang SC', 'Microsoft YaHei';
+    font-size: 13px;
+}
+
+/* 目录监听设置对话框 */
+QLabel#FolderWatchDescLabel {
+    color: #CCCCCC;
+    font-size: 13px;
+}
+QWidget#FolderWatchContainer {
+    background: transparent;
+}
+
+/* QuickLook 文本搜索浮层样式 */
+QWidget#QLSearchBar {
+    background-color: rgba(30, 30, 30, 0.92);
+    border: 1px solid #444444;
+    border-radius: 6px;
+}
+
+QLineEdit#QLSearchEdit {
+    background-color: #252526;
+    border: 1px solid #3c3c3c;
+    border-radius: 4px;
+    color: #E0E0E0;
+    padding: 0px 6px;
+    height: 24px;
+    min-height: 24px;
+    max-height: 24px;
+    font-size: 12px;
+}
+
+QLineEdit#QLSearchEdit:focus {
+    border: 1px solid #0078D4;
+}
+
+QPushButton#QLSearchBtn {
+    background-color: #333333;
+    border: 1px solid #444444;
+    border-radius: 4px;
+    color: #E0E0E0;
+    padding: 0px 8px;
+    height: 24px;
+    min-height: 24px;
+    max-height: 24px;
+    font-size: 11px;
+}
+
+QPushButton#QLSearchBtn:hover {
+    background-color: #404040;
+    border-color: #555555;
+}
+
+QPushButton#QLSearchBtn:pressed {
+    background-color: #252525;
+}
+
+QLabel#QLSearchStatus {
+    color: #AAAAAA;
+    font-size: 11px;
+    padding: 0 4px;
+}
+QPlainTextEdit#QLPlainTextEdit QScrollBar:vertical {
+    width: 10px;
+    background: transparent;
+}
+QPlainTextEdit#QLPlainTextEdit QScrollBar::handle:vertical {
+    background: #333333;
+    border-radius: 3px;
+}
+QPlainTextEdit#QLPlainTextEdit QScrollBar::add-line:vertical, QPlainTextEdit#QLPlainTextEdit QScrollBar::sub-line:vertical {
+    border: none;
+    background: none;
+}
+QPlainTextEdit#QLPlainTextEdit QScrollBar::add-page:vertical, QPlainTextEdit#QLPlainTextEdit QScrollBar::sub-page:vertical {
+    background: none;
+}
+QPlainTextEdit#QLPlainTextEdit QScrollBar:horizontal {
+    height: 10px;
+    background: transparent;
+}
+QPlainTextEdit#QLPlainTextEdit QScrollBar::handle:horizontal {
+    background: #333333;
+    border-radius: 3px;
+}
+QPlainTextEdit#QLPlainTextEdit QScrollBar::add-line:horizontal, QPlainTextEdit#QLPlainTextEdit QScrollBar::sub-line:horizontal {
+    border: none;
+    background: none;
+}
+QPlainTextEdit#QLPlainTextEdit QScrollBar::add-page:horizontal, QPlainTextEdit#QLPlainTextEdit QScrollBar::sub-page:horizontal {
+    background: none;
+}
+
+/* 菜单分割线与标题层内联样式收拢 */
+QFrame#MenuSeparatorLine {
+    background-color: #444444;
+    border: none;
+}
+
+QLabel#FilterPanelTitleLabel {
+    color: #888888;
+}
+
+/* 预设标签弹窗 PresetTagsDialog 无损收拢 */
+QLabel#PresetFolderLabel, QLabel#PresetTagLabel {
+    color: #888888;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+QLineEdit#PresetFolderNameEdit {
+    background-color: #1E1E1E;
+    border: 1px solid #3C3C3C;
+    border-radius: 4px;
+    color: #EEEEEE;
+    font-size: 12px;
+    padding: 4px;
+}
+
+QWidget#PresetTagContainer {
+    background-color: #1E1E1E;
+    border: 1px solid #3C3C3C;
     border-radius: 4px;
 }
 
+QPushButton#PresetBtnSave {
+    background-color: #378ADD;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+QPushButton#PresetBtnSave:hover {
+    background-color: #4A90E2;
+}
+
+QPushButton#PresetBtnCancel {
+    background-color: #3E3E42;
+    color: #CCCCCC;
+    border: none;
+    border-radius: 4px;
+}
+
+QPushButton#PresetBtnCancel:hover {
+    background-color: #4E4E52;
+}
+
+/* 文件冲突弹窗 FileCollisionDialog 无损收拢 */
+QLabel#CollisionTextLabel {
+    color: #EEEEEE;
+    font-size: 13px;
+}
+
+QCheckBox#CollisionApplyAllChk {
+    color: #CCCCCC;
+    font-size: 12px;
+}
+
+QPushButton#CollisionOptionBtn {
+    background-color: #2D2D30;
+    color: #EEEEEE;
+    border: 1px solid #3E3E42;
+    border-radius: 4px;
+    padding: 2px 10px;
+    text-align: center;
+}
+
+QPushButton#CollisionOptionBtn:hover {
+    background-color: #3E3E42;
+    border-color: #007ACC;
+}
+
+/* 批次三重构样式：悬浮浮层与历史面板外联 QSS 选择器 */
+QFrame#TagSelectorOverlay {
+    background-color: #1E1E1E;
+    border: 1px solid #333333;
+    border-radius: 6px;
+}
+QPushButton#TagSelectorBtn {
+    background-color: transparent;
+    color: #BBBBBB;
+    border: 1px solid #333333;
+    border-radius: 4px;
+    padding: 0 8px;
+    font-size: 11px;
+    text-align: left;
+}
+QPushButton#TagSelectorBtn:hover {
+    border-color: #1ABC9C;
+    color: #FFFFFF;
+}
+
+/* TagSelectorOverlay 标签按钮 1:1 无损迁移 */
+QPushButton#TagOverlayBtn,
+QPushButton#TagOverlayRecBtn,
+QPushButton#TagOverlayRecentBtn {
+    background-color: transparent;
+    color: #BBBBBB;
+    border: 1px solid #333333;
+    border-radius: 4px;
+    padding: 0 8px;
+    font-size: 11px;
+    text-align: left;
+}
+
+/* 未选中状态悬停 */
+QPushButton#TagOverlayBtn[selected="false"]:hover,
+QPushButton#TagOverlayRecBtn[selected="false"]:hover,
+QPushButton#TagOverlayRecentBtn[selected="false"]:hover {
+    border-color: #1ABC9C;
+    color: #FFFFFF;
+}
+
+/* 已选中状态 */
+QPushButton#TagOverlayBtn[selected="true"],
+QPushButton#TagOverlayRecBtn[selected="true"],
+QPushButton#TagOverlayRecentBtn[selected="true"] {
+    background-color: rgba(28, 151, 234, 0.35);
+    color: #FFFFFF;
+    border: 1px solid #1C97EA;
+}
+
+/* 键盘聚焦状态（优先于普通悬停） */
+QPushButton#TagOverlayBtn[focused="true"],
+QPushButton#TagOverlayRecBtn[focused="true"],
+QPushButton#TagOverlayRecentBtn[focused="true"] {
+    border: 1px solid #1C97EA;
+    color: #FFFFFF;
+}
+
+QFrame#AddressHistoryPanel, QFrame#SearchHistoryPanel {
+    background-color: #252526;
+    border: 1px solid #444444;
+    border-radius: 8px;
+}
+
+
+QWidget#QuickLookMinimap {
+    background: transparent;
+}
+QGraphicsView#QLGraphicsView QScrollBar:horizontal, QGraphicsView#QLGraphicsView QScrollBar:vertical {
+    background: transparent;
+}
+QGraphicsView#QLGraphicsView QScrollBar::handle:horizontal, QGraphicsView#QLGraphicsView QScrollBar::handle:vertical {
+    background: #333333;
+    border-radius: 3px;
+}
+QGraphicsView#QLGraphicsView QScrollBar::add-line, QGraphicsView#QLGraphicsView QScrollBar::sub-line {
+    border: none;
+    background: none;
+}
+QGraphicsView#QLGraphicsView QScrollBar::add-page, QGraphicsView#QLGraphicsView QScrollBar::sub-page {
+    background: none;
+}
+
+/* 批次四重构样式：自定义控件、Delegate 与规则编辑外联 QSS 选择器 */
+
+
+QLineEdit#TreeItemEditor, QLineEdit#ThumbnailEditor {
+    background-color: #2D2D2D;
+    color: #FFFFFF;
+    selection-background-color: #3498DB;
+    border: 1px solid #3498DB;
+    border-radius: 4px;
+    padding: 0px 4px;
+    margin: 0px;
+    font-size: 8pt;
+}
+
+/* 批次三：对话框、浮层与小组件选择器外联 */
+QLabel#UndoToastMsgLabel {
+    color: #EEEEEE;
+    font-size: 12px;
+    font-family: 'Segoe UI', 'Microsoft YaHei';
+}
+QPushButton#UndoToastBtnUndo {
+    background-color: #378ADD;
+    color: #FFFFFF;
+    font-size: 12px;
+    font-weight: bold;
+    border: none;
+    border-radius: 4px;
+    padding: 0 12px;
+}
+QPushButton#UndoToastBtnUndo:hover {
+    background-color: #4a9ce8;
+}
+QPushButton#UndoToastBtnUndo:pressed {
+    background-color: #2b73be;
+}
+QWidget#UndoToastSeparator {
+    background-color: #4E4E52;
+}
+QPushButton#UndoToastBtnClose {
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    padding: 0;
+}
+QPushButton#UndoToastBtnClose:hover {
+    background-color: #3E3E42;
+}
+
+/* ===================================================================
+   TaskProgressStrip Styles
+   =================================================================== */
+QProgressBar#TaskProgressStrip {
+    background-color: transparent;
+    border: none;
+    max-height: 5px;
+}
+
+QProgressBar#TaskProgressStrip::chunk {
+    background-color: #ff551c;
+    border-radius: 1px;
+}
+
+QWidget#QLContainer {
+    background-color: #1E1E1E;
+    border: 1px solid #333333;
+    border-radius: 8px;
+}
+QLabel#QLTitle {
+    color: #FF8C00;
+    font-weight: bold;
+    font-size: 14px;
+}
+QLabel#QLEmptyPromptLabel {
+    color: #888888;
+    font-size: 16px;
+    font-weight: bold;
+    background: transparent;
+}
+QLabel#QLInfoLabel {
+    color: #777;
+}
+QLabel#QLInfoLabelWarn {
+    color: #FF8C00;
+    font-weight: bold;
+    font-size: 14px;
+}
+QWidget#QLGraphicsView {
+    background: transparent;
+    border: none;
+}
+
+QLineEdit#TagSelectorSearchEdit, QLineEdit#TagManagerSearchEdit {
+    background: #1E1E1E;
+    border: 1px solid #3c3c3c;
+    border-radius: 4px;
+    padding: 4px 8px;
+    color: #EEEEEE;
+    font-size: 12px;
+}
+QLineEdit#TagSelectorSearchEdit:focus, QLineEdit#TagManagerSearchEdit:focus {
+    border-color: #378ADD;
+}
+QPushButton#TagSelectorToggleBtn, QPushButton#TagManagerToggleBtn {
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    padding: 0px;
+}
+QPushButton#TagSelectorToggleBtn:hover, QPushButton#TagManagerToggleBtn:hover {
+    background-color: #3E3E42;
+}
+QListWidget#TagSelectorGroupList {
+    background-color: #252526;
+    border: 1px solid #333333;
+    border-radius: 4px;
+    outline: none;
+    padding: 2px;
+    color: #CCCCCC;
+    font-size: 11px;
+}
+QListWidget#TagSelectorGroupList::item {
+    height: 26px;
+    color: #BBBBBB;
+    border-radius: 3px;
+    padding-left: 6px;
+}
+QListWidget#TagSelectorGroupList::item:hover {
+    background-color: #2D2D30;
+    color: #FFFFFF;
+}
+QListWidget#TagSelectorGroupList::item:selected {
+    background-color: #3E3E42;
+    color: #1C97EA;
+    font-weight: bold;
+}
+QWidget#TagSelectorGridWidget, QWidget#TagManagerContentWidget {
+    background-color: #1E1E1E;
+}
+QScrollArea#TagSelectorScrollArea {
+    border: 1px solid #333;
+    background-color: #1E1E1E;
+    border-radius: 4px;
+}
+
+QLabel#HistoryEmptyLabel {
+    color: #666666;
+    font-size: 12px;
+    padding: 4px 8px;
+}
+QWidget#HistoryTitleRow {
+    background: transparent;
+}
+QLabel#HistoryTitleLabel {
+    color: #888888;
+    font-size: 11px;
+}
+QPushButton#HistoryBtnClearAll {
+    background: transparent;
+    border: none;
+    color: #888888;
+    font-size: 11px;
+}
+QPushButton#HistoryBtnClearAll:hover {
+    color: #E81123;
+}
+QWidget#HistorySep {
+    background: #333333;
+    border: none;
+    max-height: 1px;
+}
+QWidget#HistoryRow {
+    background: transparent;
+    border-radius: 4px;
+}
+QWidget#HistoryRow:hover {
+    background: #3E3E42;
+}
+QLabel#HistoryItemLabel {
+    color: #CCCCCC;
+    font-size: 12px;
+    background: transparent;
+}
+QPushButton#HistoryBtnRemove {
+    background: transparent;
+    border: none;
+    border-radius: 2px;
+}
+QPushButton#HistoryBtnRemove:hover {
+    background-color: #4E4E52;
+}
+
+QWidget#TagManagerTopBar {
+    background: transparent;
+    border-bottom: 1px solid #333;
+}
+QFrame#TagManagerSidebar {
+    background-color: #252526;
+    border: 1px solid #333333;
+    border-radius: 4px;
+}
+QLabel#TagManagerSideTitle {
+    color: #888;
+    font-size: 11px;
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+QPushButton#TagManagerBtnAddGroup {
+    background-color: #2D2D30;
+    border: 1px solid #444;
+    border-radius: 4px;
+    color: #EEE;
+    font-size: 11px;
+    padding: 4px 8px;
+}
+QPushButton#TagManagerBtnAddGroup:hover {
+    background-color: #378ADD;
+    border-color: #378ADD;
+    color: #FFF;
+}
+QScrollArea#TagManagerScrollArea {
+    border: 1px solid #333333;
+    border-radius: 4px;
+    background-color: #1E1E1E;
+}
+QPushButton#TagManagerBtnAddNewTag {
+    background-color: #252526;
+    border: 1px solid #3C3C3C;
+    border-radius: 4px;
+    color: #EEEEEE;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: bold;
+}
+QPushButton#TagManagerBtnAddNewTag:hover {
+    background-color: #2D2D30;
+    border-color: #378ADD;
+    color: #FFFFFF;
+}
+
+QWidget#ColorPickerBottomBox {
+    background: #252526;
+    border: 1px solid #378ADD;
+    border-radius: 4px;
+}
+/* ColorPicker 色彩预览块静态形状 */
+QWidget#ColorPickerPreviewBlock {
+    border-radius: 4px;
+    border: 1px solid #333333;
+}
+
+/* 分屏拖拽与方向预览遮罩层静态样式 */
+QWidget#OrientationPreviewWidget {
+    background-color: rgba(0, 122, 255, 0.25);
+    border: 2px solid #007AFF;
+}
+
+/* 元数据面板与筛选器面板拖拽迁移遮罩层静态样式 (90% 不透明度 / 10% 半透明) */
+QWidget#DragOverlayWidget {
+    background-color: rgba(0, 122, 255, 0.90);
+    border: 2px solid #007AFF;
+}
+QLineEdit#ColorPickerHexEdit {
+    background: transparent;
+    border: none;
+    color: #EEEEEE;
+    font-family: monospace;
+    font-size: 12px;
+}
+QPushButton#ColorPickerBtnConfirm {
+    border: none;
+    background: transparent;
+}
+QPushButton#ColorPickerBtnConfirm:hover {
+    background: #3E3E42;
+    border-radius: 2px;
+}
+QWidget#ColorPickerToleranceRow {
+    background: transparent;
+}
+QLabel#ColorPickerToleranceLabel {
+    color: #AAAAAA;
+    font-size: 11px;
+    background: transparent;
+    border: none;
+}
+
+QWidget#ConflictCard {
+    background-color: #232325;
+    border-radius: 6px;
+    border: 1px solid #333336;
+}
+QLabel#ConflictNameLabel {
+    color: #FFFFFF;
+    font-weight: bold;
+    font-size: 13px;
+}
+QLabel#ConflictInfoLabel {
+    color: #AAAAAA;
+    font-size: 11px;
+}
+QLabel#ConflictTagBadge {
+    background-color: #333336;
+    color: #888888;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: bold;
+}
+QRadioButton#ConflictRadio {
+    color: #FFFFFF;
+    font-size: 12px;
+}
+QCheckBox#ConflictApplyAllCheckBox {
+    color: #888888;
+    font-size: 12px;
+}
+QPushButton#ConflictSubmitBtn {
+    background-color: #378ADD;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 12px;
+}
+QPushButton#ConflictSubmitBtn:hover {
+    background-color: #4a9ce8;
+}
+QPushButton#ConflictSubmitBtn:pressed {
+    background-color: #2b73be;
+}
+
+QLabel#BatchCreateTitleLabel {
+    color: #BBB;
+    font-weight: bold;
+}
+QLabel#BatchCreateRuleLabel {
+    color: #888;
+    font-size: 11px;
+}
+QScrollArea#BatchCreateScroll {
+    background: transparent;
+    border: none;
+}
+QPushButton#BatchCreateCancelBtn {
+    background: transparent;
+    color: #BBB;
+    border: 1px solid #444;
+    border-radius: 4px;
+}
+QPushButton#BatchCreateCancelBtn:hover {
+    background: #3E3E42;
+}
+QPushButton#BatchCreateOkBtn {
+    background: #007ACC;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-weight: bold;
+}
+QPushButton#BatchCreateOkBtn:hover {
+    background: #1C97EA;
+}
+QPushButton#BatchCreateOkBtn:disabled {
+    background: #333333;
+    color: #666666;
+}
+
+QPushButton#BatchRenameSecBtn {
+    background-color: transparent;
+    color: #CCCCCC;
+    border: 1px solid #444444;
+    border-radius: 4px;
+    font-size: 11px;
+}
+QPushButton#BatchRenameSecBtn:hover {
+    background-color: #3E3E42;
+    color: #FFFFFF;
+    border-color: #555555;
+}
+QPushButton#BatchRenameSecBtn:disabled {
+    background-color: #1E1E1E;
+    color: #555555;
+    border-color: #2D2D2D;
+}
+QPushButton#BatchRenameDeletePresetBtn {
+    background: transparent;
+    border: 1px solid #3c3c3c;
+    border-radius: 4px;
+    color: #888888;
+}
+QPushButton#BatchRenameDeletePresetBtn:hover {
+    background: #3E3E42;
+    color: #E81123;
+    border-color: #E81123;
+}
+QGroupBox#BatchRenameRulesGroup {
+    padding-top: 15px;
+    margin-top: 5px;
+}
+QGroupBox#BatchRenameRulesGroup::title {
+    top: -2px;
+    left: 8px;
+}
+QScrollArea#BatchRenameScroll {
+    background: transparent;
+    border: none;
+    padding: 0px;
+    margin: 0px;
+}
+QPushButton#BatchRenameExecuteBtn {
+    background-color: #007ACC;
+    color: #FFFFFF;
+    font-weight: bold;
+    font-size: 13px;
+    border: none;
+    border-radius: 4px;
+}
+QPushButton#BatchRenameExecuteBtn:hover {
+    background-color: #1C97EA;
+}
+QPushButton#BatchRenameExecuteBtn:disabled {
+    background-color: #333333;
+    color: #666666;
+}
+
+QWidget#FramelessTitleBar {
+    background-color: transparent;
+    border: none;
+}
+
+QWidget#FramelessLine {
+    background-color: #333333;
+    border: none;
+}
+
+QWidget#FileDialogTopRow, QWidget#FileDialogBottomRow {
+    background-color: #252526;
+    border-bottom: 1px solid #333333;
+}
+QListWidget#FileDialogSidebar {
+    background-color: #252526;
+    border: none;
+    border-right: 1px solid #333333;
+    color: #CCCCCC;
+    outline: none;
+}
+QListWidget#FileDialogSidebar::item {
+    height: 28px;
+    padding-left: 8px;
+    border-radius: 4px;
+    margin: 2px 4px;
+}
+QListWidget#FileDialogSidebar::item:hover {
+    background-color: #3E3E42;
+    color: #FFFFFF;
+}
+QListWidget#FileDialogSidebar::item:selected {
+    background-color: #378ADD;
+    color: #FFFFFF;
+    font-weight: bold;
+}
+QListWidget#FileDialogListView {
+    background-color: #1E1E1E;
+    border: none;
+    color: #EEEEEE;
+    outline: none;
+}
+QListWidget#FileDialogListView::item {
+    height: 28px;
+    padding-left: 8px;
+    border-radius: 4px;
+}
+QListWidget#FileDialogListView::item:hover {
+    background-color: #2A2D2E;
+}
+QListWidget#FileDialogListView::item:selected {
+    background-color: rgba(55, 138, 221, 0.3);
+    color: #FFFFFF;
+}
+
+/* 全局通用 QPushButton 暗色兜底规整 (防止未带 objectName 的按钮回退 Windows 原生灰白，彻底去除 focus 虚线框) */
+QPushButton {
+    background-color: transparent;
+    color: #EEEEEE;
+    border: 1px solid #444444;
+    border-radius: 4px;
+    padding: 3px 10px;
+    font-size: 12px;
+    outline: none;
+}
+QPushButton:focus {
+    outline: none;
+}
+QPushButton:hover {
+    background-color: #3E3E42;
+    color: #FFFFFF;
+    border-color: #555555;
+}
+QPushButton:pressed {
+    background-color: #4E4E52;
+}
+QPushButton:disabled {
+    background-color: #1E1E1E;
+    color: #555555;
+    border-color: #2D2D2D;
+}
+
+/* 统一 QTableWidget & QTableView & QHeaderView 表格组件暗色样式 */
+QTableWidget, QTableView {
+    background-color: #1E1E1E;
+    alternate-background-color: #252526;
+    color: #EEEEEE;
+    gridline-color: #333333;
+    border: 1px solid #333333;
+    border-radius: 4px;
+    outline: 0;
+}
+QTableWidget::item, QTableView::item {
+    padding: 4px;
+    border: none;
+}
+QTableWidget::item:hover, QTableView::item:hover {
+    background-color: transparent;
+}
+QTableWidget::item:selected, QTableView::item:selected {
+    background-color: transparent;
+    color: #EEEEEE;
+}
+
+QHeaderView {
+    background-color: #252526;
+    border: none;
+}
+QHeaderView::section {
+    background-color: #252526;
+    color: #888888;
+    padding: 6px 10px;
+    border: none;
+    border-right: 1px solid #333333;
+    border-bottom: 1px solid #333333;
+    font-size: 12px;
+    font-weight: bold;
+}
+QHeaderView::section:horizontal {
+    border-top: none;
+}
+QHeaderView::section:last {
+    border-right: none;
+}
+QLineEdit#FileDialogFileEdit, QComboBox#FileDialogFilterCombo {
+    background: #1E1E1E;
+    border: 1px solid #3c3c3c;
+    border-radius: 4px;
+    color: #EEEEEE;
+    padding: 4px 8px;
+    font-size: 12px;
+}
+QPushButton#FileDialogCancelBtn {
+    background-color: transparent;
+    border: 1px solid #444444;
+    border-radius: 4px;
+    color: #CCCCCC;
+    padding: 6px 16px;
+    font-size: 12px;
+}
+QPushButton#FileDialogCancelBtn:hover {
+    background-color: #3E3E42;
+    color: #FFFFFF;
+}
+QPushButton#FileDialogOkBtn {
+    background-color: #3498db;
+    border: none;
+    border-radius: 4px;
+    color: #FFFFFF;
+    padding: 6px 16px;
+    font-size: 12px;
+    font-weight: bold;
+}
+QPushButton#FileDialogOkBtn:hover {
+    background-color: #2980b9;
+}
+
+QComboBox#RuleCombo {
+    background: #1E1E1E;
+    border: 1px solid #444;
+    border-radius: 4px;
+    padding: 2px 5px;
+    color: #EEE;
+}
+QComboBox#RuleCombo::drop-down {
+    border: none;
+    width: 20px;
+}
+QComboBox#RuleCombo QAbstractItemView {
+    background-color: #2D2D2D;
+    border: 1px solid #444;
+    selection-background-color: #3E3E42;
+    selection-color: white;
+    color: #EEE;
+    outline: 0;
+}
+QComboBox#RuleCombo QAbstractItemView::item {
+    height: 22px;
+    padding: 2px;
+}
+QLineEdit#RuleTextEdit, QSpinBox#RuleStartSpin {
+    background: #1E1E1E;
+    border: 1px solid #444;
+    border-radius: 4px;
+    padding: 2px 5px;
+    color: #EEE;
+}
+QPushButton#RuleDeleteBtn {
+    background: transparent;
+    border: 1px solid #434343;
+    border-radius: 2px;
+    color: #888;
+    font-weight: bold;
+    font-size: 14px;
+    padding: 0px;
+    text-align: center;
+}
+QPushButton#RuleDeleteBtn:hover {
+    background-color: #3E3E42;
+    color: #EEE;
+    border-color: #666;
+}
+
+QWidget#ClickableRowActive {
+    background: #2A2A2A;
+    border-radius: 4px;
+}
+QWidget#ClickableRowNormal {
+    background: transparent;
+}
+QLabel#TagPillLabel {
+    color: #EEEEEE;
+    font-size: 12px;
+    border: none;
+    background: transparent;
+}
+QPushButton#TagPillCloseBtn {
+    border: none;
+    background: transparent;
+    padding: 0px;
+}
+QPushButton#TagPillCloseBtn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 7px;
+}
+
+QLineEdit#MetaInfoPathEdit {
+    background: #252526;
+    border: 1px solid #3c3c3c;
+    border-radius: 4px;
+    padding: 4px 6px;
+    font-size: 11px;
+    color: #CCCCCC;
+}
+
+QLabel#FramelessInputLabel, QLabel#FramelessConfirmLabel {
+    color: #EEEEEE;
+    font-size: 13px;
+}
+QLineEdit#FramelessInputEdit {
+    background: #1E1E1E;
+    border: 1px solid #3C3C3C;
+    border-radius: 4px;
+    padding: 6px;
+    color: #EEEEEE;
+    font-size: 12px;
+}
+QLineEdit#FramelessInputEdit:focus {
+    border-color: #007ACC;
+}
+QPushButton#FramelessBtnCancel {
+    background: transparent;
+    color: #BBB;
+    border: 1px solid #444;
+    border-radius: 4px;
+    padding: 6px 16px;
+}
+QPushButton#FramelessBtnCancel:hover {
+    background: #3E3E42;
+}
+QPushButton#FramelessBtnOk {
+    background: #007ACC;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 16px;
+    font-weight: bold;
+}
+QPushButton#FramelessBtnOk:hover {
+    background: #1C97EA;
+}
+QPushButton#FramelessBtnOkConfirm {
+    background: #E81123;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 16px;
+    font-weight: bold;
+}
+QPushButton#FramelessBtnOkConfirm:hover {
+    background: #F42637;
+}
+
+/* 各 UI 面板专属组件选择器外联 */
+QLabel#ContentPanelTitleLabel {
+    font-size: 13px;
+    font-weight: bold;
+    color: #41F2F2;
+    background: transparent;
+    border: none;
+}
+QPushButton#ViewModeToolBtn {
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+}
+QPushButton#ViewModeToolBtn:hover, QPushButton#ViewModeToolBtn:checked {
+    background: #3E3E42;
+}
+
+QLabel#NavPanelTitleLabel {
+    color: #888888;
+    font-size: 13px;
+    font-weight: bold;
+    background: transparent;
+    border: none;
+}
+QPushButton#NavTrashBtn {
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+}
+QPushButton#NavTrashBtn:hover {
+    background-color: #3E3E42;
+}
+QPushButton#NavTrashBtn:pressed {
+    background-color: #4E4E52;
+}
+
+QPushButton#FavPickerIconBtn {
+    background-color: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+}
+QPushButton#FavPickerIconBtn:hover {
+    background-color: #3E3E42;
+    border: 1px solid #555555;
+}
+
+QWidget#FilterContainerWidget, QWidget#FilterGroupWrapper, QWidget#FilterGroupContent {
+    background: transparent;
+}
+QPushButton#FilterHeaderBtn {
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+}
+QPushButton#FilterHeaderBtn:hover {
+    background: #3E3E42;
+}
+QPushButton#FilterHeaderBtn:pressed {
+    background: #4E4E52;
+}
+QPushButton#FilterHeaderBtn:checked {
+    background-color: #378ADD;
+}
+QScrollArea#FilterScrollArea {
+    border: none;
+    background: transparent;
+}
+QScrollArea#FilterScrollArea QScrollBar:vertical {
+    border-left: 1px solid #333333;
+}
+QLineEdit#FilterSearchEdit {
+    background: #2D2D2D;
+    color: #CCCCCC;
+    border: 1px solid #444444;
+    border-radius: 4px;
+    padding: 0px 6px;
+    font-size: 11px;
+}
+QLineEdit#FilterSearchEdit:focus {
+    border-color: #378ADD;
+    color: #FFFFFF;
+}
+QLineEdit#FilterSizeEdit {
+    background: #2D2D2D;
+    color: #EEEEEE;
+    border: 1px solid #444444;
+    border-radius: 4px;
+    padding: 2px 4px;
+    font-size: 11px;
+}
+QLineEdit#FilterSizeEdit:focus {
+    border-color: #378ADD;
+}
+QComboBox#FilterUnitCombo {
+    background: #2D2D2D;
+    color: #EEEEEE;
+    border: 1px solid #444444;
+    border-radius: 4px;
+    font-size: 11px;
+    padding-left: 6px;
+}
+QComboBox#FilterUnitCombo::drop-down {
+    border: none;
+    width: 18px;
+}
+QComboBox#FilterUnitCombo QAbstractItemView {
+    background-color: #252526;
+    color: #EEEEEE;
+    selection-background-color: #3E3E42;
+    border: 1px solid #444444;
+    outline: none;
+}
+QPushButton#FilterBtnSort {
+    background: transparent;
+    border: none;
+}
+QPushButton#FilterBtnSort:hover {
+    background: #3E3E42;
+    border-radius: 2px;
+}
+QLabel#FilterSepLabel {
+    color: #AAAAAA;
+    background: transparent;
+}
+QWidget#FilterGroupHdrRow {
+    background-color: #252526;
+    border-top: 1px solid #333333;
+}
+QWidget#FilterGroupHdrRow[isFirst="true"] {
+    border-top: none;
+}
+QPushButton#FilterGroupHdrBtn {
+    background-color: transparent;
+    color: #AAAAAA;
+    font-size: 11px;
+    font-weight: 600;
+    border: none;
+    outline: none;
+    text-align: left;
+    padding-left: 5px;
+    padding-right: 5px;
+    padding-top: 0px;
+    padding-bottom: 0px;
+    margin: 0px;
+}
+QPushButton#FilterGroupHdrBtn:hover {
+    color: #EEEEEE;
+    background-color: transparent;
+}
+QPushButton#FilterGroupHdrBtn:checked {
+    background-color: transparent;
+    color: #EEEEEE;
+    border: none;
+    outline: none;
+}
+QPushButton#FilterGroupHdrBtn:checked:hover {
+    background-color: transparent;
+    color: #FFFFFF;
+}
+QPushButton#FilterGroupHdrBtn:pressed {
+    background-color: transparent;
+    color: #EEEEEE;
+}
+QPushButton#FilterGroupHdrBtn:focus {
+    background-color: transparent;
+    outline: none;
+}
+QLabel#FilterItemLabel {
+    font-size: 12px;
+    color: #CCCCCC;
+    background: transparent;
+}
+QLabel#FilterItemCountLabel {
+    font-size: 11px;
+    color: #555555;
+    background: transparent;
+}
+
+/* ContentHeaderWidget 栏分割线 */
+QWidget#ContentHeaderWidget {
+    background-color: #252526;
+    border-bottom: 1px solid #333333;
+}
+
+
+
+
+/* FilterPanel 标题标签基础静态样式 */
+QLabel#FilterTitleLabel {
+    font-size: 13px;
+    font-weight: bold;
+    background: transparent;
+    border: none;
+}
+
+/* 元数据面板专属组件选择器外联 */
+QLabel#MetaPanelTitleLabel {
+    font-size: 12px;
+    font-weight: bold;
+    color: #888888;
+    background: transparent;
+    border: none;
+}
+QScrollArea#MetaScrollArea, QScrollArea#MetadataScrollArea {
+    border: none;
+    background: transparent;
+}
+QWidget#MetadataContainerInner {
+    background: transparent;
+}
+QWidget#TopPreviewBox {
+    background: transparent;
+    border: none;
+}
+QLabel#MetaImagePreview {
+    background: transparent;
+    border: none;
+}
+QTextEdit#MetaNameEdit {
+    background: #252526;
+    border: 1px solid #3c3c3c;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 13px;
+    font-weight: bold;
+    color: #FFFFFF;
+}
+QTextEdit#MetaNameEdit:focus {
+    border-color: #378ADD;
+}
+QTextEdit#MetaNameEdit:disabled {
+    background: #1E1E1E;
+    color: #777777;
+    border-color: #2A2A2A;
+}
+QTextEdit#MetaNoteEdit {
+    background: #252526;
+    border: 1px solid #3c3c3c;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 12px;
+    color: #AAAAAA;
+}
+QTextEdit#MetaNoteEdit:focus {
+    border-color: #378ADD;
+    color: #FFFFFF;
+}
+QTextEdit#MetaNoteEdit:disabled {
+    background: #1E1E1E;
+    color: #555555;
+}
+QLineEdit#MetaLinkEdit {
+    background: #252526;
+    border: 1px solid #3c3c3c;
+    border-radius: 4px;
+    padding-left: 8px;
+    font-size: 12px;
+    color: #378ADD;
+}
+QLineEdit#MetaLinkEdit:focus {
+    border-color: #378ADD;
+}
+QLineEdit#MetaLinkEdit:disabled {
+    background: #1E1E1E;
+    color: #555555;
+}
+QToolButton#MetaLinkToolBtn {
+    border: none;
+    border-left: 1px solid #3c3c3c;
+    background: transparent;
+    padding-left: 4px;
+    padding-right: 4px;
+}
+QToolButton#MetaLinkToolBtn:hover {
+    background: #3E3E42;
+}
+QPushButton#CollapsibleHeaderBtn {
+    border: none;
+    background: transparent;
+    color: #888888;
+    font-size: 11px;
+    font-weight: bold;
+    text-align: left;
+    padding: 0;
+}
+QPushButton#CollapsibleHeaderBtn:hover {
+    color: #FFFFFF;
+}
+QWidget#MetaRatingRow, QWidget#MetaColorRow {
+    background: transparent;
+    border: none;
+}
+QPushButton#MetaBtnClearStar, QPushButton#MetaBtnNoColor {
+    border: none;
+    background: transparent;
+}
+QPushButton#MetaBtnClearStar:hover, QPushButton#MetaBtnNoColor:hover {
+    background: #333333;
+    border-radius: 4px;
+}
+QPushButton#MetaBtnStar {
+    border: none;
+    background: transparent;
+}
+QPushButton#MetaBtnStar:hover {
+    background: #333333;
+    border-radius: 3px;
+}
+QPushButton#BtnAddTagBig {
+    background-color: #252526;
+    border: 1px solid #3c3c3c;
+    border-radius: 4px;
+    padding: 0 10px;
+    color: #AAAAAA;
+    font-size: 12px;
+    text-align: center;
+}
+QPushButton#BtnAddTagBig:hover {
+    background-color: #2a2d2e;
+    border-color: #378ADD;
+    color: #FFFFFF;
+}
+QPushButton#BtnAddTagBig:disabled {
+    background: #1E1E1E;
+    color: #555555;
+}
+QPushButton#BtnAddTagSmall {
+    background-color: #2D2D30;
+    border: 1px solid #555555;
+    border-radius: 4px;
+    padding: 0;
+}
+QPushButton#BtnAddTagSmall:hover {
+    background-color: #378ADD;
+    border-color: #378ADD;
+}
+QTextEdit#MetaPathEdit {
+    background: #1E1E1E;
+    border: 1px solid #2A2A2A;
+    border-radius: 4px;
+    padding: 4px 6px;
+    font-size: 11px;
+    color: #CCCCCC;
+}
+QPushButton#BtnCopyPath {
+    background: #252526;
+    border: 1px solid #3c3c3c;
+    border-radius: 4px;
+    color: #CCCCCC;
+    font-size: 11px;
+}
+QPushButton#BtnCopyPath:hover {
+    background: #333333;
+    color: #FFFFFF;
+}
+QPushButton#BtnOpenLocation {
+    background: #252526;
+    border: 1px solid #3c3c3c;
+    border-radius: 4px;
+    color: #CCCCCC;
+    font-size: 11px;
+}
+QPushButton#BtnOpenLocation:hover {
+    background: #378ADD;
+    border-color: #378ADD;
+    color: #FFFFFF;
+}
+QLabel#MetaInfoKeyLabel {
+    font-size: 11px;
+    color: #888888;
+}
+QLabel#MetaInfoValueLabel {
+    font-size: 11px;
+    color: #CCCCCC;
+    line-height: 1.4;
+}
+QWidget#MetaColorPill {
+    background: transparent;
+    border: none;
+}
+
+/* 统一全软件 QMenu 菜单 (包括托盘菜单与右键菜单) */
+QMenu {
+    background-color: #252526;
+    color: #EEEEEE;
+    border: 1px solid #333333;
+    border-radius: 6px;
+    padding: 4px;
+}
+/* TitleBarWidget 视图模式下拉菜单选中项静态属性 */
+QMenu#TitleBarViewModeMenu::item:checked,
+QMenu#TitleBarViewModeMenu::item:checked:selected {
+    color: #ff551c;
+    font-weight: bold;
+}
+QMenu#TitleBarViewModeMenu::indicator:checked {
+    width: 14px;
+    height: 14px;
+    left: 4px;
+}
+QMenu::icon {
+    margin-right: 10px;
+}
+QMenu::item {
+    background-color: transparent;
+    color: #EEEEEE;
+    padding: 6px 24px 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+QMenu::item:selected {
+    background-color: #3E3E42;
+    color: #FFFFFF;
+}
+QMenu::item:disabled {
+    color: #666666;
+    background-color: transparent;
+}
+QMenu::separator {
+    height: 1px;
+    background-color: #333333;
+    margin: 4px 6px;
+}
+
+/* 底部状态栏 */
+#StatusBar {
+    background-color: #252525;
+    border-top: 1px solid #333333;
+}
+
+/* 全局滚动条美化 (基于滚动条标准规范) */
+QScrollBar:vertical {
+    border: none;
+    background: transparent;
+    width: 10px;
+    margin: 0px;
+}
+QScrollBar::handle:vertical {
+    background: #333333;
+    min-height: 20px;
+    border-radius: 3px;
+}
 QScrollBar::handle:vertical:hover {
-    background: #555;
+    background: #444444;
 }
-
-QScrollBar::handle:vertical:pressed {
-    background: #4FACFE;
-}
-
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    width: 0px;
     height: 0px;
 }
-
 QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
     background: none;
 }
@@ -39,143 +1907,561 @@ QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
 QScrollBar:horizontal {
     border: none;
     background: transparent;
-    height: 8px;
+    height: 10px;
     margin: 0px;
 }
-
 QScrollBar::handle:horizontal {
-    background: #444;
-    min-width: 30px;
-    border-radius: 4px;
+    background: #333333;
+    min-width: 20px;
+    border-radius: 3px;
 }
-
 QScrollBar::handle:horizontal:hover {
-    background: #555;
+    background: #444444;
 }
-
 QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
     width: 0px;
+    height: 0px;
 }
-
 QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
     background: none;
 }
 
-QPushButton {
-    background-color: #0E639C;
-    color: white;
+/* 统一复选框样式 */
+QCheckBox { color: #EEEEEE; font-size: 12px; spacing: 5px; }
+QCheckBox::indicator { width: 15px; height: 15px; border: 1px solid #444; border-radius: 2px; background: #1E1E1E; }
+QCheckBox::indicator:hover { border: 1px solid #666; }
+QCheckBox::indicator:checked {
+    border: 1px solid #378ADD;
+    background: #1E1E1E;
+}
+
+/* 统一输入框与多行文本框样式 */
+QLineEdit, QPlainTextEdit, QTextEdit {
+    background: #252526;
+    border: 1px solid #333333;
+    border-radius: 4px;
+    color: #EEEEEE;
+    padding-left: 6px;
+}
+QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus {
+    border: 1px solid #378ADD;
+}
+
+/* 全局 QComboBox 下拉框暗色规整 */
+QComboBox {
+    background-color: #252526;
+    border: 1px solid #333333;
+    border-radius: 4px;
+    padding: 2px 8px;
+    color: #EEEEEE;
+    font-size: 12px;
+}
+QComboBox:hover {
+    border-color: #444444;
+}
+QComboBox:focus {
+    border-color: #378ADD;
+}
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 20px;
+    border-left: none;
+}
+QComboBox::down-arrow {
+    width: 10px;
+    height: 10px;
+    margin-right: 4px;
+}
+QComboBox QAbstractItemView,
+QComboBox QAbstractItemView::viewport {
+    background-color: #2D2D2D;
+    border: 1px solid #444444;
+    selection-background-color: #45454A;
+    selection-color: #FFFFFF;
+    color: #EEEEEE;
+    outline: 0;
+    padding: 2px;
+}
+QComboBox QAbstractItemView::item {
+    padding: 4px 8px;
+    border-radius: 3px;
+    background-color: transparent;
+}
+QComboBox QAbstractItemView::item:hover,
+QComboBox QAbstractItemView::item:selected {
+    background-color: #45454A;
+    color: #FFFFFF;
+}
+
+/* 全局 QGroupBox 分组框暗色规整 */
+QGroupBox {
+    color: #EEEEEE;
+    border: 1px solid #333333;
+    border-radius: 6px;
+    margin-top: 8px;
+    padding-top: 12px;
+    font-size: 12px;
+}
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    left: 10px;
+    padding: 0 4px;
+    color: #888888;
+    background-color: #1E1E1E;
+}
+
+/* 全局 QRadioButton 单选框暗色规整 */
+QRadioButton {
+    color: #EEEEEE;
+    font-size: 12px;
+    spacing: 6px;
+}
+QRadioButton::indicator {
+    width: 14px;
+    height: 14px;
+    border-radius: 8px;
+    border: 1px solid #555555;
+    background: transparent;
+}
+QRadioButton::indicator:hover {
+    border-color: #888888;
+}
+QRadioButton::indicator:checked {
+    border: 1px solid #CCCCCC;
+    background: qradialgradient(cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0.5, stop:0 #FFFFFF, stop:0.45 #FFFFFF, stop:0.5 transparent, stop:1 transparent);
+}
+
+/* 全局 QSpinBox 数字框暗色规整 */
+QSpinBox {
+    background-color: #252526;
+    border: 1px solid #333333;
+    border-radius: 4px;
+    padding: 2px 6px;
+    color: #EEEEEE;
+    font-size: 12px;
+}
+QSpinBox:focus {
+    border-color: #378ADD;
+}
+
+/* 历史记录面板与标记面板 QTreeWidget 选中高亮与悬停样式 */
+QTreeWidget#HistoryTreeWidget, QTreeWidget#MarkedTreeWidget {
+    background-color: #1E1E1E;
+    color: #EEEEEE;
     border: none;
-    padding: 6px 20px;
-    border-radius: 4px; /* 2026-03-xx 统一全局按钮圆角为 4px */
+    outline: 0;
+}
+QTreeWidget#HistoryTreeWidget::item, QTreeWidget#MarkedTreeWidget::item {
+    height: 28px;
+    border: none;
+    padding-left: 4px;
+}
+QTreeWidget#HistoryTreeWidget::item:hover, QTreeWidget#MarkedTreeWidget::item:hover {
+    background-color: #2A2D2E;
+}
+QTreeWidget#HistoryTreeWidget::item:selected, QTreeWidget#MarkedTreeWidget::item:selected {
+    background-color: rgba(55, 138, 221, 0.15);
+    color: #FFFFFF;
 }
 
-QPushButton:hover {
-    background-color: #3e3e42; /* 2026-03-xx 统一悬停色 */
+/* 统一 QTreeView 列表视图暗色斑马纹与高亮 */
+QTreeView {
+    background-color: #1E1E1E;
+    alternate-background-color: #252526;
+    color: #EEEEEE;
+    border: none;
+    outline: 0;
 }
-
-QPushButton:pressed {
-    background-color: #0D598C;
+QTreeView::branch {
+    background: transparent;
 }
-
-QSplitter::handle {
+QTreeView::item {
+    height: 28px;
+    border: none;
+}
+QTreeView::item:alternate {
     background-color: #252526;
 }
 
-QListView {
+/* TextExtensionDialog 文本扩展名设置弹窗 */
+#TextExtBuiltInTitle, #TextExtCustomTitle {
+    font-weight: bold;
+    color: #CCCCCC;
+    font-size: 13px;
+}
+
+#TextExtScrollArea {
+    background-color: #1a1a1a;
+    border: 1px solid #333333;
+    border-radius: 6px;
+}
+
+#TextExtScrollContent, #TextExtBuiltInContainer {
+    background-color: transparent;
+}
+
+#TextExtBuiltInCapsules {
+    color: #888888;
+    font-size: 12px;
+}
+
+#TextExtensionListWidget {
+    background-color: #1e1e1e;
+    border: 1px solid #333333;
+    border-radius: 6px;
+    color: #e0e0e0;
+    padding: 4px;
+}
+
+#TextExtensionListWidget::item {
+    padding: 6px 10px;
+    border-radius: 4px;
+}
+
+#TextExtensionListWidget::item:selected {
+    background-color: #005fb8;
+    color: #ffffff;
+}
+
+/* 状态栏右侧分栏控制按钮 */
+QPushButton#StatusBarControlBtn {
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    padding: 0;
+    outline: none;
+}
+QPushButton#StatusBarControlBtn:hover {
+    background: #3E3E42;
+}
+QPushButton#StatusBarControlBtn:pressed, QPushButton#StatusBarControlBtn:checked {
+    background: #3E3E42;
+    border: 1px solid #555555;
+}
+
+/* 列视图 ColumnView 专属 QSS */
+QScrollArea#ColumnViewScrollArea {
+    background: #181818;
+    border: none;
+}
+
+QWidget#ColumnViewPane {
+    background: #1E1E1E;
+    border-right: 1px solid #2D2D2D;
+}
+
+QFrame#FolderSectionHeaderBar, QFrame#FileSectionHeaderBar {
+    background: transparent;
+    border: none;
+}
+
+QListView#ColumnViewPaneListView, QListView#ColumnViewFolderList {
+    background: transparent;
+    border: none;
+    color: #CCCCCC;
     outline: none;
 }
 
-QListView::item {
-    padding: 10px;
-    border-bottom: 1px solid #2D2D2D;
-}
-
-QListView::item:selected {
-    background-color: #37373D;
-}
-
-QTabWidget::pane {
+QListView#ColumnViewPaneListView::item, QListView#ColumnViewFolderList::item {
+    height: 28px;
     border: none;
-    background: #1E1E1E;
 }
 
-QTabBar::tab {
-    background: #2D2D2D;
-    padding: 8px 20px;
-    margin-right: 2px;
+QListView#ColumnViewPaneListView::item:selected, QListView#ColumnViewFolderList::item:selected {
+    background: #378ADD;
+    color: #FFFFFF;
+    outline: none;
 }
 
-QTabBar::tab:selected {
-    background: #1E1E1E;
-    border-top: 2px solid #007ACC;
-}
-
-QLineEdit {
-    background-color: #2D2D2D;
-    border: 1px solid #3E3E42;
-    padding: 5px;
-    color: white;
-    border-radius: 4px;
-}
-
-QLineEdit:focus {
-    border: 1px solid #4FACFE;
-}
-
-QComboBox {
-    background-color: #2D2D2D;
-    border: 1px solid #3E3E42;
-    border-radius: 4px;
-    padding: 5px;
-    color: white;
-}
-
-QComboBox:on {
-    border: 1px solid #4FACFE;
-}
-
-QComboBox::drop-down {
-    border: none;
-    width: 20px;
-}
-
-QMenu {
-    background-color: #2b2b2b;
-    color: #f0f0f0;
-    border: 1px solid #444;
-    border-radius: 5px;
-    padding: 5px;
-}
-
-/* 菜单项图标与文本间距规范：padding-left 设为 10px 配合 icon margin-left 6px 实现精确 10px 间距。请勿修改。 */
-QMenu::item {
-    padding: 6px 10px 6px 10px;
-    border-radius: 4px; /* 2026-03-xx 统一菜单项圆角为 4px */
-}
-
-QMenu::icon {
-    margin-left: 6px;
-}
-
-QMenu::item:selected {
-    background-color: #3e3e42; /* 2026-03-xx 统一菜单悬停色为 #3e3e42 */
-}
-
-QMenu::separator {
-    height: 1px;
-    background: #444;
-    margin: 4px 10px;
-}
-
-QToolTip {
-    background-color: rgba(45, 45, 45, 254);
-    color: #ffffff;
-    border: 1px solid #555555;
-    border-radius: 6px;
-    padding: 5px;
-}
-
-QToolTip QLabel {
+/* Sidebar Container & Dual TabBar Styles */
+QTabBar#SidebarTabBar {
     background: transparent;
     border: none;
+    qproperty-drawBase: false;
+}
+
+QTabBar#SidebarTabBar::tab {
+    background: transparent;
+    color: #AAAAAA;
+    padding: 4px 6px;
+    font-size: 12px;
+    font-weight: bold;
+    border: none;
+    border-bottom: none;
+    border-radius: 4px;
+    margin-right: 4px;
+    margin-bottom: 0px;
+}
+
+QTabBar#SidebarTabBar::tab:selected {
+    background: #37373D;
+    color: #FFFFFF;
+    border: none;
+    border-bottom: none;
+}
+
+QTabBar#SidebarTabBar::tab:hover:!selected {
+    background: #2A2D2E;
+    color: #CCCCCC;
+}
+
+/* ── 自动提取色面板 (AutoColorGroup) ──────────── */
+QLabel#FilterColorSliderLabel {
+    color: #AAAAAA;
+    font-size: 11px;
+}
+
+QSlider#FilterColorSlider::groove:horizontal {
+    height: 2px;
+    background: #444444;
+    border-radius: 1px;
+}
+
+QSlider#FilterColorSlider::handle:horizontal {
+    background: #EEEEEE;
+    border: 1px solid #777777;
+    width: 10px;
+    height: 10px;
+    margin: -4px 0;
+    border-radius: 5px;
+}
+
+QSlider#FilterColorSlider::handle:horizontal:hover {
+    background: #FFFFFF;
+    border-color: #378ADD;
+}
+
+QLabel#FilterColorSubTitle {
+    color: #666666;
+    font-size: 10px;
+    margin-top: 4px;
+    margin-left: 8px;
+}
+
+QLabel#FilterColorSubTitleRecent {
+    color: #666666;
+    font-size: 10px;
+    margin-top: 8px;
+    margin-left: 8px;
+}
+
+/* ===================================================================
+   TagSelectorOverlay Styles
+   =================================================================== */
+QPushButton#TagSelectorHeaderBtn {
+    text-align: left;
+    font-weight: bold;
+    color: #CCCCCC;
+    background: transparent;
+    border: none;
+    font-size: 13px;
+}
+
+/* ===================================================================
+   CreateFolderWithItemsDialog Styles
+   =================================================================== */
+QLabel#CreateFolderTitleLabel {
+    color: #EEEEEE;
+}
+
+QLabel#CreateFolderSubtitleLabel {
+    color: #AAAAAA;
+}
+
+QLineEdit#CreateFolderNameEdit {
+    background-color: #1E1E1E;
+    color: #EEEEEE;
+    border: 1px solid #3498db;
+    border-radius: 6px;
+    padding: 0 12px;
+    font-size: 13px;
+}
+
+QLineEdit#CreateFolderNameEdit:focus {
+    border: 1px solid #5dedff;
+}
+
+QPushButton#CreateFolderCancelBtn {
+    background-color: #2D2D2D;
+    color: #EEEEEE;
+    border: 1px solid #3E3E3E;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+QPushButton#CreateFolderCancelBtn:hover {
+    background-color: #383838;
+}
+
+QPushButton#CreateFolderCreateBtn {
+    background-color: #3498db;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: bold;
+    padding: 0 16px;
+}
+
+QPushButton#CreateFolderCreateBtn:hover {
+    background-color: #2980b9;
+}
+
+/* ===================================================================
+   SmartFolderDialog Styles
+   =================================================================== */
+QLabel#SmartFolderLabel {
+    color: #CCCCCC;
+    font-size: 13px;
+}
+
+QFrame#SmartFolderSeparatorLine {
+    color: #333333;
+}
+
+QScrollArea#SmartFolderScrollArea, QScrollArea#SmartFolderScrollArea QWidget {
+    background: transparent;
+}
+
+QComboBox#SmartFolderComboBox {
+    background-color: #252526;
+    color: #EEEEEE;
+    border: 1px solid #333333;
+    border-radius: 4px;
+    padding: 2px 8px;
+    min-height: 24px;
+}
+
+QComboBox#SmartFolderComboBox:hover {
+    border-color: #444444;
+}
+
+QComboBox#SmartFolderComboBox:focus {
+    border-color: #378ADD;
+}
+
+QLineEdit#SmartFolderLineEdit {
+    background-color: #252526;
+    color: #EEEEEE;
+    border: 1px solid #333333;
+    border-radius: 4px;
+    padding: 2px 8px;
+    min-height: 24px;
+}
+
+QLineEdit#SmartFolderLineEdit:focus {
+    border-color: #378ADD;
+}
+
+QSpinBox#SmartFolderSpinBox {
+    background-color: #252526;
+    color: #EEEEEE;
+    border: 1px solid #333333;
+    border-radius: 4px;
+    padding: 2px 6px;
+    min-height: 24px;
+}
+
+QCalendarWidget {
+    background-color: #1E1E1E;
+    color: #EEEEEE;
+}
+
+QCalendarWidget QWidget#qt_calendar_navigationbar {
+    background-color: #252526;
+    min-height: 28px;
+}
+
+QCalendarWidget QAbstractItemView {
+    background-color: #1E1E1E;
+    color: #EEEEEE;
+    selection-background-color: rgba(55, 138, 221, 0.35);
+    selection-color: #FFFFFF;
+    outline: none;
+}
+
+QDateEdit#SmartFolderDateEdit {
+    background-color: #252526;
+    color: #EEEEEE;
+    border: 1px solid #333333;
+    border-radius: 4px;
+    padding: 2px 6px;
+    min-height: 24px;
+}
+
+QPushButton#SmartFolderRowDeleteBtn {
+    background-color: transparent;
+    border: none;
+    border-radius: 4px;
+}
+
+QPushButton#SmartFolderRowDeleteBtn:hover {
+    background-color: rgba(255, 59, 48, 0.2);
+}
+
+/* ── FileCompareDialog Styles ──────────── */
+QTableView#FileCompareTableView {
+    background-color: #1E1E1E;
+    alternate-background-color: #252526;
+    color: #EEEEEE;
+    gridline-color: transparent;
+    border: 1px solid #333333;
+    border-radius: 4px;
+    outline: 0;
+}
+
+QTableView#FileCompareTableView::item {
+    padding: 4px 8px;
+    border: none;
+}
+
+QTableView#FileCompareTableView::item:selected {
+    background-color: #094771;
+    color: #FFFFFF;
+}
+
+QHeaderView#FileCompareHeaderView {
+    background-color: #252526;
+    border: none;
+}
+
+QHeaderView#FileCompareHeaderView::section {
+    background-color: #252526;
+    color: #888888;
+    padding: 6px 8px;
+    border: none;
+    border-right: 1px solid #333333;
+    border-bottom: 1px solid #333333;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+QHeaderView#FileCompareHeaderView::section:last {
+    border-right: none;
+}
+
+QLabel#FileCompareProgressLabel {
+    color: #AAAAAA;
+    font-size: 12px;
+}
+
+QPushButton#FileCompareCloseBtn {
+    background-color: #2D2D30;
+    color: #EEEEEE;
+    border: 1px solid #3E3E42;
+    border-radius: 4px;
+    padding: 4px 16px;
+    min-height: 24px;
+    min-width: 60px;
+}
+
+QPushButton#FileCompareCloseBtn:hover {
+    background-color: #3E3E42;
+    border-color: #555555;
+}
+
+QPushButton#FileCompareCloseBtn:pressed {
+    background-color: #1E1E1E;
 }

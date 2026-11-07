@@ -99,9 +99,9 @@ bool FilterProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex& source
 
         if (!currentFilter.typeFilterText.isEmpty()) {
             QString searchText = currentFilter.typeFilterText.trimmed();
-            if (searchText == "文件夹" || searchText.toLower() == "folder") {
+            if (searchText == "分类" || searchText.toLower() == "folder") {
                 if (type == "folder") matchType = true;
-            } else if (searchText == "空文件夹") {
+            } else if (searchText == "空分类") {
                 if (type == "folder" && record.isEmpty) matchType = true;
             } else {
                 if (ext.contains(searchText.toUpper())) matchType = true;
@@ -116,7 +116,7 @@ bool FilterProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex& source
                     if (type == "folder") { matchType = true; break; }
                 } else if (fType == "file") {
                     if (type != "folder") { matchType = true; break; }
-                } else if (fType == "空文件夹") {
+                } else if (fType == "空分类") {
                     if (type == "folder" && record.isEmpty) { matchType = true; break; }
                 } else {
                     if (ext == fType.toUpper()) { matchType = true; break; }

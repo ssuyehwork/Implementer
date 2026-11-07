@@ -73,7 +73,7 @@ void ContentHeaderWidget::initUi() {
     m_btnLayers->setCheckable(true);
     m_btnLayers->setFixedSize(24, 24);
     m_btnLayers->setIcon(UiHelper::getIcon("layers", QColor("#888888"), 18));
-    m_btnLayers->setProperty("tooltipText", "显示子文件夹中的项目");
+    m_btnLayers->setProperty("tooltipText", "显示子分类中的项目");
     m_btnLayers->setObjectName("ViewModeToolBtn");
     m_btnLayers->installEventFilter(this);
 

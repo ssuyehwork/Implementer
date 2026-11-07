@@ -75,8 +75,8 @@ bool LibraryItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* model, 
                 int countVal = index.data(Qt::UserRole + 9).toInt();
                 QString sectionText;
                 if (nodeId == -10) sectionText = QString("快速访问(%1)").arg(countVal);
-                else if (nodeId == -20) sectionText = QString("智能文件夹(%1)").arg(countVal);
-                else sectionText = QString("文件夹(%1)").arg(countVal);
+                else if (nodeId == -20) sectionText = QString("智能分类(%1)").arg(countVal);
+                else sectionText = QString("分类(%1)").arg(countVal);
 
                 QFont hdrFont = option.font;
                 hdrFont.setPointSize(10);
@@ -200,8 +200,8 @@ void LibraryItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& o
 
         QString sectionText;
         if (nodeId == -10) sectionText = QString("快速访问(%1)").arg(countVal);
-        else if (nodeId == -20) sectionText = QString("智能文件夹(%1)").arg(countVal);
-        else sectionText = QString("文件夹(%1)").arg(countVal);
+        else if (nodeId == -20) sectionText = QString("智能分类(%1)").arg(countVal);
+        else sectionText = QString("分类(%1)").arg(countVal);
 
         QFont hdrFont = opt.font;
         hdrFont.setPointSize(10);
@@ -1076,7 +1076,7 @@ void LibraryPanel::onCategoryContextMenu(const QPoint& pos) {
 
         menu.addSeparator();
 
-        QAction* deleteSmartAct = menu.addAction(UiHelper::getIcon("close", QColor("#EEEEEE")), "删除智能文件夹");
+        QAction* deleteSmartAct = menu.addAction(UiHelper::getIcon("close", QColor("#EEEEEE")), "删除智能分类");
         connect(deleteSmartAct, &QAction::triggered, this, [this, smartFolderId]() {
             if (SmartFolderDao::removeSmartFolderById(smartFolderId)) {
                 invalidateSmartFolderCache(smartFolderId);
@@ -1106,7 +1106,7 @@ void LibraryPanel::onCategoryContextMenu(const QPoint& pos) {
 
     if (nodeId == -20) {
         // 智能文件夹分组右键菜单
-        QAction* newSmartAct = menu.addAction(UiHelper::getIcon("smart-folder-1.svg", QColor("#EEEEEE")), "新建智能文件夹");
+        QAction* newSmartAct = menu.addAction(UiHelper::getIcon("smart-folder-1.svg", QColor("#EEEEEE")), "新建智能分类");
         connect(newSmartAct, &QAction::triggered, this, [this]() {
             SmartFolderDialog dlg(this);
             connect(&dlg, &SmartFolderDialog::rulesPreviewRequested, this, &LibraryPanel::smartFolderPreviewRequested);
@@ -1578,7 +1578,7 @@ void LibraryPanel::createAndEditCategory(int parentId) {
         }
     }
 
-    QString defaultName = (parentId == -20) ? "新建智能文件夹" : "新建分类";
+    QString defaultName = (parentId == -20) ? "新建智能分类" : "新建分类";
     int newId = LibraryService::instance().createCategory(defaultName, parentId);
     if (newId > 0) {
         m_pendingEditNodeId = newId;

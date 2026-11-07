@@ -219,7 +219,7 @@ TabBarWidget::TabBarWidget(QWidget* parent, HoverEventFilter* hoverFilter)
     }
 
     connect(m_btnNewTab, &QPushButton::clicked, this, [this]() {
-        addTab("此电脑", "computer://", true);
+        addTab("全部数据", "library://-1", true);
         emit newTabRequested();
     });
 
@@ -230,7 +230,7 @@ TabBarWidget::TabBarWidget(QWidget* parent, HoverEventFilter* hoverFilter)
     m_scrollArea->setWidget(m_tabsContainer);
     m_mainLayout->addWidget(m_scrollArea, 1);
 
-    addTab("此电脑", "computer://", true);
+    addTab("全部数据", "library://-1", true);
 }
 
 void TabBarWidget::wheelEvent(QWheelEvent* event) {
@@ -253,10 +253,11 @@ void TabBarWidget::resizeEvent(QResizeEvent* event) {
 }
 
 static QString cleanNameForTab(const QString& path) {
-    if (path.isEmpty() || path == "computer://") return "此电脑";
+    if (path.isEmpty() || path == "library://-1") return "全部数据";
+    if (path == "library://-2") return "未分类";
     if (path == "trash://") return "回收站";
     if (path.startsWith("library://") || path.startsWith("smartfolder://")) {
-        return "库";
+        return "分类";
     }
     QString cleanP = QDir::cleanPath(path);
     QFileInfo fi(cleanP);
@@ -276,8 +277,8 @@ static int paneCountForTab(const TabInfo& tab) {
 void TabBarWidget::addTab(const QString& title, const QString& url, bool switchToNew) {
     TabInfo info;
     info.id = QString::number(QDateTime::currentMSecsSinceEpoch()) + "_" + QString::number(m_tabs.size());
-    info.title = title.isEmpty() ? "此电脑" : title;
-    info.url = url.isEmpty() ? "computer://" : url;
+    info.title = title.isEmpty() ? "全部数据" : title;
+    info.url = url.isEmpty() ? "library://-1" : url;
     info.active = false;
 
     m_tabs.append(info);
@@ -292,11 +293,11 @@ void TabBarWidget::addTab(const QString& title, const QString& url, bool switchT
 void TabBarWidget::closeTab(int index) {
     if (index < 0 || index >= m_tabs.size()) return;
     if (m_tabs.size() <= 1) {
-        m_tabs[0].title = "此电脑";
-        m_tabs[0].url = "computer://";
+        m_tabs[0].title = "全部数据";
+        m_tabs[0].url = "library://-1";
         m_tabs[0].splitState = TabSplitState();
         applyDiffUpdate();
-        emit currentTabChanged(0, "computer://");
+        emit currentTabChanged(0, "library://-1");
         saveStateToConfig();
         return;
     }
@@ -558,8 +559,8 @@ bool TabBarWidget::restoreStateFromConfig() {
         QJsonObject obj = val.toObject();
         TabInfo info;
         info.id = QString::number(QDateTime::currentMSecsSinceEpoch()) + "_" + QString::number(m_tabs.size());
-        info.title = obj["title"].toString("此电脑");
-        info.url = obj["url"].toString("computer://");
+        info.title = obj["title"].toString("全部数据");
+        info.url = obj["url"].toString("library://-1");
         info.color = obj["color"].toString();
         info.iconKey = obj["iconKey"].toString();
         info.active = false;
@@ -745,12 +746,14 @@ void TabBarWidget::updateCurrentTabTitle(const QString& title, const QString& ur
         if (folderName.startsWith("库 → ")) {
             folderName = folderName.mid(4);
         }
-        if (url == "computer://" || url.isEmpty()) {
-            folderName = "此电脑";
+        if (url == "library://-1" || url == "computer://" || url.isEmpty()) {
+            folderName = "全部数据";
+        } else if (url == "library://-2") {
+            folderName = "未分类";
         } else if (!url.startsWith("library://") && !url.startsWith("smartfolder://") && (title.contains("/") || title.contains("\\"))) {
             folderName = cleanNameForTab(url);
         }
-        currentTab.title = folderName.isEmpty() ? "此电脑" : folderName;
+        currentTab.title = folderName.isEmpty() ? "全部数据" : folderName;
         currentTab.url = url;
     }
 

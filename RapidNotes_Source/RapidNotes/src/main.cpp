@@ -5,6 +5,7 @@
 #include <QFile>
 #include <QCursor>
 #include "ui/FramelessDialog.h" // 2026-04-08 引入无边框对话框支持
+#include "ui/ThemeManager.h"
 #include <QMessageBox>
 #include <QCoreApplication>
 #include <QDir>
@@ -128,11 +129,8 @@ int main(int argc, char *argv[]) {
         qWarning() << "无法启动单实例服务器";
     }
 
-    // 加载全局样式表
-    QFile styleFile(":/qss/dark_style.qss");
-    if (styleFile.open(QFile::ReadOnly)) {
-        a.setStyleSheet(styleFile.readAll());
-    }
+    // 加载全局样式表 (使用 ThemeManager 统一动态注入完整 QuarkMeta QSS 及动态 SVG)
+    RapidNotes::ThemeManager::instance().initialize(&a);
 
     // 1. 初始化数据库 (外壳文件名改为 inspiration.db)
     QString dbPath = QCoreApplication::applicationDirPath() + "/inspiration.db";

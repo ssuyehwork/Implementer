@@ -101,7 +101,7 @@ void SearchController::updatePlaceholderText() {
     if (m_searchScope == SearchScope::Library) {
         m_searchEdit->setPlaceholderText("搜索：库");
     } else {
-        m_searchEdit->setPlaceholderText("搜索：当前文件夹");
+        m_searchEdit->setPlaceholderText("搜索：当前分类");
     }
 }
 
@@ -114,7 +114,7 @@ void SearchController::showSearchMenu() {
     QActionGroup* group = new QActionGroup(&menu);
     group->setExclusive(true);
 
-    QAction* actFolder = menu.addAction("搜索：当前文件夹");
+    QAction* actFolder = menu.addAction("搜索：当前分类");
     actFolder->setCheckable(true);
     actFolder->setChecked(m_searchScope == SearchScope::CurrentFolder);
     group->addAction(actFolder);

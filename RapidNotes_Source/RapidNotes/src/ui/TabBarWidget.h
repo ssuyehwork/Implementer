@@ -85,7 +85,7 @@ public:
     explicit TabBarWidget(QWidget* parent = nullptr, HoverEventFilter* hoverFilter = nullptr);
     ~TabBarWidget() override = default;
 
-    void addTab(const QString& title = "此电脑", const QString& url = "computer://", bool switchToNew = true);
+    void addTab(const QString& title = "全部数据", const QString& url = "library://-1", bool switchToNew = true);
     void closeTab(int index);
     void closeOtherTabs(int index);
     void closeRightTabs(int index);

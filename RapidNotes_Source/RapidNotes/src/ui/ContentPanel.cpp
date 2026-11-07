@@ -669,8 +669,8 @@ void ContentPanel::updateHeaderTitle() {
         return;
     }
 
-    if (m_currentPath.isEmpty() || m_currentPath == "computer://") {
-        m_headerWidget->setTitle("此电脑");
+    if (m_currentPath.isEmpty() || m_currentPath == "library://-1" || m_currentPath == "computer://") {
+        m_headerWidget->setTitle("全部数据");
         return;
     }
     if (m_currentPath == "trash://") {
@@ -1268,8 +1268,8 @@ void ContentPanel::setPendingSelectName(const QString& name, bool edit) {
 
 void ContentPanel::updateLayersButtonState() {
     if (!m_headerWidget) return;
-    bool isComp = m_currentPath.isEmpty() || m_currentPath == "computer://";
-    m_headerWidget->setLayersEnabled(!isComp, isComp ? "“此电脑”不支持递归显示" : "显示子文件夹中的项目（Ctrl + R）");
+    bool isRoot = m_currentPath.isEmpty() || m_currentPath == "library://-1" || m_currentPath == "computer://";
+    m_headerWidget->setLayersEnabled(!isRoot, isRoot ? "“全部数据”不支持递归显示" : "显示子分类中的项目（Ctrl + R）");
 }
 
 ContentPanel::DataSourceType ContentPanel::dataSourceType() const {
