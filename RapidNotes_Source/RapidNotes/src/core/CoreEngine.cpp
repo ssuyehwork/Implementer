@@ -1,15 +1,11 @@
 #include "CoreEngine.h"
 #include "LastOperationManager.h"
-#include "../meta/MetadataManager.h"
-#include "../meta/RapidNotesJsonStore.h"
-#include "../meta/FavoriteDao.h"
-#include "../meta/FavoriteService.h"
-#include "../ui/PanelMediator.h"
-#include "../ui/ContentPanel.h"
-#include "../ui/ToolTipOverlay.h"
+#include "DatabaseManager.h"
+#include "TagCodec.h"
 #include "TagLexiconService.h"
 #include "TaskProgressService.h"
 #include <QCoreApplication>
+#include <QRegularExpression>
 
 namespace RapidNotes {
 
@@ -63,11 +59,12 @@ bool CoreEngine::executeCommand(const AppCommand& cmd) {
                 tagsToApply.append(singleTag);
             }
         }
-        tagsToApply.removeDuplicates();
+        tagsToApply = TagCodec::normalize(tagsToApply);
         if (tagsToApply.isEmpty()) break;
 
         TagLexiconService::instance().addTags(tagsToApply);
-        MetadataManager::instance().addTagsBatch(cmd.targetPaths, tagsToApply);
+        QList<int> noteIds = extractNoteIds(cmd.targetPaths);
+        DatabaseManager::instance().addTagsToNotesBatch(noteIds, tagsToApply);
 
         AppEvent ev;
         ev.type = AppEventType::MetadataUpdated;
@@ -86,10 +83,11 @@ bool CoreEngine::executeCommand(const AppCommand& cmd) {
                 tagsToRemove.append(singleTag);
             }
         }
-        tagsToRemove.removeDuplicates();
+        tagsToRemove = TagCodec::normalize(tagsToRemove);
         if (tagsToRemove.isEmpty()) break;
 
-        MetadataManager::instance().removeTagsBatch(cmd.targetPaths, tagsToRemove);
+        QList<int> noteIds = extractNoteIds(cmd.targetPaths);
+        DatabaseManager::instance().removeTagsFromNotesBatch(noteIds, tagsToRemove);
 
         AppEvent ev;
         ev.type = AppEventType::MetadataUpdated;
@@ -102,8 +100,8 @@ bool CoreEngine::executeCommand(const AppCommand& cmd) {
         QString newTag = cmd.params.value("newTag").toString().trimmed();
         if (oldTag.isEmpty() || newTag.isEmpty() || oldTag == newTag) break;
 
-        // 🚀 仅作用于 inspiration.db 标签词库，解耦全盘扫描
         TagLexiconService::instance().renameTag(oldTag, newTag);
+        DatabaseManager::instance().renameTagGlobally(oldTag, newTag);
 
         AppEvent ev;
         ev.type = AppEventType::MetadataUpdated;
@@ -114,8 +112,8 @@ bool CoreEngine::executeCommand(const AppCommand& cmd) {
         QString tag = cmd.params.value("tag").toString().trimmed();
         if (tag.isEmpty()) break;
 
-        // 🚀 仅作用于 inspiration.db 标签词库，解耦全盘扫描
         TagLexiconService::instance().deleteTag(tag);
+        DatabaseManager::instance().deleteTagGlobally(tag);
 
         AppEvent ev;
         ev.type = AppEventType::MetadataUpdated;
@@ -124,9 +122,9 @@ bool CoreEngine::executeCommand(const AppCommand& cmd) {
     }
     case AppCommandType::SetPinned: {
         bool pinned = cmd.params.value("pinned", false).toBool();
-        for (const QString& path : cmd.targetPaths) {
-            MetadataManager::instance().setPinned(path.toStdWString(), pinned, true);
-        }
+        QList<int> noteIds = extractNoteIds(cmd.targetPaths);
+        DatabaseManager::instance().updateNoteStateBatch(noteIds, "is_pinned", pinned ? 1 : 0);
+
         AppEvent ev;
         ev.type = AppEventType::MetadataUpdated;
         ev.paths = cmd.targetPaths;
@@ -143,11 +141,27 @@ bool CoreEngine::executeCommand(const AppCommand& cmd) {
         handleSetURL(cmd.targetPaths, url);
         break;
     }
-    case AppCommandType::DeletePermanently: {
-        for (const QString& path : cmd.targetPaths) {
-            MetadataManager::instance().removeMetadataSync(path.toStdWString());
+    case AppCommandType::RenameItems: {
+        if (!cmd.targetPaths.isEmpty()) {
+            QString newTitle = cmd.params.value("newName").toString().trimmed();
+            handleRenameItem(cmd.targetPaths.first(), newTitle);
         }
-        MetadataManager::instance().notifyUI(MetadataManager::RefreshLevel::FullRebuild);
+        break;
+    }
+    case AppCommandType::MoveToTrash: {
+        QList<int> noteIds = extractNoteIds(cmd.targetPaths);
+        DatabaseManager::instance().softDeleteNotes(noteIds);
+
+        AppEvent ev;
+        ev.type = AppEventType::ItemsDeleted;
+        ev.paths = cmd.targetPaths;
+        CentralEventHub::instance().publishEvent(ev);
+        break;
+    }
+    case AppCommandType::DeletePermanently: {
+        QList<int> noteIds = extractNoteIds(cmd.targetPaths);
+        DatabaseManager::instance().deleteNotesBatch(noteIds);
+
         AppEvent ev;
         ev.type = AppEventType::ItemsDeleted;
         ev.paths = cmd.targetPaths;
@@ -169,9 +183,30 @@ bool CoreEngine::executeCommand(const AppCommand& cmd) {
     return true;
 }
 
+QList<int> CoreEngine::extractNoteIds(const QStringList& paths) {
+    QList<int> ids;
+    ids.reserve(paths.size());
+    static const QRegularExpression noteUriRegex(QStringLiteral(R"(^note://(\d+)$)"));
+    for (const QString& p : paths) {
+        QString s = p.trimmed();
+        auto match = noteUriRegex.match(s);
+        if (match.hasMatch()) {
+            ids.append(match.captured(1).toInt());
+        } else {
+            bool ok = false;
+            int directId = s.toInt(&ok);
+            if (ok && directId > 0) {
+                ids.append(directId);
+            }
+        }
+    }
+    return ids;
+}
+
 void CoreEngine::handleSetRating(const QStringList& paths, int rating) {
     LastOperationManager::instance().recordSetRating(rating);
-    MetadataManager::instance().setRatingBatch(paths, rating);
+    QList<int> noteIds = extractNoteIds(paths);
+    DatabaseManager::instance().updateNoteStateBatch(noteIds, "rating", rating);
 
     AppEvent ev;
     ev.type = AppEventType::MetadataUpdated;
@@ -183,7 +218,9 @@ void CoreEngine::handleSetRating(const QStringList& paths, int rating) {
 
 void CoreEngine::handleSetColor(const QStringList& paths, const QString& color) {
     LastOperationManager::instance().recordSetColor(color);
-    MetadataManager::instance().setColorBatch(paths, color);
+    QList<int> noteIds = extractNoteIds(paths);
+    // 写入 notes.color_label 列，彻底与分类背景色分离
+    DatabaseManager::instance().updateNoteStateBatch(noteIds, "color_label", color);
 
     AppEvent ev;
     ev.type = AppEventType::MetadataUpdated;
@@ -195,8 +232,12 @@ void CoreEngine::handleSetColor(const QStringList& paths, const QString& color) 
 
 void CoreEngine::handleSetTags(const QStringList& paths, const QStringList& tags) {
     LastOperationManager::instance().recordPasteTags(tags);
-    TagLexiconService::instance().addTags(tags);
-    MetadataManager::instance().addTagsBatch(paths, tags);
+    QStringList normalizedTags = TagCodec::normalize(tags);
+    TagLexiconService::instance().addTags(normalizedTags);
+    QString joinedTags = TagCodec::join(normalizedTags);
+
+    QList<int> noteIds = extractNoteIds(paths);
+    DatabaseManager::instance().updateNoteStateBatch(noteIds, "tags", joinedTags);
 
     AppEvent ev;
     ev.type = AppEventType::MetadataUpdated;
@@ -219,56 +260,39 @@ void CoreEngine::addTagsToPathsAsync(const QStringList& paths, const QStringList
 
     m_asyncTagPool.start([paths, tags, onFinished, existingJobId]() {
         int totalPaths = paths.size();
-        int jobId = existingJobId > 0 ? existingJobId : TaskProgressService::instance().createJob("正在应用预设标签...", totalPaths);
+        int jobId = existingJobId > 0 ? existingJobId : TaskProgressService::instance().createJob("正在应用标签...", totalPaths);
 
-        TagLexiconService::instance().addTags(tags);
+        QStringList normalizedTags = TagCodec::normalize(tags);
+        TagLexiconService::instance().addTags(normalizedTags);
 
+        QList<int> noteIds = extractNoteIds(paths);
         constexpr int kBatchSize = 100;
         int processed = 0;
-        for (int i = 0; i < totalPaths; i += kBatchSize) {
-            QStringList batch = paths.mid(i, kBatchSize);
-            MetadataManager::instance().addTagsBatch(batch, tags);
+        for (int i = 0; i < noteIds.size(); i += kBatchSize) {
+            QList<int> batch = noteIds.mid(i, kBatchSize);
+            DatabaseManager::instance().addTagsToNotesBatch(batch, normalizedTags);
             processed += batch.size();
             TaskProgressService::instance().updateProgress(jobId, processed, totalPaths, QString("已应用 %1 / %2 项").arg(processed).arg(totalPaths));
         }
 
         QMetaObject::invokeMethod(qApp, [paths, jobId, onFinished]() {
-            TaskProgressService::instance().updateProgress(jobId, paths.size(), paths.size(), "正在刷新界面...");
+            TaskProgressService::instance().finishJob(jobId);
 
             AppEvent ev;
             ev.type = AppEventType::MetadataUpdated;
             ev.paths = paths;
             CentralEventHub::instance().publishEvent(ev);
 
-            ContentPanel* activePanel = nullptr;
-            if (PanelMediator* mediator = PanelMediator::instance()) {
-                activePanel = mediator->activeContentPanel();
-            }
-
-            auto proceedToSave = [jobId, paths, onFinished]() {
-                TaskProgressService::instance().updateProgress(jobId, paths.size(), paths.size(), "正在保存...");
-                RapidNotesJsonStore::instance().flushAllDirtyBuffersAsync([jobId, paths, onFinished](bool allOk) {
-                    TaskProgressService::instance().finishJob(jobId);
-                    if (!allOk) {
-                        ToolTipOverlay::instance()->showToast("部分元数据保存失败", 2000, QColor("#e81123"));
-                    }
-                    if (onFinished) {
-                        onFinished(paths.size());
-                    }
-                });
-            };
-
-            if (activePanel) {
-                activePanel->runWhenStatsSettled(proceedToSave);
-            } else {
-                proceedToSave();
+            if (onFinished) {
+                onFinished(paths.size());
             }
         }, Qt::QueuedConnection);
     });
 }
 
 void CoreEngine::handleSetNote(const QStringList& paths, const QString& note) {
-    MetadataManager::instance().setNoteBatch(paths, note);
+    QList<int> noteIds = extractNoteIds(paths);
+    DatabaseManager::instance().updateNoteStateBatch(noteIds, "remark", note);
 
     AppEvent ev;
     ev.type = AppEventType::MetadataUpdated;
@@ -279,7 +303,9 @@ void CoreEngine::handleSetNote(const QStringList& paths, const QString& note) {
 }
 
 void CoreEngine::handleSetURL(const QStringList& paths, const QString& url) {
-    MetadataManager::instance().setURLBatch(paths, url);
+    // 纯文本笔记统一映射到 remark 补充信息或 content 特征中
+    QList<int> noteIds = extractNoteIds(paths);
+    DatabaseManager::instance().updateNoteStateBatch(noteIds, "remark", url);
 
     AppEvent ev;
     ev.type = AppEventType::MetadataUpdated;
@@ -290,30 +316,34 @@ void CoreEngine::handleSetURL(const QStringList& paths, const QString& url) {
 }
 
 void CoreEngine::handleRecordAccess(const QStringList& paths) {
-    for (const QString& path : paths) {
-        MetadataManager::instance().recordAccess(path.toStdWString());
-    }
+    QList<int> noteIds = extractNoteIds(paths);
+    DatabaseManager::instance().recordAccessBatch(noteIds);
 }
 
 void CoreEngine::handleToggleFavorite(const QStringList& paths) {
     if (paths.isEmpty()) return;
-
-    bool allFav = true;
-    for (const QString& p : paths) {
-        if (!FavoriteService::instance().isFavorite(p)) {
-            allFav = false;
-            break;
-        }
-    }
-
-    for (const QString& p : paths) {
-        FavoriteService::instance().toggleFavorite(p);
-    }
+    QList<int> noteIds = extractNoteIds(paths);
+    DatabaseManager::instance().toggleNoteFavoriteBatch(noteIds);
 
     AppEvent ev;
     ev.type = AppEventType::FavoritesUpdated;
     ev.paths = paths;
-    ev.payload["isFavorite"] = !allFav;
+    CentralEventHub::instance().publishEvent(ev);
+}
+
+void CoreEngine::handleRenameItem(const QString& path, const QString& newTitle) {
+    if (newTitle.isEmpty()) return;
+    QList<int> noteIds = extractNoteIds({path});
+    if (noteIds.isEmpty()) return;
+
+    int id = noteIds.first();
+    DatabaseManager::instance().updateNoteState(id, "title", newTitle);
+
+    AppEvent ev;
+    ev.type = AppEventType::MetadataUpdated;
+    ev.paths = {path};
+    ev.payload["field"] = "title";
+    ev.payload["value"] = newTitle;
     CentralEventHub::instance().publishEvent(ev);
 }
 

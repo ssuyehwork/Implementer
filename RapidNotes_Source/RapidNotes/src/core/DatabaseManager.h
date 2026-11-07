@@ -47,6 +47,8 @@ public:
     bool toggleNoteState(int id, const QString& column);
     bool moveNotesToCategory(const QList<int>& noteIds, int catId);
     bool recordAccess(int id);
+    bool recordAccessBatch(const QList<int>& ids);
+    bool toggleNoteFavoriteBatch(const QList<int>& ids);
     bool moveNote(int id, MoveDirection direction, const QString& filterType, const QVariant& filterValue, const QVariantMap& criteria = QVariantMap());
     bool moveNotesToRow(const QList<int>& ids, int targetRow, const QString& filterType, const QVariant& filterValue, const QVariantMap& criteria = QVariantMap());
     bool reorderNotes(const QString& filterType, const QVariant& filterValue, bool ascending, const QVariantMap& criteria = QVariantMap());
@@ -91,8 +93,10 @@ public:
     bool setCategoryPresetTags(int catId, const QString& tags);
     QString getCategoryPresetTags(int catId);
 
-    // 标签管理
+    // 标签管理 (单条与原生原子批量)
     bool addTagsToNote(int noteId, const QStringList& tags);
+    bool addTagsToNotesBatch(const QList<int>& noteIds, const QStringList& tags);
+    bool removeTagsFromNotesBatch(const QList<int>& noteIds, const QStringList& tags);
     bool renameTagGlobally(const QString& oldName, const QString& newName);
     bool deleteTagGlobally(const QString& tagName);
     // 2026-05-01 按照用户要求：标签物理化同步引擎
@@ -100,6 +104,8 @@ public:
 
     // 搜索与查询
     QList<QVariantMap> searchNotes(const QString& keyword, const QString& filterType = "all", const QVariant& filterValue = -1, int page = -1, int pageSize = DEFAULT_PAGE_SIZE, const QVariantMap& criteria = QVariantMap());
+    // 专为 MainWindow 卡片与列表渲染定制的轻量级摘要查询（绝不拉取 content 与 data_blob 整列，杜绝内存与 I/O 阻塞）
+    QList<QVariantMap> searchNotesSummary(const QString& keyword, const QString& filterType = "all", const QVariant& filterValue = -1, int page = -1, int pageSize = DEFAULT_PAGE_SIZE, const QVariantMap& criteria = QVariantMap());
     int getNotesCount(const QString& keyword, const QString& filterType = "all", const QVariant& filterValue = -1, const QVariantMap& criteria = QVariantMap());
     QStringList getAllTags();
     QList<QVariantMap> getRecentTagsWithCounts(int limit = 20);

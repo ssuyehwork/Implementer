@@ -259,9 +259,6 @@
    - 严禁任何特判、兜底分支与兼容壳，凡出现此类倾向必须停下从根上重新设计。
 
 ---
-
----
-
 ## 11. 步骤 1 返工规范：词表与纯函数彻底收敛契约 (Step 1 Remediation & Pure SSOT Contract)
 
 根据《RapidNotes 步骤 1 返工清单》，在词表与纯函数阶段必须彻底落实无死角的收敛与零冗余：
@@ -291,11 +288,7 @@
    - 单一数据库事务内完成全部数据复制、字段映射与索引重建，失败则完整回滚；
    - 迁移完成后必须通过 `ATTACH` 机制逐字段自动化校验，比对所有非文件类笔记关键字段，不一致行数必须为 0。
 
-
 ---
-
----
-
 ## 12. UI 样式内联转外联彻底重构契约 (Inline QSS to External QSS Migration Contract)
 
 根据架构治理与用户明确指令（“由内联转成外联时，不可擅自修改样式参数，只做搬迁，不做重写、不做优化、不做重新设计”）：
@@ -329,8 +322,8 @@
    - **标头空白区域防误触**：点击标头文字、数字或空白处时，事件被框架直接消费（`return true`），绝对不得像普通分类那样触发数据选中、高亮或内容列表刷新；
    - **分类子项自由交互**：展开后的各个具体分类子项（如 RapidNotes、Link 等）保持纯粹独立的业务行为（单选/多选高亮、数据筛选、右键上下文菜单、拖拽移动与状态联动）；
    - **职责单一与扩展性**：标头仅负责视觉分组与折叠状态组织，不挂载任何实体业务数据，彻底杜绝数据与容器的耦合混淆。
----
 
+---
 ---
 
 ## 14. QuarkMeta 迁移合并至 RapidNotes 核心设计理念与数据真理源 (QuarkMeta Merge Architecture & Data SSOT)
@@ -348,15 +341,54 @@ QuarkMeta 原版面向本地磁盘物理文件系统（磁盘驱动器、物理�
 1. **路由与导航纯化**：
    - 彻底废除物理磁盘路径（如 `C:\...`、`D:\...`）；
    - 导航协议与面包屑层级严格统一为虚拟数据库路由协议 `library://<categoryId>`（如 `library://-1` 对应全部笔记，`library://-2` 对应未分类，`library://<id>` 对应各级分类）；
+   - **地址栏与标签页**：不再显示任何物理路径，仅严格显示当前选中的数据库分类名称；
 2. **面板架构收敛与解耦**：
-   - 彻底剔除盘符栏 (`DriveBarWidget`)、物理收藏夹 (`FavoritePanel`)、标记分发 (`MarkedPanel` / `MarkedFolderService`) 以及物理目录树 (`NavPanel`)；
+   - 彻底剔除盘符栏 (`DriveBarWidget`)、物理收藏夹 (`FavoritePanel` 选项卡及相关逻辑代码彻底根除)；
+   - 彻底移除物理标记分发 (`MarkedPanel` / `MarkedFolderService`)；
    - 侧边栏仅保留面向分类数据库表（`categories`）的 `LibraryPanel`；
-3. **交互实体转变**：
+   - “目录导航”栏 (`NavPanel`) 暂不物理删除，标记为 **TODO**，待后续专门重构；
+3. **交互实体与快捷键转变**：
    - 彻底移除磁盘扫描、物理文件碰撞提示 (`FileCollisionDialog`)、文件系统拖拽分发逻辑；
+   - **创建快捷键语义转换**：
+     - `Ctrl+Shift+N`：由原 QuarkMeta 的“创建物理文件夹”转变为“**创建分类**”；
+     - `Ctrl+N`：由原 QuarkMeta 的“创建 Markdown 实体文件”转变为“**创建笔记**”；
+   - **行内重命名**：重命名交互严格采用行内就地编辑（Inline Rename），禁止使用弹窗对话框；
    - 视图中所有卡片展示、星级评分、颜色标记、重命名、拖拽移动与回收站软删除，其实体**严格且仅为数据库中的笔记记录 (`notes`)**。
 
-### 14.3 唯一存储真理源：`inspiration.db` (Storage SSOT)
+### 14.3 视图控制与界面功能精简 (View Controls & Feature Pruning)
+1. **视图模式收敛**：
+   - MainWindow 界面**仅保留“列表视图 (ListView)”和“网格视图 (GridView)”**；
+   - 状态栏上的“自适应”、“列视图 (ColumnView)”按钮彻底移除；
+2. **根除物理文件系统特性**：
+   - “显示/隐藏隐藏项目”功能彻底根除；
+   - “显示子文件夹中的项目”（递归查看物理目录）功能彻底根除；
+3. **内容面板标题联动**：
+   - 内容面板（ContentPanel）标题栏不再固定显示“内容”，而是动态联动显示为**当前选中的分类名称**；
+4. **视觉与操作资产保留**：
+   - QuarkMeta 原带的标准色系（包含高对比度暗色调与颜色标签调色盘）必须完整保留，不得丢失；
+   - 标准快捷键映射体系完整保留，无缝平移至笔记数据模型上。
+
+### 14.4 唯一存储真理源：`inspiration.db` (Storage SSOT)
 1. **唯一数据库**：所管理的数据库**绝非 QuarkMeta 原有的 `QuarkMeta.store` 数据库**，而是 RapidNotes 自身的 **`inspiration.db`** 数据库（主要包括 `notes` 表与 `categories` 表）；
-2. **零数据冗余与严禁侧车**：
-   - 严禁引入或残留 `QuarkMeta.store`、`.QuarkMeta.json` 侧车文件；
+2. **彻底作废侧车文件**：
+   - 原 QuarkMeta 的 `.QuarkMeta.json` 侧车机制彻底作废与删除，所有颜色、星级、标签等元数据直接存入 `inspiration.db` 的字段中；
+3. **零数据冗余与严禁缓存副本**：
    - 严禁在界面层自建第二份缓存副本或重复持久化层，所有数据读取与变更必须单向穿透至 RapidNotes 现有的 `DatabaseManager` 与领域服务中。
+### 14.5 卡片视图呈现与 Notes 虚拟后缀真理源规范 (Card View & Notes Extension SSOT)
+1. **卡片中央图标呈现规范**：
+   - 卡片中央图标完全对齐 QuickWindow 列表左侧图标（`NoteModel::data(DecorationRole)`、`ItemClassifier` 与 `ThumbnailMaker`）：
+     - **图片 (`image`)**：直接显示图片本身的缩略图；
+     - **纯文本 (`text`)**：显示 `text` 文本图标；
+     - **网址链接 (`link`)**：显示 `link` 链接图标；
+     - **代码片段 (`code`)**：显示 `code` 代码图标；
+     - **颜色/调色板 (`color`/`palette`)**：显示 `palette` 调色盘图标；
+     - **OCR 识别文本 (`screenshot_ocr`)**：显示 `screenshot_ocr` 图标；
+     - **剪贴板消息 (`captured_message`)**：显示 `message` 图标；
+     - **历史文件/文件夹类**：按单文件（`file`）、单文件夹（`folder`）、多文件（`files_multiple`）、多文件夹（`folders_multiple`）分别显示对应图标。
+2. **纯笔记特化虚拟后缀 "Notes"**：
+   - 为了便于统一管理与后期多维精准筛选，特地为纯笔记设定后缀名为 **`Notes`**；
+   - **卡片左上角徽章 (Badge)**：纯笔记的徽章一律固定显示为 **`Notes`**；
+   - **筛选器 (FilterPanel) 与统计引擎联动**：在数据契约层（`ModelContract` / `NoteModel`）中，纯文本笔记返回的扩展名统一为 `Notes`，使得筛选面板的文件类型分组可以直接一键筛选出纯笔记。
+3. **卡片底部名称显示与截断规范**：
+   - 卡片名称部分显示笔记的标题（`title`）；
+   - **截断规则**：若标题过长，**仅显示前 10 个字**（超出部分予以截断），保持卡片布局清爽整洁。

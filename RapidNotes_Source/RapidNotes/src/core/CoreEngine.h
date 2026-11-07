@@ -87,6 +87,9 @@ private:
     CoreEngine(const CoreEngine&) = delete;
     CoreEngine& operator=(const CoreEngine&) = delete;
 
+    // 从 note://<id> 格式或纯数字字符串批量解析笔记 ID
+    static QList<int> extractNoteIds(const QStringList& paths);
+
     void handleSetRating(const QStringList& paths, int rating);
     void handleSetColor(const QStringList& paths, const QString& color);
     void handleSetTags(const QStringList& paths, const QStringList& tags);
@@ -94,6 +97,7 @@ private:
     void handleSetURL(const QStringList& paths, const QString& url);
     void handleRecordAccess(const QStringList& paths);
     void handleToggleFavorite(const QStringList& paths);
+    void handleRenameItem(const QString& path, const QString& newTitle);
 
     QThreadPool m_asyncTagPool;
 };

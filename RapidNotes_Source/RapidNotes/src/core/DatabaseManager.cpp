@@ -576,6 +576,7 @@ bool DatabaseManager::createTables() {
     // 2026-03-xx 按照用户要求：部署核心业务索引，确保大数据量下的检索性能
     query.exec("CREATE INDEX IF NOT EXISTS idx_notes_main_filter ON notes(is_deleted, category_id, is_pinned, updated_at)");
     query.exec("CREATE INDEX IF NOT EXISTS idx_notes_rating ON notes(rating) WHERE rating > 0");
+    query.exec("CREATE INDEX IF NOT EXISTS idx_notes_color_label ON notes(color_label) WHERE is_deleted = 0 AND color_label != ''");
 
     QString createCategoriesTable = R"(
         CREATE TABLE IF NOT EXISTS categories (
@@ -620,6 +621,7 @@ bool DatabaseManager::createTables() {
         addCol("categories", "password_hint", "TEXT");
         addCol("categories", "pinned_sort_order", "INTEGER DEFAULT 0"); // [NEW] 2026-04-20 增加镜像组拉伸排序
         addCol("categories", "sort_mode", "TEXT DEFAULT 'manual'"); // [NEW] 2026-04-xx 增加分类独立排序模式
+        addCol("categories", "icon_key", "TEXT DEFAULT 'Data-Classification.svg'"); // [NEW] 分类矢量图标键
     }
     query.exec("CREATE TABLE IF NOT EXISTS tags (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE NOT NULL)");
     query.exec("CREATE TABLE IF NOT EXISTS note_tags (note_id INTEGER, tag_id INTEGER, PRIMARY KEY (note_id, tag_id))");
@@ -717,6 +719,7 @@ bool DatabaseManager::createTables() {
         addCol("notes", "remark", "TEXT DEFAULT ''"); // [NEW] 备注字段
         addCol("notes", "file_extensions", "TEXT DEFAULT ''"); // [NEW] 2026-04-08 多后缀关联字段
         addCol("notes", "word_count", "INTEGER DEFAULT 0");
+        addCol("notes", "color_label", "TEXT DEFAULT ''"); // [NEW] 纯笔记独立手动颜色标记字段
 
         // 2026-05-03 按照用户要求：执行 C++ 引擎全量字数精准校准迁移 v3 (修复 0 字逻辑并应用绿色收藏)
         QSqlQuery checkAccurateMigV3(m_db);
@@ -1277,8 +1280,8 @@ bool DatabaseManager::updateNoteState(int id, const QString& column, const QVari
     {
         QMutexLocker locker(&m_mutex);
         if (!m_db.isOpen()) return false;
-        // [CRITICAL] 必须包含 item_type 以支持从图片识别提取的文字类型标记
-        QStringList allowedColumns = {"is_pinned", "is_favorite", "is_deleted", "tags", "rating", "category_id", "color", "content", "title", "item_type", "remark"};
+        // [CRITICAL] 必须包含 item_type 以支持从图片识别提取的文字类型标记，包含 color_label 支撑纯笔记色标
+        QStringList allowedColumns = {"is_pinned", "is_favorite", "is_deleted", "tags", "rating", "category_id", "color", "content", "title", "item_type", "remark", "color_label"};
         if (!allowedColumns.contains(column)) return false;
         QSqlQuery query(m_db);
         if (column == "is_favorite") {
@@ -1362,7 +1365,7 @@ bool DatabaseManager::updateNoteStateBatch(const QList<int>& ids, const QString&
         QMutexLocker locker(&m_mutex);
         if (!m_db.isOpen()) return false;
         // [CRITICAL] 保持与 updateNoteState 相同的允许列白名单，确保功能不丢失
-        QStringList allowedColumns = {"is_pinned", "is_favorite", "is_deleted", "tags", "rating", "category_id", "color", "content", "title", "item_type"};
+        QStringList allowedColumns = {"is_pinned", "is_favorite", "is_deleted", "tags", "rating", "category_id", "color", "content", "title", "item_type", "remark", "color_label"};
         if (!allowedColumns.contains(column)) return false;
         m_db.transaction();
         QSqlQuery query(m_db);
@@ -1692,6 +1695,72 @@ QList<QVariantMap> DatabaseManager::searchNotes(const QString& keyword, const QS
 }
 
 // [CRITICAL] 核心计数逻辑：必须与 searchNotes 的过滤条件保持 1:1 同步，禁止擅自改动。
+QList<QVariantMap> DatabaseManager::searchNotesSummary(const QString& keyword, const QString& filterType, const QVariant& filterValue, int page, int pageSize, const QVariantMap& criteria) {
+    QMutexLocker locker(&m_mutex);
+    QList<QVariantMap> results;
+    if (!m_db.isOpen()) {
+        qCritical() << "[DB] searchNotesSummary 失败：数据库未打开";
+        return results;
+    }
+
+    if (filterType == "trash" && keyword.isEmpty()) {
+        QString sql = "SELECT id, title, substr(content, 1, 200) AS summary, tags, color, color_label, category_id, item_type, created_at, updated_at, is_pinned, is_favorite, is_deleted, rating, remark "
+                      "FROM notes WHERE is_deleted = 1 "
+                      "UNION ALL "
+                      "SELECT id, name AS title, '(已删除的分类)' AS summary, '' AS tags, color, '' AS color_label, parent_id AS category_id, 'deleted_category' AS item_type, NULL AS created_at, NULL AS updated_at, 0 AS is_pinned, 0 AS is_favorite, 1 AS is_deleted, 0 AS rating, '' AS remark "
+                      "FROM categories WHERE is_deleted = 1 "
+                      "ORDER BY is_pinned DESC, updated_at DESC";
+        QSqlQuery query(m_db);
+        if (query.exec(sql)) {
+            while (query.next()) {
+                QVariantMap map;
+                QSqlRecord rec = query.record();
+                for (int i = 0; i < rec.count(); ++i) map[rec.fieldName(i)] = query.value(i);
+                results.append(map);
+            }
+        }
+        return results;
+    }
+
+    QString baseSql = "SELECT id, title, substr(content, 1, 200) AS summary, tags, color, color_label, category_id, item_type, rating, is_pinned, is_favorite, is_deleted, created_at, updated_at, remark, file_extensions FROM notes ";
+    QString whereClause;
+    QVariantList params;
+    applyCommonFilters(whereClause, params, filterType, filterValue, criteria);
+
+    if (!keyword.isEmpty()) {
+        QStringList keywords = keyword.split(QRegularExpression(QStringLiteral(R"(\s+)")), Qt::SkipEmptyParts);
+        for (const QString& kw : keywords) {
+            whereClause += "AND (title LIKE ? OR remark LIKE ? OR tags LIKE ? OR file_extensions LIKE ?) ";
+            QString pattern = "%" + kw + "%";
+            params << pattern << pattern << pattern << pattern;
+        }
+    }
+
+    QString finalSql = baseSql + whereClause;
+
+    // 补充排序与分页口径
+    finalSql += " ORDER BY is_pinned DESC, sort_order ASC, updated_at DESC";
+    if (page > 0) {
+        finalSql += QString(" LIMIT %1 OFFSET %2").arg(pageSize).arg((page - 1) * pageSize);
+    }
+
+    QSqlQuery query(m_db);
+    query.prepare(finalSql);
+    for (int i = 0; i < params.size(); ++i) query.bindValue(i, params[i]);
+
+    if (query.exec()) {
+        while (query.next()) {
+            QVariantMap map;
+            QSqlRecord rec = query.record();
+            for (int i = 0; i < rec.count(); ++i) map[rec.fieldName(i)] = query.value(i);
+            results.append(map);
+        }
+    } else {
+        qCritical() << "searchNotesSummary failed:" << query.lastError().text() << "SQL:" << finalSql;
+    }
+    return results;
+}
+
 int DatabaseManager::getNotesCount(const QString& keyword, const QString& filterType, const QVariant& filterValue, const QVariantMap& criteria) {
     QMutexLocker locker(&m_mutex);
     if (!m_db.isOpen()) return 0;
@@ -3305,17 +3374,127 @@ QList<DatabaseManager::Todo> DatabaseManager::getAllPendingTodos() {
 }
 
 bool DatabaseManager::addTagsToNote(int noteId, const QStringList& tags) {
-    QVariantMap note = getNoteById(noteId);
-    if (note.isEmpty()) return false;
-    
-    QStringList finalTags = RapidNotes::TagCodec::split(note["tags"].toString());
-    finalTags.append(RapidNotes::TagCodec::normalize(tags));
-    finalTags = RapidNotes::TagCodec::normalize(finalTags);
-    
-    // 2026-05-09 按照用户要求：严禁使用 "逗号+空格"，统一使用纯逗号分割。
-    QString tagsString = RapidNotes::TagCodec::join(finalTags);
-    bool ok = updateNoteState(noteId, "tags", tagsString);
-    if (ok) syncNoteTags(noteId, finalTags); // 保持物理表同步
+    return addTagsToNotesBatch({noteId}, tags);
+}
+
+bool DatabaseManager::addTagsToNotesBatch(const QList<int>& noteIds, const QStringList& tags) {
+    if (noteIds.isEmpty() || tags.isEmpty()) return true;
+    QStringList normTags = RapidNotes::TagCodec::normalize(tags);
+    if (normTags.isEmpty()) return true;
+
+    QMutexLocker locker(&m_mutex);
+    if (!m_db.isOpen()) return false;
+    m_db.transaction();
+
+    QString currentTime = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss");
+    for (int id : noteIds) {
+        QSqlQuery sel(m_db);
+        sel.prepare("SELECT tags FROM notes WHERE id = ?");
+        sel.addBindValue(id);
+        if (sel.exec() && sel.next()) {
+            QStringList cur = RapidNotes::TagCodec::split(sel.value(0).toString());
+            cur.append(normTags);
+            cur = RapidNotes::TagCodec::normalize(cur);
+            QString joined = RapidNotes::TagCodec::join(cur);
+
+            QSqlQuery up(m_db);
+            up.prepare("UPDATE notes SET tags = ?, updated_at = ? WHERE id = ?");
+            up.addBindValue(joined);
+            up.addBindValue(currentTime);
+            up.addBindValue(id);
+            up.exec();
+        }
+    }
+
+    bool ok = m_db.commit();
+    if (ok) {
+        markDirty();
+        emit noteUpdated();
+    }
+    return ok;
+}
+
+bool DatabaseManager::removeTagsFromNotesBatch(const QList<int>& noteIds, const QStringList& tags) {
+    if (noteIds.isEmpty() || tags.isEmpty()) return true;
+    QStringList normTags = RapidNotes::TagCodec::normalize(tags);
+    if (normTags.isEmpty()) return true;
+
+    QMutexLocker locker(&m_mutex);
+    if (!m_db.isOpen()) return false;
+    m_db.transaction();
+
+    QString currentTime = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss");
+    for (int id : noteIds) {
+        QSqlQuery sel(m_db);
+        sel.prepare("SELECT tags FROM notes WHERE id = ?");
+        sel.addBindValue(id);
+        if (sel.exec() && sel.next()) {
+            QStringList cur = RapidNotes::TagCodec::split(sel.value(0).toString());
+            for (const QString& t : normTags) cur.removeAll(t);
+            QString joined = RapidNotes::TagCodec::join(cur);
+
+            QSqlQuery up(m_db);
+            up.prepare("UPDATE notes SET tags = ?, updated_at = ? WHERE id = ?");
+            up.addBindValue(joined);
+            up.addBindValue(currentTime);
+            up.addBindValue(id);
+            up.exec();
+        }
+    }
+
+    bool ok = m_db.commit();
+    if (ok) {
+        markDirty();
+        emit noteUpdated();
+    }
+    return ok;
+}
+
+bool DatabaseManager::recordAccessBatch(const QList<int>& ids) {
+    if (ids.isEmpty()) return true;
+    QMutexLocker locker(&m_mutex);
+    if (!m_db.isOpen()) return false;
+    m_db.transaction();
+    QString currentTime = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss");
+    QSqlQuery query(m_db);
+    query.prepare("UPDATE notes SET last_accessed_at = ? WHERE id = ?");
+    for (int id : ids) {
+        query.bindValue(0, currentTime);
+        query.bindValue(1, id);
+        query.exec();
+    }
+    return m_db.commit();
+}
+
+bool DatabaseManager::toggleNoteFavoriteBatch(const QList<int>& ids) {
+    if (ids.isEmpty()) return true;
+    QMutexLocker locker(&m_mutex);
+    if (!m_db.isOpen()) return false;
+    m_db.transaction();
+    QString currentTime = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss");
+    for (int id : ids) {
+        QSqlQuery q(m_db);
+        q.prepare("SELECT is_favorite FROM notes WHERE id = ?");
+        q.addBindValue(id);
+        if (q.exec() && q.next()) {
+            int cur = q.value(0).toInt();
+            int nextFav = (cur == 1) ? 0 : 1;
+            QString color = (nextFav == 1) ? "#2ECC71" : "#0A362F";
+            QSqlQuery up(m_db);
+            up.prepare("UPDATE notes SET is_favorite = ?, color = ?, updated_at = ?, last_accessed_at = ? WHERE id = ?");
+            up.addBindValue(nextFav);
+            up.addBindValue(color);
+            up.addBindValue(currentTime);
+            up.addBindValue(currentTime);
+            up.addBindValue(id);
+            up.exec();
+        }
+    }
+    bool ok = m_db.commit();
+    if (ok) {
+        markDirty();
+        emit noteUpdated();
+    }
     return ok;
 }
 bool DatabaseManager::renameTagGlobally(const QString& oldName, const QString& newName) {
