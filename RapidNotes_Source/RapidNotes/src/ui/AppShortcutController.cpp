@@ -4,7 +4,6 @@
 #include "TabBarWidget.h"
 #include "LocalShortcutInterceptor.h"
 #include "../core/NavigationService.h"
-#include "../core/UndoManager.h"
 #include <QApplication>
 #include <QLineEdit>
 #include <QTextEdit>
@@ -125,14 +124,14 @@ void AppShortcutController::initShortcuts() {
         NavigationService::instance().refresh();
     });
 
-    // 2. Ctrl+Z: 事务级撤销
+    // 2. Ctrl+Z: 事务级撤销 (RapidNotes 暂未启用 UndoManager)
     registerShortcut(QKeySequence::Undo, []() {
-        if (!isEditingFocus()) UndoManager::instance().undo();
+        // Reserved for future undo handling
     });
 
-    // 3. Ctrl+Shift+Z / Ctrl+Y: 事务级重做
+    // 3. Ctrl+Shift+Z / Ctrl+Y: 事务级重做 (RapidNotes 暂未启用 UndoManager)
     registerShortcut(QKeySequence::Redo, []() {
-        if (!isEditingFocus()) UndoManager::instance().redo();
+        // Reserved for future redo handling
     });
 
     // 4. Alt+Q: 局内切换窗口置顶

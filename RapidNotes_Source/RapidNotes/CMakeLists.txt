@@ -80,6 +80,8 @@ set(SOURCES
     src/core/CentralEventHub.h
     src/core/ClipboardMonitor.cpp
     src/core/ClipboardMonitor.h
+    src/core/ClipboardService.cpp
+    src/core/ClipboardService.h
     src/core/CoreEngine.cpp
     src/core/CoreEngine.h
     src/core/DatabaseManager.cpp
@@ -111,6 +113,8 @@ set(SOURCES
     src/meta/FavoriteService.h
     src/meta/LibrarySyncService.h
     src/meta/LibraryDao.h
+    src/meta/LibraryService.cpp
+    src/meta/LibraryService.h
     src/util/ShellHelper.h
     src/core/NavigationHistoryService.cpp
     src/core/NavigationHistoryService.h
@@ -130,6 +134,8 @@ set(SOURCES
     src/core/ShortcutManager.h
     src/core/TagCodec.cpp
     src/core/TagCodec.h
+    src/core/TaskProgressService.cpp
+    src/core/TaskProgressService.h
     src/core/TrashService.cpp
     src/core/TrashService.h
     src/core/PermanentDeleteService.cpp
