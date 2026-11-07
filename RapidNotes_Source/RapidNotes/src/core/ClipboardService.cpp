@@ -3,7 +3,6 @@
 #include "TrashService.h"
 #include "../util/DiskIoService.h"
 #include "../ui/ToolTipOverlay.h"
-#include "../ui/FileCollisionDialog.h"
 #include "ModelContract.h"
 #include <QAbstractItemView>
 #include <QApplication>
@@ -221,70 +220,11 @@ void ClipboardService::executePaste(const QString& targetDir, QWidget* parentWid
         if (!effect.isEmpty() && (effect.at(0) & 0x02)) isMove = true;
     }
 
-    // 检测目标文件夹中的同名冲突文件
-    QStringList conflictingSources;
-    for (const QString& src : fromPaths) {
-        QString fileName = QFileInfo(src).fileName();
-        QString destPath = QDir(targetDir).filePath(fileName);
-        if (QFile::exists(destPath)) {
-            conflictingSources.append(src);
-        }
-    }
-
     DiskIoContext ioCtx;
     ioCtx.sources = fromPaths;
     ioCtx.destination = targetDir;
     ioCtx.isMove = isMove;
-
-    if (!conflictingSources.isEmpty()) {
-        QStringList activeSources = fromPaths;
-        int remainingConflicts = conflictingSources.size();
-
-        for (int i = 0; i < conflictingSources.size(); ++i) {
-            const QString& srcFile = conflictingSources.at(i);
-            FileCollisionDialog dialog(srcFile, targetDir, remainingConflicts--, parentWidget);
-
-            if (dialog.exec() != QDialog::Accepted) {
-                return; // 用户点击关闭或取消
-            }
-
-            CollisionResolveAction action = dialog.selectedAction();
-            bool applyToAll = dialog.applyToAll();
-
-            if (action == CollisionResolveAction::Cancel) {
-                return;
-            }
-
-            if (applyToAll) {
-                // 勾选了“是否应用于全部文件？”，将当前选择应用至剩余所有冲突文件并退出循环
-                if (action == CollisionResolveAction::AutoResolve) {
-                    ioCtx.autoRenameAll = true;
-                } else if (action == CollisionResolveAction::Replace) {
-                    ioCtx.overwriteAll = true;
-                } else if (action == CollisionResolveAction::Skip) {
-                    for (int j = i; j < conflictingSources.size(); ++j) {
-                        activeSources.removeOne(conflictingSources.at(j));
-                    }
-                }
-                break; // 结束逐项弹窗循环
-            } else {
-                // 未勾选“是否应用于全部文件？”，仅对当前单个文件生效，循环继续处理下一个冲突文件
-                if (action == CollisionResolveAction::AutoResolve) {
-                    ioCtx.autoRenameFiles.insert(srcFile);
-                } else if (action == CollisionResolveAction::Replace) {
-                    ioCtx.overwriteFiles.insert(srcFile);
-                } else if (action == CollisionResolveAction::Skip) {
-                    activeSources.removeOne(srcFile);
-                }
-            }
-        }
-
-        if (activeSources.isEmpty()) {
-            ToolTipOverlay::instance()->showText(QCursor::pos(), "已跳过所有同名文件", 1500, QColor("#378ADD"));
-            return;
-        }
-        ioCtx.sources = activeSources;
-    }
+    ioCtx.autoRenameAll = true;
 
     QPointer<ClipboardService> weakThis(this);
     DiskIoService::instance().executeAsync(ioCtx, [weakThis, targetDir](bool success) {
