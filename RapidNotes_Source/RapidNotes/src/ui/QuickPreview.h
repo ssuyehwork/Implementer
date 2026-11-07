@@ -99,7 +99,7 @@ private:
         titleLayout->setSpacing(5);
 
         m_titleLabel = new QLabel("预览");
-        m_titleLabel->setStyleSheet("color: #888; font-size: 12px; font-weight: bold;");
+        m_titleLabel->setObjectName("QuickPreview_m_titleLabel_1");
         titleLayout->addWidget(m_titleLabel);
 
         m_searchEdit = new SearchLineEdit();
@@ -127,7 +127,7 @@ private:
         titleLayout->addWidget(m_searchEdit);
 
         m_searchCountLabel = new QLabel("0 / 0");
-        m_searchCountLabel->setStyleSheet("color: #007acc; font-size: 11px; font-weight: bold; margin-left: 5px;");
+        m_searchCountLabel->setObjectName("QuickPreview_m_searchCountLabel_2");
         titleLayout->addWidget(m_searchCountLabel);
 
         titleLayout->addStretch();
@@ -266,7 +266,7 @@ private:
 
         auto addMetaRow = [&](const QString& iconName, const QString& labelText, QLabel*& valueLabel) {
             auto* row = new QWidget();
-            row->setStyleSheet("background: transparent;");
+            row->setObjectName("QuickPreview_row_3");
             auto* rowLayout = new QVBoxLayout(row);
             rowLayout->setContentsMargins(0, 8, 0, 8);
             rowLayout->setSpacing(3);
@@ -276,18 +276,18 @@ private:
             auto* iconLbl = new QLabel();
             iconLbl->setPixmap(IconHelper::getIcon(iconName, "#666", 12).pixmap(12, 12));
             auto* keyLbl = new QLabel(labelText);
-            keyLbl->setStyleSheet("color: #666; font-size: 11px;");
+            keyLbl->setObjectName("QuickPreview_keyLbl_4");
             header->addWidget(iconLbl);
             header->addWidget(keyLbl);
             header->addStretch();
 
             valueLabel = new QLabel("-");
             valueLabel->setWordWrap(true);
-            valueLabel->setStyleSheet("color: #ddd; font-size: 12px; font-weight: bold;");
+            valueLabel->setObjectName("QuickPreview_valueLabel_5");
 
             auto* sepLine = new QFrame();
             sepLine->setFrameShape(QFrame::HLine);
-            sepLine->setStyleSheet("background: #2a2a2a; max-height: 1px; border: none;");
+            sepLine->setObjectName("QuickPreview_sepLine_6");
 
             rowLayout->addLayout(header);
             rowLayout->addWidget(valueLabel);
@@ -306,7 +306,7 @@ private:
         // 备注单独处理
         m_metaRemarkRow = new QWidget();
         auto* remarkRow = m_metaRemarkRow;
-        remarkRow->setStyleSheet("background: transparent;");
+        remarkRow->setObjectName("QuickPreview_remarkRow_7");
         auto* remarkRowLayout = new QVBoxLayout(remarkRow);
         remarkRowLayout->setContentsMargins(0, 8, 0, 8);
         remarkRowLayout->setSpacing(3);
@@ -315,14 +315,14 @@ private:
         auto* riIcon = new QLabel();
         riIcon->setPixmap(IconHelper::getIcon("edit", "#666", 12).pixmap(12, 12));
         auto* riKey = new QLabel("备注");
-        riKey->setStyleSheet("color: #666; font-size: 11px;");
+        riKey->setObjectName("QuickPreview_riKey_8");
         remarkHeaderLayout->addWidget(riIcon);
         remarkHeaderLayout->addWidget(riKey);
         remarkHeaderLayout->addStretch();
         m_metaRemark = new QLabel("-");
         m_metaRemark->setWordWrap(true);
         m_metaRemark->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-        m_metaRemark->setStyleSheet("color: #4fc3f7; font-size: 12px; font-style: italic;");
+        m_metaRemark->setObjectName("QuickPreview_m_metaRemark_9");
         remarkRowLayout->addLayout(remarkHeaderLayout);
         remarkRowLayout->addWidget(m_metaRemark);
         metaLayout->addWidget(remarkRow);
@@ -344,7 +344,7 @@ private:
         contentSplitter->setStretchFactor(0, 1);
         contentSplitter->setStretchFactor(1, 0);
         contentSplitter->setSizes({870, 230}); 
-        contentSplitter->setStyleSheet("QSplitter { background: transparent; }");
+        contentSplitter->setObjectName("QuickPreview_contentSplitter_10");
         
         containerLayout->addWidget(contentSplitter);
         
@@ -449,7 +449,7 @@ public:
                 m_metaRating->setText(html);
             } else {
                 m_metaRating->setText("无");
-                m_metaRating->setStyleSheet("color: #555; font-size: 12px; font-weight: normal;");
+                m_metaRating->setObjectName("QuickPreview_m_metaRating_11");
             }
         }
         if (m_metaStatus) {

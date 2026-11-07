@@ -28,7 +28,7 @@ public:
         layout->setSpacing(10);
         
         auto* lbl = new QLabel(text);
-        lbl->setStyleSheet("border: none; background: transparent; color: #DDD; font-size: 13px;");
+        lbl->setObjectName("SearchLineEdit_lbl_1");
         layout->addWidget(lbl);
         layout->addStretch();
         
@@ -114,16 +114,16 @@ public:
         auto* top = new QHBoxLayout();
         auto* icon = new QLabel();
         icon->setPixmap(IconHelper::getIcon("clock", "#888").pixmap(14, 14));
-        icon->setStyleSheet("border: none; background: transparent;");
+        icon->setObjectName("SearchLineEdit_icon_2");
         top->addWidget(icon);
 
         m_titleLabel = new QLabel(m_edit->historyTitle());
-        m_titleLabel->setStyleSheet("color: #888; font-weight: bold; font-size: 11px; background: transparent; border: none;");
+        m_titleLabel->setObjectName("SearchLineEdit_m_titleLabel_3");
         top->addWidget(m_titleLabel);
         top->addStretch();
         auto* clearBtn = new QPushButton("清空");
         clearBtn->setCursor(Qt::PointingHandCursor);
-        clearBtn->setStyleSheet("QPushButton { background: transparent; color: #666; border: none; font-size: 11px; } QPushButton:hover { color: #E74C3C; }");
+        clearBtn->setObjectName("SearchLineEdit_clearBtn_4");
         connect(clearBtn, &QPushButton::clicked, [this](){
             m_edit->clearHistory();
             refreshUI();
@@ -141,7 +141,7 @@ public:
         scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
         m_chipsWidget = new QWidget();
-        m_chipsWidget->setStyleSheet("background-color: transparent;");
+        m_chipsWidget->setObjectName("SearchLineEdit_m_chipsWidget_5");
         m_vLayout = new QVBoxLayout(m_chipsWidget);
         m_vLayout->setContentsMargins(0, 0, 0, 0);
         m_vLayout->setSpacing(2);
@@ -172,7 +172,7 @@ public:
         if(history.isEmpty()) {
             auto* lbl = new QLabel("暂无历史记录");
             lbl->setAlignment(Qt::AlignCenter);
-            lbl->setStyleSheet("color: #555; font-style: italic; margin: 20px; background: transparent; border: none;");
+            lbl->setObjectName("SearchLineEdit_lbl_6");
             m_vLayout->insertWidget(0, lbl);
             contentHeight = 100;
         } else {

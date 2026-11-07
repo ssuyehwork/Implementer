@@ -31,7 +31,7 @@ void PasswordGeneratorWindow::initUI() {
     m_usageEntry = new QLineEdit();
     m_usageEntry->setPlaceholderText("Account / Usage (e.g. GitHub, Gmail...)");
     m_usageEntry->setFixedHeight(36);
-    m_usageEntry->setStyleSheet("QLineEdit { background-color: #252525; border: 1px solid #333333; border-radius: 8px; color: #cccccc; font-size: 13px; padding-left: 10px; } QLineEdit:focus { border-color: #3b8ed0; }");
+    m_usageEntry->setObjectName("PasswordGeneratorWindow_m_usageEntry_1");
     innerLayout->addWidget(m_usageEntry);
 
     innerLayout->addWidget(createDisplayArea());
@@ -40,13 +40,13 @@ void PasswordGeneratorWindow::initUI() {
     auto* generateBtn = new QPushButton("Generate Password");
     generateBtn->setFixedHeight(40);
     generateBtn->setFixedWidth(200);
-    generateBtn->setStyleSheet("QPushButton { background-color: #2cc985; color: white; border: none; border-radius: 20px; font-size: 13px; font-weight: bold; } QPushButton:hover { background-color: #3e3e42; }"); // 2026-03-xx 统一悬停色
+    generateBtn->setObjectName("PasswordGeneratorWindow_generateBtn_2"); // 2026-03-xx 统一悬停色
     connect(generateBtn, &QPushButton::clicked, this, &PasswordGeneratorWindow::generatePassword);
     innerLayout->addWidget(generateBtn, 0, Qt::AlignCenter);
 
     m_statusLabel = new QLabel("");
     m_statusLabel->setAlignment(Qt::AlignCenter);
-    m_statusLabel->setStyleSheet("color: gray; font-size: 9px;");
+    m_statusLabel->setObjectName("PasswordGeneratorWindow_m_statusLabel_3");
     innerLayout->addWidget(m_statusLabel);
 
 }
@@ -61,12 +61,12 @@ QWidget* PasswordGeneratorWindow::createDisplayArea() {
     m_passEntry->setFixedHeight(44);
     m_passEntry->setAlignment(Qt::AlignCenter);
     m_passEntry->setReadOnly(true);
-    m_passEntry->setStyleSheet("QLineEdit { background-color: #2b2b2b; border: none; border-radius: 10px; color: #e0e0e0; font-family: Consolas; font-size: 15px; }");
+    m_passEntry->setObjectName("PasswordGeneratorWindow_m_passEntry_4");
 
     m_strengthBar = new QProgressBar();
     m_strengthBar->setFixedHeight(3);
     m_strengthBar->setTextVisible(false);
-    m_strengthBar->setStyleSheet("QProgressBar { border: none; background-color: #2b2b2b; border-radius: 1.5px; } QProgressBar::chunk { background-color: #4ade80; border-radius: 1.5px; }");
+    m_strengthBar->setObjectName("PasswordGeneratorWindow_m_strengthBar_5");
     m_strengthBar->setRange(0, 100);
     m_strengthBar->setValue(0);
 
@@ -82,7 +82,7 @@ QWidget* PasswordGeneratorWindow::createControlsArea() {
     layout->setSpacing(10);
 
     m_lengthLabel = new QLabel("Length: 16");
-    m_lengthLabel->setStyleSheet("font-size: 12px; font-weight: bold; color: #cccccc;");
+    m_lengthLabel->setObjectName("PasswordGeneratorWindow_m_lengthLabel_6");
 
     m_lengthSlider = new QSlider(Qt::Horizontal);
     m_lengthSlider->setRange(8, 64);
@@ -146,11 +146,11 @@ QWidget* PasswordGeneratorWindow::createControlsArea() {
 void PasswordGeneratorWindow::generatePassword() {
     QString usageText = m_usageEntry->text().trimmed();
     if (usageText.isEmpty()) {
-        m_usageEntry->setStyleSheet("QLineEdit { background-color: #252525; border: 1px solid #ef4444; border-radius: 8px; color: #cccccc; font-size: 13px; padding-left: 10px; }");
+        m_usageEntry->setObjectName("PasswordGeneratorWindow_m_usageEntry_7");
         ToolTipOverlay::instance()->showText(m_usageEntry->mapToGlobal(QPoint(0, m_usageEntry->height())), "请输入账号备注信息！", 700);
         // 2026-03-xx 统一缩短提示时间为 700ms
         QTimer::singleShot(700, [this]() {
-            m_usageEntry->setStyleSheet("QLineEdit { background-color: #252525; border: 1px solid #333333; border-radius: 8px; color: #cccccc; font-size: 13px; padding-left: 10px; }");
+            m_usageEntry->setObjectName("PasswordGeneratorWindow_m_usageEntry_8");
         });
         return;
     }
@@ -174,17 +174,17 @@ void PasswordGeneratorWindow::generatePassword() {
     QApplication::clipboard()->setText(pwd);
 
     m_statusLabel->setText(QString("✓ 已保存并复制密码！[%1]").arg(usageText));
-    m_statusLabel->setStyleSheet("color: #4ade80; font-size: 9px;");
+    m_statusLabel->setObjectName("PasswordGeneratorWindow_m_statusLabel_9");
 
     // Update strength bar
     if (length < 10) {
-        m_strengthBar->setStyleSheet("QProgressBar { border: none; background-color: #2b2b2b; border-radius: 1.5px; } QProgressBar::chunk { background-color: #ef4444; border-radius: 1.5px; }");
+        m_strengthBar->setObjectName("PasswordGeneratorWindow_m_strengthBar_10");
         m_strengthBar->setValue(30);
     } else if (length < 16) {
-        m_strengthBar->setStyleSheet("QProgressBar { border: none; background-color: #2b2b2b; border-radius: 1.5px; } QProgressBar::chunk { background-color: #f59e0b; border-radius: 1.5px; }");
+        m_strengthBar->setObjectName("PasswordGeneratorWindow_m_strengthBar_11");
         m_strengthBar->setValue(60);
     } else {
-        m_strengthBar->setStyleSheet("QProgressBar { border: none; background-color: #2b2b2b; border-radius: 1.5px; } QProgressBar::chunk { background-color: #2cc985; border-radius: 1.5px; }");
+        m_strengthBar->setObjectName("PasswordGeneratorWindow_m_strengthBar_12");
         m_strengthBar->setValue(100);
     }
 }

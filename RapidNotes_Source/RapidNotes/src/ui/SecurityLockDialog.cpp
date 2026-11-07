@@ -27,7 +27,7 @@ SecurityLockDialog::SecurityLockDialog(const QString& message, QWidget* parent)
 
     m_lblMessage = new QLabel(message);
     m_lblMessage->setWordWrap(true);
-    m_lblMessage->setStyleSheet("color: #ecf0f1; font-size: 14px; line-height: 1.4;");
+    m_lblMessage->setObjectName("SecurityLockDialog_m_lblMessage_1");
     row->addWidget(m_lblMessage, 1);
     layout->addLayout(row);
 
@@ -39,7 +39,7 @@ SecurityLockDialog::SecurityLockDialog(const QString& message, QWidget* parent)
     btnLayout->addStretch();
     auto* btnOk = new QPushButton("确 定");
     btnOk->setFixedSize(100, 36);
-    btnOk->setStyleSheet("QPushButton { background-color: #3A90FF; color: white; border-radius: 4px; font-weight: bold; } QPushButton:hover { background-color: #3e3e42; }"); // 2026-03-xx 统一悬停色
+    btnOk->setObjectName("SecurityLockDialog_btnOk_2"); // 2026-03-xx 统一悬停色
     connect(btnOk, &QPushButton::clicked, this, &QDialog::reject);
     btnLayout->addWidget(btnOk);
     layout->addLayout(btnLayout);

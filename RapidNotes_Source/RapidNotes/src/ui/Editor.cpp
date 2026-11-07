@@ -86,7 +86,7 @@ void MarkdownHighlighter::highlightBlock(const QString& text) {
 #include <QUrl>
 
 InternalEditor::InternalEditor(QWidget* parent) : QTextEdit(parent) {
-    setStyleSheet("background: #1E1E1E; color: #D4D4D4; font-family: 'Consolas', 'Courier New'; font-size: 13pt; border: none; outline: none; padding: 10px;");
+    setObjectName("Editor_this_1");
     setAcceptRichText(true); // 允许富文本以支持高亮和图片
 }
 
@@ -171,16 +171,16 @@ Editor::Editor(QWidget* parent) : QWidget(parent) {
 
     m_stack = new QStackedWidget(this);
     // [CRITICAL] 强制设定深色背景 (#1e1e1e)，防止在特定系统主题或高对比度模式下背景变白，导致浅灰色文字不可见。
-    m_stack->setStyleSheet("background-color: #1e1e1e; border: none;");
+    m_stack->setObjectName("Editor_m_stack_1");
     
     m_edit = new InternalEditor(this);
-    m_edit->setStyleSheet("background: transparent; color: #D4D4D4; font-family: 'Consolas', 'Courier New'; font-size: 13pt; border: none; outline: none; padding: 15px;");
+    m_edit->setObjectName("Editor_m_edit_2");
     m_highlighter = new MarkdownHighlighter(m_edit->document());
 
     m_preview = new QTextEdit(this);
     m_preview->setReadOnly(true);
     // [CRITICAL] UI 偏移锁定：padding-top 必须保持 15px 左右，以确保预览内容（标题、分割线、正文）与顶部标题栏有视觉间隔。
-    m_preview->setStyleSheet("QTextEdit { background: transparent; color: #D4D4D4; padding: 15px 10px 10px 15px; border: none; outline: none; }");
+    m_preview->setObjectName("Editor_m_preview_3");
 
     // [UX] 为预览卡片设置基准字号，并安装过滤器以支持 Ctrl+滚轮缩放
     QFont previewFont = m_preview->font();

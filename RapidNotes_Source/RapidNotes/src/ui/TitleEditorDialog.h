@@ -26,7 +26,7 @@ public:
 
         auto* container = new QWidget(this);
         container->setObjectName("container");
-        container->setStyleSheet("QWidget#container { background-color: #1e1e1e; border: 1px solid #333; border-radius: 10px; }");
+        container->setObjectName("TitleEditorDialog_container_1");
         layout->addWidget(container);
 
         auto* innerLayout = new QVBoxLayout(container);
@@ -36,7 +36,7 @@ public:
         m_textEdit = new QTextEdit();
         m_textEdit->setText(currentText);
         m_textEdit->setPlaceholderText("请输入标题...");
-        m_textEdit->setStyleSheet("QTextEdit { background-color: #252526; border: 1px solid #444; border-radius: 6px; color: white; font-size: 14px; padding: 8px; } QTextEdit:focus { border: 1px solid #4a90e2; }");
+        m_textEdit->setObjectName("TitleEditorDialog_m_textEdit_2");
         m_textEdit->installEventFilter(this);
         innerLayout->addWidget(m_textEdit);
 
@@ -45,7 +45,7 @@ public:
         auto* btnSave = new QPushButton("完成");
         btnSave->setFixedSize(64, 30);
         btnSave->setCursor(Qt::PointingHandCursor);
-        btnSave->setStyleSheet("QPushButton { background-color: #4a90e2; color: white; border: none; border-radius: 4px; font-weight: bold; } QPushButton:hover { background-color: #3e3e42; }"); // 2026-03-xx 统一悬停色
+        btnSave->setObjectName("TitleEditorDialog_btnSave_3"); // 2026-03-xx 统一悬停色
         connect(btnSave, &QPushButton::clicked, this, &QDialog::accept);
         btnLayout->addWidget(btnSave);
         innerLayout->addLayout(btnLayout);

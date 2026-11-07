@@ -1,0 +1,61 @@
+#pragma once
+#include <QSettings>
+#include <QVariant>
+#include <QString>
+#include <QMutex>
+#include <QStandardPaths>
+#include <QDir>
+
+namespace QuarkMeta {
+
+/**
+ * @brief 工业级配置管理单例 (AppConfig)
+ * 物理隔离 QSettings，解决身份分裂问题，统一组织与应用名称。
+ */
+class AppConfig {
+public:
+    static AppConfig& instance() {
+        static AppConfig inst;
+        return inst;
+    }
+
+    void setValue(const QString& key, const QVariant& value) {
+        QMutexLocker lock(&m_mutex);
+        m_settings.setValue(key, value);
+    }
+
+    QVariant getValue(const QString& key, const QVariant& defaultValue = QVariant()) const {
+        QMutexLocker lock(&m_mutex);
+        return m_settings.value(key, defaultValue);
+    }
+
+    void remove(const QString& key) {
+        QMutexLocker lock(&m_mutex);
+        m_settings.remove(key);
+    }
+
+    void sync() {
+        QMutexLocker lock(&m_mutex);
+        m_settings.sync();
+    }
+
+    QString getGlobalCacheDir() const {
+        QMutexLocker lock(&m_mutex);
+        QString customPath = m_settings.value("Cache/CustomLocation").toString();
+        if (!customPath.isEmpty() && QDir(customPath).exists()) {
+            return customPath + "/cache";
+        }
+        return QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
+    }
+
+private:
+    AppConfig() : m_settings("QuarkMeta", "QuarkMeta") {}
+    ~AppConfig() = default;
+    AppConfig(const AppConfig&) = delete;
+    AppConfig& operator=(const AppConfig&) = delete;
+
+    mutable QSettings m_settings;
+    mutable QMutex m_mutex;
+};
+
+} // namespace QuarkMeta

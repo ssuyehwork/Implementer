@@ -119,7 +119,7 @@ public:
                       "QLabel { background: transparent; border: none; }");
 
         auto* appTitle = new QLabel("懒人笔记");
-        appTitle->setStyleSheet("color: white; font-size: 24px; font-weight: bold; margin-bottom: 20px;");
+        appTitle->setObjectName("QuickWindow_appTitle_1");
         appTitle->setAlignment(Qt::AlignCenter);
         layout->addWidget(appTitle);
 
@@ -133,7 +133,7 @@ public:
         
         auto* titleLabel = new QLabel("已锁定");
 
-        titleLabel->setStyleSheet("color: #00A650; font-size: 18px; font-weight: bold;");
+        titleLabel->setObjectName("QuickWindow_titleLabel_2");
         titleLabel->setAlignment(Qt::AlignCenter);
         layout->addWidget(titleLabel);
 
@@ -141,7 +141,7 @@ public:
         QSettings settings("RapidNotes", "QuickWindow");
         QString hint = settings.value("appPasswordHint", "请输入启动密码").toString();
         auto* hintLabel = new QLabel(hint);
-        hintLabel->setStyleSheet("color: #666666; font-size: 12px;");
+        hintLabel->setObjectName("QuickWindow_hintLabel_3");
         hintLabel->setAlignment(Qt::AlignCenter);
         layout->addWidget(hintLabel);
 
@@ -371,7 +371,7 @@ void QuickWindow::initUI() {
     
     auto* leftContent = new QWidget();
     leftContent->setObjectName("leftContent");
-    leftContent->setStyleSheet("QWidget#leftContent { background: #1E1E1E; border-top-left-radius: 10px; border-bottom-left-radius: 10px; }");
+    leftContent->setObjectName("QuickWindow_leftContent_4");
     leftContent->setMouseTracking(true);
     auto* leftLayout = new QVBoxLayout(leftContent);
     leftLayout->setContentsMargins(10, 10, 10, 5);
@@ -401,7 +401,7 @@ void QuickWindow::initUI() {
 
     m_listFocusLine = new QWidget();
     m_listFocusLine->setFixedHeight(1);
-    m_listFocusLine->setStyleSheet("background-color: #3498db;");
+    m_listFocusLine->setObjectName("QuickWindow_m_listFocusLine_5");
     m_listFocusLine->hide();
     listWrapperLayout->addWidget(m_listFocusLine);
 
@@ -463,7 +463,7 @@ void QuickWindow::initUI() {
 
     m_sidebarFocusLine = new QWidget();
     m_sidebarFocusLine->setFixedHeight(1);
-    m_sidebarFocusLine->setStyleSheet("background-color: #3498db;");
+    m_sidebarFocusLine->setObjectName("QuickWindow_m_sidebarFocusLine_6");
     m_sidebarFocusLine->hide();
     sidebarLayout->addWidget(m_sidebarFocusLine);
 
@@ -556,7 +556,7 @@ void QuickWindow::initUI() {
     
     auto* sbContent = new QWidget();
     sbContent->setAttribute(Qt::WA_StyledBackground, true);
-    sbContent->setStyleSheet("background: transparent; border: none;");
+    sbContent->setObjectName("QuickWindow_sbContent_7");
     auto* sbContentLayout = new QVBoxLayout(sbContent);
     sbContentLayout->setContentsMargins(7, 10, 0, 0);
     sbContentLayout->setSpacing(0);
@@ -656,13 +656,13 @@ void QuickWindow::initUI() {
     m_filterWrapper->setObjectName("FilterWrapper");
 
     m_filterWrapper->setMinimumWidth(163);
-    m_filterWrapper->setStyleSheet("QFrame#FilterWrapper { background-color: #1e1e1e; border: none; }");
+    m_filterWrapper->setObjectName("QuickWindow_m_filterWrapper_8");
     auto* fwLayout = new QVBoxLayout(m_filterWrapper);
     fwLayout->setContentsMargins(0, 0, 0, 0);
     fwLayout->setSpacing(0);
 
     m_filterPanel = new FilterPanel(this);
-    m_filterPanel->setStyleSheet("background: transparent; border: none;");
+    m_filterPanel->setObjectName("QuickWindow_m_filterPanel_9");
     connect(m_filterPanel, &FilterPanel::filterChanged, this, &QuickWindow::refreshData);
     fwLayout->addWidget(m_filterPanel);
     m_filterWrapper->hide();
@@ -701,7 +701,7 @@ void QuickWindow::initUI() {
     bottomLayout->setSpacing(10);
 
     m_statusLabel = new QLabel("当前分类: 全部数据");
-    m_statusLabel->setStyleSheet("font-size: 11px; color: #888;");
+    m_statusLabel->setObjectName("QuickWindow_m_statusLabel_10");
     m_statusLabel->setFixedHeight(32);
     bottomLayout->addWidget(m_statusLabel);
 
@@ -864,7 +864,7 @@ void QuickWindow::initUI() {
     btnPin->setCheckable(true);
     btnPin->setObjectName("btnPin");
 
-    btnPin->setStyleSheet("QPushButton:checked { background-color: rgba(255, 255, 255, 0.1); }");
+    btnPin->setObjectName("QuickWindow_btnPin_11");
     if (windowFlags() & Qt::WindowStaysOnTopHint) {
         btnPin->setChecked(true);
         btnPin->setIcon(IconHelper::getIcon("pin_vertical", "#FF551C"));
@@ -874,7 +874,7 @@ void QuickWindow::initUI() {
     
     QPushButton* btnAdd = createToolBtn("add", "#aaaaaa", "新建数据", "qw_new_idea");
     btnAdd->setObjectName("btnAdd");
-    btnAdd->setStyleSheet("QPushButton::menu-indicator { width: 0px; image: none; }");
+    btnAdd->setObjectName("QuickWindow_btnAdd_12");
 
     QMenu* addMenu = new QMenu(this);
     IconHelper::setupMenu(addMenu);
@@ -907,7 +907,7 @@ void QuickWindow::initUI() {
     btnSidebar->setObjectName("btnSidebar");
     btnSidebar->setCheckable(true);
     btnSidebar->setChecked(true);
-    btnSidebar->setStyleSheet("QPushButton:checked { background-color: rgba(255, 255, 255, 0.1); }");
+    btnSidebar->setObjectName("QuickWindow_btnSidebar_13");
 
     connect(btnSidebar, &QPushButton::clicked, this, &QuickWindow::toggleSidebar);
 
@@ -915,7 +915,7 @@ void QuickWindow::initUI() {
     btnFilter->setObjectName("btnFilter");
     btnFilter->setCheckable(true);
     btnFilter->setChecked(false);
-    btnFilter->setStyleSheet("QPushButton:checked { background-color: rgba(255, 255, 255, 0.1); }");
+    btnFilter->setObjectName("QuickWindow_btnFilter_14");
     connect(btnFilter, &QPushButton::clicked, this, &QuickWindow::toggleFilter);
 
     
@@ -926,7 +926,7 @@ void QuickWindow::initUI() {
     m_btnToggleAll = createToolBtn("sidebar_open_filled", "#3A90FF", "联动显示/隐藏面板", "qw_toggle_all_panels");
     m_btnToggleAll->setObjectName("btnToggleAll");
     m_btnToggleAll->setCheckable(true);
-    m_btnToggleAll->setStyleSheet("QPushButton:checked { background-color: rgba(255, 255, 255, 0.1); }");
+    m_btnToggleAll->setObjectName("QuickWindow_m_btnToggleAll_15");
     connect(m_btnToggleAll, &QPushButton::clicked, this, &QuickWindow::toggleAllPanels);
 
     m_btnAutoCat = createToolBtn("clipboard_auto", "#aaaaaa", "剪贴板自动归档到当前分类");
@@ -1005,7 +1005,7 @@ void QuickWindow::initUI() {
     QLabel* totalLabel = new QLabel("1");
     totalLabel->setObjectName("totalLabel");
     totalLabel->setAlignment(Qt::AlignCenter);
-    totalLabel->setStyleSheet("color: #666; font-size: 10px; border: none; background: transparent;");
+    totalLabel->setObjectName("QuickWindow_totalLabel_16");
 
     QPushButton* btnNext = createToolBtn("nav_next", "#aaaaaa", "下一页", "qw_next_page", 90);
     btnNext->setObjectName("btnNext");
@@ -1027,7 +1027,7 @@ void QuickWindow::initUI() {
     
     QLabel* verticalTitle = new QLabel("懒\n人\n笔\n记");
     verticalTitle->setAlignment(Qt::AlignCenter);
-    verticalTitle->setStyleSheet("color: #444; font-size: 11px; font-weight: bold; border: none; background: transparent; line-height: 1.1;");
+    verticalTitle->setObjectName("QuickWindow_verticalTitle_17");
     toolLayout->addWidget(verticalTitle, 0, Qt::AlignHCenter);
 
     toolLayout->addSpacing(12);
@@ -1037,7 +1037,7 @@ void QuickWindow::initUI() {
 
     btnLogo->setFixedSize(28, 28);
     btnLogo->setCursor(Qt::ArrowCursor);
-    btnLogo->setStyleSheet("background: transparent; border: none;");
+    btnLogo->setObjectName("QuickWindow_btnLogo_18");
     toolLayout->addWidget(btnLogo, 0, Qt::AlignHCenter);
 
     containerLayout->addWidget(customToolbar);
@@ -2266,11 +2266,11 @@ void QuickWindow::toggleLayoutDirection() {
         if (m_isLayoutReversed) {
             containerLayout->addWidget(customToolbar);
             containerLayout->addWidget(leftContent);
-            leftContent->setStyleSheet("QWidget#leftContent { background: #1E1E1E; border-top-right-radius: 10px; border-bottom-right-radius: 10px; }");
+            leftContent->setObjectName("QuickWindow_leftContent_19");
         } else {
             containerLayout->addWidget(leftContent);
             containerLayout->addWidget(customToolbar);
-            leftContent->setStyleSheet("QWidget#leftContent { background: #1E1E1E; border-top-left-radius: 10px; border-bottom-left-radius: 10px; }");
+            leftContent->setObjectName("QuickWindow_leftContent_4");
         }
     }
 
@@ -3878,12 +3878,7 @@ bool QuickWindow::eventFilter(QObject* watched, QEvent* event) {
             QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
             if (mouseEvent->button() == Qt::RightButton) {
                 QMenu menu(this);
-                menu.setStyleSheet(R"(
-                    QMenu { background-color: #252526; border: 1px solid #454545; color: #cccccc; padding: 4px; }
-                    QMenu::item { padding: 4px 20px; border-radius: 4px; }
-                    QMenu::item:selected { background-color: #094771; color: white; }
-                    QMenu::item:checked { color: #2ecc71; font-weight: bold; }
-                )");
+                menu.setObjectName("QuickWindow_this_1");
 
                 QAction* autoFold = menu.addAction("自动收起");
                 autoFold->setCheckable(true);

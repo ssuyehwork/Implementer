@@ -403,7 +403,7 @@ public:
         
         auto* container = new QWidget(this);
         container->setObjectName("container");
-        container->setStyleSheet("QWidget#container { background: #1a1a1a; border-radius: 15px; border: 1px solid #444; }");
+        container->setObjectName("ColorPickerWindow_container_1");
         auto* mainL = new QVBoxLayout(this);
         mainL->setContentsMargins(0,0,0,0);
         mainL->addWidget(container);
@@ -416,12 +416,12 @@ public:
         // [FIX] 使用占位控件平衡右侧关闭按钮，确保标题视觉绝对居中
         auto* spacerBtn = new QWidget();
         spacerBtn->setFixedSize(28, 28);
-        spacerBtn->setStyleSheet("background: transparent;");
+        spacerBtn->setObjectName("ColorPickerWindow_spacerBtn_2");
         headerLayout->addWidget(spacerBtn);
 
         headerLayout->addStretch();
         auto* title = new QLabel("颜色选择器");
-        title->setStyleSheet("color: white; font-weight: bold; font-size: 16px; border: none; background: transparent;");
+        title->setObjectName("ColorPickerWindow_title_3");
         headerLayout->addWidget(title);
         headerLayout->addStretch();
 
@@ -429,7 +429,7 @@ public:
         closeTopBtn->setFixedSize(28, 28);
         closeTopBtn->setIcon(IconHelper::getIcon("close", "#aaaaaa", 16));
         closeTopBtn->setCursor(Qt::PointingHandCursor);
-        closeTopBtn->setStyleSheet("QPushButton { background: transparent; border-radius: 4px; border: none; } QPushButton:hover { background-color: #E81123; }");
+        closeTopBtn->setObjectName("ColorPickerWindow_closeTopBtn_4");
         connect(closeTopBtn, &QPushButton::clicked, this, &QDialog::reject);
         headerLayout->addWidget(closeTopBtn);
 
@@ -441,22 +441,22 @@ public:
 
         auto* bRow = new QHBoxLayout();
         auto* blbl = new QLabel("亮度:");
-        blbl->setStyleSheet("color: white; border: none; background: transparent;");
+        blbl->setObjectName("ColorPickerWindow_blbl_5");
         bRow->addWidget(blbl);
         m_brightSlider = new QSlider(Qt::Horizontal);
         m_brightSlider->setRange(0, 100);
         m_brightSlider->setValue(100);
-        m_brightSlider->setStyleSheet("QSlider::groove:horizontal { height: 6px; background: #444; border-radius: 3px; } QSlider::handle:horizontal { background: white; width: 16px; margin: -5px 0; border-radius: 8px; }");
+        m_brightSlider->setObjectName("ColorPickerWindow_m_brightSlider_6");
         connect(m_brightSlider, &QSlider::valueChanged, this, &ColorPickerDialog::updatePreview);
         bRow->addWidget(m_brightSlider);
         l->addLayout(bRow);
 
         m_preview = new QFrame();
         m_preview->setFixedHeight(60);
-        m_preview->setStyleSheet("border-radius: 10px; background: white; border: 1px solid #555;");
+        m_preview->setObjectName("ColorPickerWindow_m_preview_7");
         auto* pl = new QVBoxLayout(m_preview);
         m_hexLabel = new QLabel("#FFFFFF");
-        m_hexLabel->setStyleSheet("color: #1a1a1a; font-weight: bold; font-size: 18px; border: none; background: transparent;");
+        m_hexLabel->setObjectName("ColorPickerWindow_m_hexLabel_8");
         m_hexLabel->setAlignment(Qt::AlignCenter);
         pl->addWidget(m_hexLabel);
         l->addWidget(m_preview);
@@ -465,14 +465,14 @@ public:
         auto* btnClose = new QPushButton("取消");
         btnClose->setAutoDefault(false);
         btnClose->setFixedHeight(36);
-        btnClose->setStyleSheet("background: #444; color: white; border-radius: 6px; border: none;");
+        btnClose->setObjectName("ColorPickerWindow_btnClose_9");
         connect(btnClose, &QPushButton::clicked, this, &QDialog::reject);
         btnRow->addWidget(btnClose);
         
         auto* btnConfirm = new QPushButton("确认选择");
         btnConfirm->setAutoDefault(false);
         btnConfirm->setFixedHeight(36);
-        btnConfirm->setStyleSheet("background: #3b8ed0; color: white; border-radius: 6px; border: none; font-weight: bold;");
+        btnConfirm->setObjectName("ColorPickerWindow_btnConfirm_10");
         connect(btnConfirm, &QPushButton::clicked, this, &ColorPickerDialog::onConfirm);
         btnRow->addWidget(btnConfirm);
         l->addLayout(btnRow);
@@ -560,18 +560,18 @@ void ColorPickerWindow::initUI() {
     // ① 颜色预览 (200x50)
     auto* previewContainer = new QFrame();
     previewContainer->setFixedSize(200, 50);
-    previewContainer->setStyleSheet("background: #1e1e1e; border-radius: 8px; border: 1px solid #333;");
+    previewContainer->setObjectName("ColorPickerWindow_previewContainer_11");
     auto* pl = new QVBoxLayout(previewContainer);
     pl->setContentsMargins(2, 2, 2, 2);
     m_colorDisplay = new QWidget();
     m_colorDisplay->setObjectName("mainPreview");
-    m_colorDisplay->setStyleSheet("border-radius: 6px; background: #D64260;");
+    m_colorDisplay->setObjectName("ColorPickerWindow_m_colorDisplay_12");
     auto* cl = new QVBoxLayout(m_colorDisplay);
     cl->setContentsMargins(0, 0, 0, 0);
     m_colorLabel = new QLabel("#D64260");
     m_colorLabel->setCursor(Qt::PointingHandCursor);
     m_colorLabel->setAlignment(Qt::AlignCenter);
-    m_colorLabel->setStyleSheet("font-family: Consolas; font-size: 18px; font-weight: bold; border: none; background: transparent;");
+    m_colorLabel->setObjectName("ColorPickerWindow_m_colorLabel_13");
     // m_colorLabel->setToolTip("当前 HEX 颜色");
     m_colorLabel->setProperty("tooltipText", "当前 HEX 颜色");
     m_colorLabel->installEventFilter(this);
@@ -600,7 +600,7 @@ void ColorPickerWindow::initUI() {
     // btnCopyHex->setToolTip("复制 HEX 代码");
     btnCopyHex->setProperty("tooltipText", "复制 HEX 代码");
     btnCopyHex->installEventFilter(this);
-    btnCopyHex->setStyleSheet("QPushButton { background: transparent; border: none; } QPushButton:hover { background: rgba(255,255,255,0.1); }");
+    btnCopyHex->setObjectName("ColorPickerWindow_btnCopyHex_14");
     connect(btnCopyHex, &QPushButton::clicked, this, &ColorPickerWindow::copyHexValue);
     hexLayout->addWidget(btnCopyHex);
     row1->addLayout(hexLayout);
@@ -630,7 +630,7 @@ void ColorPickerWindow::initUI() {
     // btnCopyRgb->setToolTip("复制 RGB 代码");
     btnCopyRgb->setProperty("tooltipText", "复制 RGB 代码");
     btnCopyRgb->installEventFilter(this);
-    btnCopyRgb->setStyleSheet("QPushButton { background: transparent; border: none; } QPushButton:hover { background: rgba(255,255,255,0.1); }");
+    btnCopyRgb->setObjectName("ColorPickerWindow_btnCopyRgb_15");
     connect(btnCopyRgb, &QPushButton::clicked, this, &ColorPickerWindow::copyRgbValue);
     rl->addWidget(btnCopyRgb);
     row1->addWidget(rgbContainer);
@@ -665,18 +665,18 @@ void ColorPickerWindow::initUI() {
     auto* gradBox = new QFrame();
     gradBox->setObjectName("gradBox");
     gradBox->setFixedHeight(50);
-    gradBox->setStyleSheet("QFrame#gradBox { background: #252526; border-radius: 8px; border: 1px solid #383838; }");
+    gradBox->setObjectName("ColorPickerWindow_gradBox_16");
     auto* gl = new QHBoxLayout(gradBox);
     gl->setContentsMargins(15, 0, 15, 0);
     gl->setSpacing(8);
 
     auto* gt = new QLabel("渐变生成器");
-    gt->setStyleSheet("font-weight: bold; font-size: 12px; color: #888; background: transparent;");
+    gt->setObjectName("ColorPickerWindow_gt_17");
     gl->addWidget(gt);
 
     auto addGradInput = [&](const QString& label, QLineEdit*& entry, int width) {
         auto* lbl = new QLabel(label);
-        lbl->setStyleSheet("font-size: 11px; color: #666; background: transparent;");
+        lbl->setObjectName("ColorPickerWindow_lbl_18");
         gl->addWidget(lbl);
         entry = new QLineEdit();
         entry->setFixedWidth(width);
@@ -688,7 +688,7 @@ void ColorPickerWindow::initUI() {
     addGradInput("结束", m_gradEnd, 80);
     
     auto* stepslbl = new QLabel("步数");
-    stepslbl->setStyleSheet("color: #666; font-size: 11px; background: transparent; border: none;");
+    stepslbl->setObjectName("ColorPickerWindow_stepslbl_19");
     gl->addWidget(stepslbl);
     
     m_gradSteps = new QLineEdit("7");
@@ -761,7 +761,7 @@ void ColorPickerWindow::initUI() {
     auto* btnGrad = new QPushButton("生成渐变");
     btnGrad->setAutoDefault(false);
     btnGrad->setFixedSize(80, 28);
-    btnGrad->setStyleSheet("background: #007ACC; font-weight: bold; color: white; border: none; border-radius: 4px;");
+    btnGrad->setObjectName("ColorPickerWindow_btnGrad_20");
     connect(btnGrad, &QPushButton::clicked, this, &ColorPickerWindow::generateGradient);
     gl->addWidget(btnGrad);
     gl->addStretch();
@@ -771,18 +771,18 @@ void ColorPickerWindow::initUI() {
     // --- 图片预览区域 (从左侧面板移出，由逻辑触发显示) ---
     m_imagePreviewFrame = new QFrame();
     m_imagePreviewFrame->setObjectName("imagePreviewFrame");
-    m_imagePreviewFrame->setStyleSheet("QFrame#imagePreviewFrame { background: #1e1e1e; border: 1px dashed #555; border-radius: 12px; }");
+    m_imagePreviewFrame->setObjectName("ColorPickerWindow_m_imagePreviewFrame_21");
     m_imagePreviewFrame->setFixedHeight(120);
     auto* ipl = new QHBoxLayout(m_imagePreviewFrame);
     ipl->setContentsMargins(10, 5, 10, 5);
     m_imagePreviewLabel = new QLabel("暂无图片");
     m_imagePreviewLabel->setAlignment(Qt::AlignCenter);
-    m_imagePreviewLabel->setStyleSheet("color: #666; border: none; background: transparent;");
+    m_imagePreviewLabel->setObjectName("ColorPickerWindow_m_imagePreviewLabel_22");
     ipl->addWidget(m_imagePreviewLabel, 1);
     auto* btnClearImg = new QPushButton("重置图片提取");
     btnClearImg->setAutoDefault(false);
     btnClearImg->setFixedSize(120, 30);
-    btnClearImg->setStyleSheet("color: #888; border: 1px solid #444; background: #2A2A2A; font-size: 11px; border-radius: 4px;");
+    btnClearImg->setObjectName("ColorPickerWindow_btnClearImg_23");
     connect(btnClearImg, &QPushButton::clicked, [this](){
         m_imagePreviewFrame->hide();
         m_imagePreviewLabel->setPixmap(QPixmap());
@@ -840,7 +840,7 @@ void ColorPickerWindow::createRightPanel(QWidget* parent) {
         scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
         scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
         content = new QWidget();
-        content->setStyleSheet("background: transparent;");
+        content->setObjectName("ColorPickerWindow_content_24");
         scroll->setWidget(content);
         return scroll;
     };
@@ -852,12 +852,12 @@ void ColorPickerWindow::createRightPanel(QWidget* parent) {
     fl->setContentsMargins(20, 20, 25, 20);
     fl->setSpacing(15);
     auto* ft = new QLabel("我的收藏");
-    ft->setStyleSheet("font-size: 20px; font-weight: bold; color: white; border: none;");
+    ft->setObjectName("ColorPickerWindow_ft_25");
     fl->addWidget(ft);
     
     m_favGridContainer = new QFrame();
     m_favGridContainer->setObjectName("cardContainer");
-    m_favGridContainer->setStyleSheet("QFrame#cardContainer { background: #252526; border-radius: 12px; }");
+    m_favGridContainer->setObjectName("ColorPickerWindow_m_favGridContainer_26");
     m_favGridContainer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     new FlowLayout(m_favGridContainer, 10, 5, 5); 
     fl->addWidget(m_favGridContainer);
@@ -867,16 +867,16 @@ void ColorPickerWindow::createRightPanel(QWidget* parent) {
     gl->setContentsMargins(20, 20, 25, 20);
     gl->setSpacing(15);
     auto* gt = new QLabel("渐变预览");
-    gt->setStyleSheet("font-size: 20px; font-weight: bold; color: white; border: none;");
+    gt->setObjectName("ColorPickerWindow_gt_27");
     gl->addWidget(gt);
 
     auto* gt2 = new QLabel("生成结果 (左键应用 / 右键收藏)");
-    gt2->setStyleSheet("font-weight: bold; font-size: 14px; border: none; background: transparent; color: #888;");
+    gt2->setObjectName("ColorPickerWindow_gt2_28");
     gl->addWidget(gt2);
 
     m_gradGridContainer = new QFrame();
     m_gradGridContainer->setObjectName("cardContainer");
-    m_gradGridContainer->setStyleSheet("QFrame#cardContainer { background: #252526; border-radius: 12px; }");
+    m_gradGridContainer->setObjectName("ColorPickerWindow_m_gradGridContainer_29");
     m_gradGridContainer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     new FlowLayout(m_gradGridContainer, 10, 5, 5);
     gl->addWidget(m_gradGridContainer);
@@ -886,15 +886,15 @@ void ColorPickerWindow::createRightPanel(QWidget* parent) {
     el->setContentsMargins(20, 20, 25, 20);
     el->setSpacing(15);
     auto* et = new QLabel("图片提取");
-    et->setStyleSheet("font-size: 20px; font-weight: bold; color: white; border: none;");
+    et->setObjectName("ColorPickerWindow_et_30");
     el->addWidget(et);
 
     auto* et2 = new QLabel("提取结果 (左键应用 / 右键收藏)");
-    et2->setStyleSheet("font-weight: bold; font-size: 14px; border: none; background: transparent; color: #888;");
+    et2->setObjectName("ColorPickerWindow_et2_31");
     el->addWidget(et2);
 
     m_dropHintContainer = new QFrame();
-    m_dropHintContainer->setStyleSheet("background: transparent; border: 3px dashed #555; border-radius: 15px;");
+    m_dropHintContainer->setObjectName("ColorPickerWindow_m_dropHintContainer_32");
     m_dropHintContainer->setFixedHeight(300);
     auto* hl = new QVBoxLayout(m_dropHintContainer);
     hl->setAlignment(Qt::AlignCenter);
@@ -902,18 +902,18 @@ void ColorPickerWindow::createRightPanel(QWidget* parent) {
     auto* iconHint = new QLabel();
     iconHint->setPixmap(IconHelper::getIcon("image", "#444444").pixmap(64, 64));
     iconHint->setAlignment(Qt::AlignCenter);
-    iconHint->setStyleSheet("border: none; background: transparent;");
+    iconHint->setObjectName("ColorPickerWindow_iconHint_33");
     hl->addWidget(iconHint);
 
     auto* hint = new QLabel("拖放图片到软件任意位置\n\n或\n\nCtrl+V 粘贴\n点击左侧相机图标");
-    hint->setStyleSheet("color: #666; font-size: 16px; border: none; background: transparent; margin-top: 10px;");
+    hint->setObjectName("ColorPickerWindow_hint_34");
     hint->setAlignment(Qt::AlignCenter);
     hl->addWidget(hint);
     el->addWidget(m_dropHintContainer);
 
     m_extractGridContainer = new QFrame();
     m_extractGridContainer->setObjectName("cardContainer");
-    m_extractGridContainer->setStyleSheet("QFrame#cardContainer { background: #252526; border-radius: 12px; }");
+    m_extractGridContainer->setObjectName("ColorPickerWindow_m_extractGridContainer_35");
     m_extractGridContainer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     new FlowLayout(m_extractGridContainer, 10, 5, 5);
     el->addWidget(m_extractGridContainer);
@@ -1077,7 +1077,7 @@ void ColorPickerWindow::updateFavoritesDisplay() {
     
     if (m_favorites.isEmpty()) {
         auto* lbl = new QLabel("暂无收藏\n右键点击任何颜色块即可收藏");
-        lbl->setStyleSheet("color: #666; font-size: 16px; border: none; background: transparent; padding: 40px;");
+        lbl->setObjectName("ColorPickerWindow_lbl_36");
         lbl->setAlignment(Qt::AlignCenter);
         flow->addWidget(lbl);
         return;
@@ -1323,11 +1323,11 @@ void ColorPickerWindow::showNotification(const QString& message, bool isError) {
     
     auto* icon = new QLabel();
     icon->setPixmap(IconHelper::getIcon(isError ? "close" : "select", "#FFFFFF").pixmap(18, 18));
-    icon->setStyleSheet("border: none; background: transparent;");
+    icon->setObjectName("ColorPickerWindow_icon_37");
     l->addWidget(icon);
     
     auto* lbl = new QLabel(message);
-    lbl->setStyleSheet("color: white; font-weight: bold; font-size: 13px; border: none; background: transparent;");
+    lbl->setObjectName("ColorPickerWindow_lbl_38");
     l->addWidget(lbl);
     
     m_notification->adjustSize();

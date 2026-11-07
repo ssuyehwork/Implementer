@@ -73,43 +73,12 @@ void HelpWindow::initUI() {
     // 左侧列表
     m_listWidget = new QListWidget();
     m_listWidget->setFixedWidth(220);
-    m_listWidget->setStyleSheet(R"(
-        QListWidget { 
-            background-color: #252526; 
-            border: none; 
-            border-right: 1px solid #333;
-            color: #BBB;
-            outline: none;
-            padding: 5px;
-        }
-        QListWidget::item {
-            height: 25px;
-            padding-left: 10px;
-            border-radius: 4px;
-            margin: 0px 5px;
-            font-size: 11px;
-        }
-        QListWidget::item:hover {
-            background-color: #2D2D2D;
-        }
-        QListWidget::item:selected {
-            background-color: #094771;
-            color: white;
-        }
-    )");
+    m_listWidget->setObjectName("HelpWindow_m_listWidget_1");
 
     // 右侧详情
     m_detailView = new QTextBrowser();
     m_detailView->setFrameShape(QFrame::NoFrame);
-    m_detailView->setStyleSheet(R"(
-        QTextBrowser { 
-            background-color: #1e1e1e; 
-            color: #DDD; 
-            padding: 30px;
-            line-height: 1.6;
-            border: none;
-        }
-    )");
+    m_detailView->setObjectName("HelpWindow_m_detailView_2");
 
     layout->addWidget(m_listWidget);
     layout->addWidget(m_detailView);

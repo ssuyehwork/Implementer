@@ -33,33 +33,7 @@ IntegratedSearchWindow::IntegratedSearchWindow(QWidget* parent)
 IntegratedSearchWindow::~IntegratedSearchWindow() {}
 
 void IntegratedSearchWindow::setupStyles() {
-    setStyleSheet(R"(
-        #IntegratedSearchWindow { background-color: #1E1E1E; }
-        QTabWidget::pane { border: none; background-color: #1E1E1E; }
-        QTabBar::tab {
-            background-color: transparent;
-            color: #888888;
-            padding: 12px 24px;
-            margin-right: 15px;
-            font-size: 14px;
-            border-bottom: 3px solid transparent;
-        }
-        QTabBar::tab:selected {
-            color: #007ACC;
-            border-bottom: 3px solid #007ACC;
-            font-weight: bold;
-        }
-        QTabBar::tab:hover { color: #CCCCCC; }
-        QListWidget {
-            background-color: #252526; border: 1px solid #333; border-radius: 6px; padding: 4px; color: #CCC;
-        }
-        QListWidget::item { min-height: 28px; padding-left: 10px; border-radius: 4px; }
-        QListWidget::item:selected { background-color: #3e3e42; border-left: 4px solid #007ACC; color: #FFF; } // 2026-03-xx 统一选中色
-        #SideButton {
-            background-color: #2D2D30; border: 1px solid #444; color: #AAA; border-radius: 4px; font-size: 12px;
-        }
-        #SideButton:hover { background-color: #3e3e42; color: #FFF; border-color: #666; } // 2026-03-xx 统一悬停色
-    )");
+    setObjectName("IntegratedSearchWindow_this_1");
 }
 
 void IntegratedSearchWindow::initUI() {
@@ -80,7 +54,7 @@ void IntegratedSearchWindow::initUI() {
     auto* leftIcon = new QLabel(); leftIcon->setPixmap(IconHelper::getIcon("folder", "#007ACC").pixmap(16, 16));
     leftHeader->addWidget(leftIcon);
     auto* leftTitle = new QLabel("收藏夹 (可拖入)");
-    leftTitle->setStyleSheet("color: #888; font-weight: bold; font-size: 12px;");
+    leftTitle->setObjectName("IntegratedSearchWindow_leftTitle_1");
     leftHeader->addWidget(leftTitle);
     leftHeader->addStretch();
     leftLayout->addLayout(leftHeader);
@@ -115,7 +89,7 @@ void IntegratedSearchWindow::initUI() {
     auto* rightIcon = new QLabel(); rightIcon->setPixmap(IconHelper::getIcon("file", "#007ACC").pixmap(16, 16));
     rightHeader->addWidget(rightIcon);
     auto* rightTitle = new QLabel("文件收藏 (可多选/拖入)");
-    rightTitle->setStyleSheet("color: #888; font-weight: bold; font-size: 12px;");
+    rightTitle->setObjectName("IntegratedSearchWindow_rightTitle_2");
     rightHeader->addWidget(rightTitle);
     rightHeader->addStretch();
     rightLayout->addLayout(rightHeader);

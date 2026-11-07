@@ -99,7 +99,7 @@ QWidget* TagEditorWidget::createChip(const QString& tag) {
     layout->setSpacing(6);
 
     auto* label = new QLabel(tag);
-    label->setStyleSheet("color: #EEE; font-size: 12px; border: none; background: transparent;");
+    label->setObjectName("TagEditorWidget_label_1");
     layout->addWidget(label);
 
     auto* btnClose = new QPushButton();

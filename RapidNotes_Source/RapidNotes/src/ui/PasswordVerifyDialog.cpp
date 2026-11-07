@@ -53,7 +53,7 @@ PasswordVerifyDialog::PasswordVerifyDialog(const QString& title, const QString& 
 
     // 1. 提示信息
     auto* lblMsg = new QLabel(message);
-    lblMsg->setStyleSheet("color: #ccc; font-size: 13px;");
+    lblMsg->setObjectName("PasswordVerifyDialog_lblMsg_1");
     lblMsg->setWordWrap(true);
     layout->addWidget(lblMsg);
 
@@ -80,12 +80,12 @@ PasswordVerifyDialog::PasswordVerifyDialog(const QString& title, const QString& 
     
     auto* btnCancel = new QPushButton("取 消");
     btnCancel->setFixedSize(90, 32);
-    btnCancel->setStyleSheet("QPushButton { background: #444; color: #ccc; border-radius: 4px; } QPushButton:hover { background: #555; }");
+    btnCancel->setObjectName("PasswordVerifyDialog_btnCancel_2");
     connect(btnCancel, &QPushButton::clicked, this, &QDialog::reject);
     
     auto* btnOk = new QPushButton("确 定");
     btnOk->setFixedSize(90, 32);
-    btnOk->setStyleSheet("QPushButton { background: #3a90ff; color: white; border-radius: 4px; font-weight: bold; } QPushButton:hover { background: #2b7ae6; }");
+    btnOk->setObjectName("PasswordVerifyDialog_btnOk_3");
     connect(btnOk, &QPushButton::clicked, this, &QDialog::accept);
     // 默认点击确定
     btnOk->setDefault(true);

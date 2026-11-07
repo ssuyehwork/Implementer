@@ -24,7 +24,7 @@ public:
         );
         
         auto* label = new QLabel(text);
-        label->setStyleSheet("color: #4facfe; font-size: 11px; font-weight: bold; background: transparent; border: none; padding-left: 2px;");
+        label->setObjectName("TagCapsule_label_1");
         layout->addWidget(label);
         
         auto* closeBtn = new QPushButton();

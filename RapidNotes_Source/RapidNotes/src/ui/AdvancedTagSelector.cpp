@@ -29,9 +29,7 @@ AdvancedTagSelector::AdvancedTagSelector(QWidget* parent)
     auto* container = new QWidget();
     container->setObjectName("container");
     container->setMouseTracking(true);
-    container->setStyleSheet(
-        "QWidget#container { background: #1E1E1E; border-radius: 10px; border: 1px solid #333; }"
-    );
+    container->setObjectName("AdvancedTagSelector_container_1");
 
     // 阴影效果: 严格 1:1 复制 QuickWindow 参数 (同步修复模糊截止问题)
     auto* shadow = new QGraphicsDropShadowEffect(this);
@@ -91,7 +89,7 @@ AdvancedTagSelector::AdvancedTagSelector(QWidget* parent)
 
     // 2. 提示标签
     m_tipsLabel = new QLabel("最近使用");
-    m_tipsLabel->setStyleSheet("color: #888; font-size: 12px; font-weight: bold; margin-top: 5px;");
+    m_tipsLabel->setObjectName("AdvancedTagSelector_m_tipsLabel_2");
     layout->addWidget(m_tipsLabel);
 
     // 3. 滚动区域
@@ -105,7 +103,7 @@ AdvancedTagSelector::AdvancedTagSelector(QWidget* parent)
     );
 
     m_tagContainer = new QWidget();
-    m_tagContainer->setStyleSheet("background: transparent;");
+    m_tagContainer->setObjectName("AdvancedTagSelector_m_tagContainer_3");
     
     m_flow = new FlowLayout(m_tagContainer, 0, 8, 8);
     scroll->setWidget(m_tagContainer);

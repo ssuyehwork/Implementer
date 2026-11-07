@@ -39,17 +39,17 @@ void TimePasteWindow::initUI() {
 
     m_dateLabel = new QLabel();
     m_dateLabel->setAlignment(Qt::AlignCenter);
-    m_dateLabel->setStyleSheet("color: #B0B0B0; font-size: 16px; padding: 5px;");
+    m_dateLabel->setObjectName("TimePasteWindow_m_dateLabel_1");
     layout->addWidget(m_dateLabel);
 
     m_timeLabel = new QLabel();
     m_timeLabel->setAlignment(Qt::AlignCenter);
-    m_timeLabel->setStyleSheet("color: #E0E0E0; font-size: 28px; font-weight: bold; padding: 5px; font-family: 'Consolas', 'Monaco', monospace;");
+    m_timeLabel->setObjectName("TimePasteWindow_m_timeLabel_2");
     layout->addWidget(m_timeLabel);
 
     auto* sep = new QLabel();
     sep->setFixedHeight(2);
-    sep->setStyleSheet("background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 transparent, stop:0.5 #555555, stop:1 transparent);");
+    sep->setObjectName("TimePasteWindow_sep_3");
     layout->addWidget(sep);
 
     m_buttonGroup = new QButtonGroup(this);
@@ -66,7 +66,7 @@ void TimePasteWindow::initUI() {
 
     auto* tip = new QLabel("按主键盘数字键 0-9 输出时间");
     tip->setAlignment(Qt::AlignCenter);
-    tip->setStyleSheet("color: #666666; font-size: 11px; padding: 5px;");
+    tip->setObjectName("TimePasteWindow_tip_4");
     layout->addWidget(tip);
 
 }

@@ -78,7 +78,7 @@ public:
         layout->setSpacing(10);
         
         auto* lbl = new QLabel(text);
-        lbl->setStyleSheet("border: none; background: transparent; color: #DDD; font-size: 13px;");
+        lbl->setObjectName("KeywordSearchWidget_lbl_1");
         layout->addWidget(lbl);
         layout->addStretch();
         
@@ -132,9 +132,7 @@ public:
         
         auto* container = new QFrame();
         container->setObjectName("PopupContainer");
-        container->setStyleSheet(
-            "#PopupContainer { background-color: #252526; border: 1px solid #444; border-radius: 10px; }"
-        );
+        container->setObjectName("KeywordSearchWidget_container_1");
         rootLayout->addWidget(container);
 
         auto* shadow = new QGraphicsDropShadowEffect(container);
@@ -154,7 +152,7 @@ public:
 
         auto* icon = new QLabel();
         icon->setPixmap(IconHelper::getIcon("clock", "#888").pixmap(14, 14));
-        icon->setStyleSheet("border: none; background: transparent;");
+        icon->setObjectName("KeywordSearchWidget_icon_3");
 //         icon->setToolTip(StringUtils::wrapToolTip(titleStr));
         top->addWidget(icon);
 
@@ -166,7 +164,7 @@ public:
         clearBtn->setFixedSize(20, 20);
         clearBtn->setCursor(Qt::PointingHandCursor);
 //         clearBtn->setToolTip(StringUtils::wrapToolTip("清空历史记录"));
-        clearBtn->setStyleSheet("QPushButton { background: transparent; border: none; border-radius: 4px; } QPushButton:hover { background-color: #3e3e42; }"); // 2026-03-xx 统一悬停色
+        clearBtn->setObjectName("KeywordSearchWidget_clearBtn_4"); // 2026-03-xx 统一悬停色
         connect(clearBtn, &QPushButton::clicked, [this](){
             clearAllHistory();
             refreshUI();
@@ -184,7 +182,7 @@ public:
         scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
         m_chipsWidget = new QWidget();
-        m_chipsWidget->setStyleSheet("background-color: transparent;");
+        m_chipsWidget->setObjectName("KeywordSearchWidget_m_chipsWidget_5");
         m_vLayout = new QVBoxLayout(m_chipsWidget);
         m_vLayout->setContentsMargins(0, 0, 0, 0);
         m_vLayout->setSpacing(2);
@@ -247,7 +245,7 @@ protected:
         if(history.isEmpty()) {
             auto* lbl = new QLabel("暂无历史记录");
             lbl->setAlignment(Qt::AlignCenter);
-            lbl->setStyleSheet("color: #555; font-style: italic; margin: 20px; border: none;");
+            lbl->setObjectName("KeywordSearchWidget_lbl_6");
             m_vLayout->insertWidget(0, lbl);
         } else {
             for(const QString& val : history) {
@@ -386,7 +384,7 @@ void KeywordSearchWidget::initUI() {
     auto createLabel = [](const QString& text) {
         auto* lbl = new QLabel(text);
         lbl->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-        lbl->setStyleSheet("color: #AAA; font-weight: bold; border: none; background: transparent;");
+        lbl->setObjectName("KeywordSearchWidget_lbl_7");
         return lbl;
     };
 
@@ -414,7 +412,7 @@ void KeywordSearchWidget::initUI() {
 //     browseBtn->setToolTip(StringUtils::wrapToolTip("浏览文件夹"));
     browseBtn->setAutoDefault(false);
     browseBtn->setCursor(Qt::PointingHandCursor);
-    browseBtn->setStyleSheet("QPushButton { background: #3E3E42; border: none; border-radius: 4px; } QPushButton:hover { background: #4E4E52; }");
+    browseBtn->setObjectName("KeywordSearchWidget_browseBtn_8");
     connect(browseBtn, &QPushButton::clicked, this, &KeywordSearchWidget::onBrowseFolder);
     configLayout->addWidget(browseBtn, 0, 2);
 
@@ -454,13 +452,13 @@ void KeywordSearchWidget::initUI() {
 //     swapBtn->setToolTip(StringUtils::wrapToolTip("交换查找与替换内容"));
     swapBtn->setIcon(IconHelper::getIcon("swap", "#AAA", 20));
     swapBtn->setAutoDefault(false);
-    swapBtn->setStyleSheet("QPushButton { background: #3E3E42; border: none; border-radius: 4px; } QPushButton:hover { background: #4E4E52; }");
+    swapBtn->setObjectName("KeywordSearchWidget_swapBtn_9");
     connect(swapBtn, &QPushButton::clicked, this, &KeywordSearchWidget::onSwapSearchReplace);
     configLayout->addWidget(swapBtn, 2, 2, 2, 1);
 
     // 选项
     m_caseCheck = new QCheckBox("区分大小写");
-    m_caseCheck->setStyleSheet("QCheckBox { color: #AAA; }");
+    m_caseCheck->setObjectName("KeywordSearchWidget_m_caseCheck_10");
     configLayout->addWidget(m_caseCheck, 4, 1, 1, 2);
 
     rightLayout->addWidget(configGroup);
@@ -470,25 +468,25 @@ void KeywordSearchWidget::initUI() {
     auto* searchBtn = new QPushButton(" 智能搜索");
     searchBtn->setAutoDefault(false);
     searchBtn->setIcon(IconHelper::getIcon("find_keyword", "#FFF", 16));
-    searchBtn->setStyleSheet("QPushButton { background: #007ACC; border: none; border-radius: 4px; padding: 8px 20px; color: #FFF; font-weight: bold; } QPushButton:hover { background: #0098FF; }");
+    searchBtn->setObjectName("KeywordSearchWidget_searchBtn_11");
     connect(searchBtn, &QPushButton::clicked, this, &KeywordSearchWidget::onSearch);
 
     auto* replaceBtn = new QPushButton(" 执行替换");
     replaceBtn->setAutoDefault(false);
     replaceBtn->setIcon(IconHelper::getIcon("edit", "#FFF", 16));
-    replaceBtn->setStyleSheet("QPushButton { background: #D32F2F; border: none; border-radius: 4px; padding: 8px 20px; color: #FFF; font-weight: bold; } QPushButton:hover { background: #F44336; }");
+    replaceBtn->setObjectName("KeywordSearchWidget_replaceBtn_12");
     connect(replaceBtn, &QPushButton::clicked, this, &KeywordSearchWidget::onReplace);
 
     auto* undoBtn = new QPushButton(" 撤销替换");
     undoBtn->setAutoDefault(false);
     undoBtn->setIcon(IconHelper::getIcon("undo", "#EEE", 16));
-    undoBtn->setStyleSheet("QPushButton { background: #3E3E42; border: none; border-radius: 4px; padding: 8px 20px; color: #EEE; } QPushButton:hover { background: #4E4E52; }");
+    undoBtn->setObjectName("KeywordSearchWidget_undoBtn_13");
     connect(undoBtn, &QPushButton::clicked, this, &KeywordSearchWidget::onUndo);
 
     auto* clearBtn = new QPushButton(" 清空日志");
     clearBtn->setAutoDefault(false);
     clearBtn->setIcon(IconHelper::getIcon("trash", "#e74c3c", 16)); // 2026-03-13 统一 Trash 图标颜色为红色
-    clearBtn->setStyleSheet("QPushButton { background: #3E3E42; border: none; border-radius: 4px; padding: 8px 20px; color: #EEE; } QPushButton:hover { background: #4E4E52; }");
+    clearBtn->setObjectName("KeywordSearchWidget_clearBtn_14");
     connect(clearBtn, &QPushButton::clicked, this, &KeywordSearchWidget::onClearLog);
 
     btnLayout->addWidget(searchBtn);
@@ -515,11 +513,11 @@ void KeywordSearchWidget::initUI() {
     m_progressBar = new QProgressBar();
     m_progressBar->setFixedHeight(4);
     m_progressBar->setTextVisible(false);
-    m_progressBar->setStyleSheet("QProgressBar { background: #252526; border: none; } QProgressBar::chunk { background: #007ACC; }");
+    m_progressBar->setObjectName("KeywordSearchWidget_m_progressBar_15");
     m_progressBar->hide();
     
     m_statusLabel = new QLabel("就绪");
-    m_statusLabel->setStyleSheet("color: #888; font-size: 11px;");
+    m_statusLabel->setObjectName("KeywordSearchWidget_m_statusLabel_16");
     
     statusLayout->addWidget(m_progressBar);
     statusLayout->addWidget(m_statusLabel);

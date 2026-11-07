@@ -158,13 +158,7 @@ void RecentNotesWindow::initUI() {
     cardLayout->addWidget(m_tabContainer);
 
     // ── 全局样式 ───────────────────────────────────
-    m_cardWidget->setStyleSheet(R"(
-        QWidget#rnwCard {
-            background-color: #1E1E1E;
-            border-radius: 10px;
-            border: 1px solid #383838;
-        }
-    )");
+    m_cardWidget->setObjectName("RecentNotesWindow_m_cardWidget_1");
 
     // ── 列表视图 ───────────────────────────────────
     m_listView = new QListView();

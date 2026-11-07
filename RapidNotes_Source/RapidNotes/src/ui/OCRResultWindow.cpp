@@ -28,7 +28,7 @@ OCRResultWindow::OCRResultWindow(const QImage& image, int contextId, QWidget* pa
         titleLayout->insertWidget(0, iconLabel);
         
         m_titleLabel->setText("识别文本");
-        m_titleLabel->setStyleSheet("font-weight: bold; color: #eee;");
+        m_titleLabel->setObjectName("OCRResultWindow_m_titleLabel_1");
     }
     
     auto* layout = new QVBoxLayout(m_contentArea);
@@ -39,38 +39,14 @@ OCRResultWindow::OCRResultWindow(const QImage& image, int contextId, QWidget* pa
     m_textEdit->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_textEdit->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_textEdit->setPlaceholderText("正在识别中...");
-    m_textEdit->setStyleSheet(R"(
-        QPlainTextEdit {
-            background-color: #1E1E1E;
-            color: #D4D4D4;
-            border: 1px solid #333333;
-            border-radius: 4px;
-            padding: 8px;
-            font-family: 'Microsoft YaHei', sans-serif;
-            font-size: 14px;
-        }
-        QScrollBar:vertical {
-            border: none;
-            background: #1E1E1E;
-            width: 10px;
-            margin: 0px;
-        }
-        QScrollBar::handle:vertical {
-            background: #333;
-            min-height: 20px;
-            border-radius: 5px;
-        }
-        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-            height: 0px;
-        }
-    )");
+    m_textEdit->setObjectName("OCRResultWindow_m_textEdit_1");
     layout->addWidget(m_textEdit);
 
     auto* bottomLayout = new QHBoxLayout();
     bottomLayout->setSpacing(10);
     
     m_autoCopyCheck = new QCheckBox("下次自动复制");
-    m_autoCopyCheck->setStyleSheet("QCheckBox { color: #999; font-size: 12px; } QCheckBox::indicator { width: 16px; height: 16px; }");
+    m_autoCopyCheck->setObjectName("OCRResultWindow_m_autoCopyCheck_2");
     
     QSettings settings("RapidNotes", "OCR");
     m_autoCopyCheck->setChecked(settings.value("autoCopy", false).toBool());
@@ -87,7 +63,7 @@ OCRResultWindow::OCRResultWindow(const QImage& image, int contextId, QWidget* pa
 
     QPushButton* toSimplifiedBtn = new QPushButton("转简体");
     toSimplifiedBtn->setFlat(true);
-    toSimplifiedBtn->setStyleSheet("QPushButton { color: #1abc9c; border: none; font-size: 13px; } QPushButton:hover { color: #2ecc71; }");
+    toSimplifiedBtn->setObjectName("OCRResultWindow_toSimplifiedBtn_3");
     toSimplifiedBtn->setCursor(Qt::PointingHandCursor);
     toSimplifiedBtn->setProperty("tooltipText", "转换为简体中文");
     toSimplifiedBtn->installEventFilter(this);
@@ -98,7 +74,7 @@ OCRResultWindow::OCRResultWindow(const QImage& image, int contextId, QWidget* pa
 
     QPushButton* toTraditionalBtn = new QPushButton("转繁体");
     toTraditionalBtn->setFlat(true);
-    toTraditionalBtn->setStyleSheet("QPushButton { color: #f39c12; border: none; font-size: 13px; } QPushButton:hover { color: #e67e22; }");
+    toTraditionalBtn->setObjectName("OCRResultWindow_toTraditionalBtn_4");
     toTraditionalBtn->setCursor(Qt::PointingHandCursor);
     toTraditionalBtn->setProperty("tooltipText", "转换为繁体中文");
     toTraditionalBtn->installEventFilter(this);
@@ -109,7 +85,7 @@ OCRResultWindow::OCRResultWindow(const QImage& image, int contextId, QWidget* pa
 
     QPushButton* typesettingBtn = new QPushButton("排版");
     typesettingBtn->setFlat(true);
-    typesettingBtn->setStyleSheet("QPushButton { color: #4a90e2; border: none; font-size: 13px; } QPushButton:hover { color: #6ab0ff; }");
+    typesettingBtn->setObjectName("OCRResultWindow_typesettingBtn_5");
     typesettingBtn->setCursor(Qt::PointingHandCursor);
     typesettingBtn->setProperty("tooltipText", "智能合并换行并优化排版");
     typesettingBtn->installEventFilter(this);
@@ -120,22 +96,7 @@ OCRResultWindow::OCRResultWindow(const QImage& image, int contextId, QWidget* pa
     copyBtn->setProperty("tooltipText", "复制识别结果并关闭窗口");
     copyBtn->installEventFilter(this);
     copyBtn->setFixedSize(80, 32);
-    copyBtn->setStyleSheet(R"(
-        QPushButton {
-            background-color: #007ACC;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            font-weight: bold;
-            font-size: 13px;
-        }
-        QPushButton:hover {
-            background-color: #008be5;
-        }
-        QPushButton:pressed {
-            background-color: #005a9e;
-        }
-    )");
+    copyBtn->setObjectName("OCRResultWindow_copyBtn_2");
     connect(copyBtn, &QPushButton::clicked, this, &OCRResultWindow::onCopyClicked);
     bottomLayout->addWidget(copyBtn);
 
