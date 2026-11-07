@@ -850,4 +850,20 @@ void FilterPanel::selectColor(const QColor& color) {
     rebuildGroups();
 }
 
+void FilterPanel::dragEnterEvent(QDragEnterEvent* event) {
+    QFrame::dragEnterEvent(event);
+}
+
+void FilterPanel::dragLeaveEvent(QDragLeaveEvent* event) {
+    QFrame::dragLeaveEvent(event);
+}
+
+void FilterPanel::dragMoveEvent(QDragMoveEvent* event) {
+    QFrame::dragMoveEvent(event);
+}
+
+void FilterPanel::dropEvent(QDropEvent* event) {
+    QFrame::dropEvent(event);
+}
+
 } // namespace RapidNotes

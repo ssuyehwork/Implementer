@@ -1044,4 +1044,20 @@ bool MetaPanel::eventFilter(QObject* watched, QEvent* event) {
     return QFrame::eventFilter(watched, event);
 }
 
+void MetaPanel::dragEnterEvent(QDragEnterEvent* event) {
+    QFrame::dragEnterEvent(event);
+}
+
+void MetaPanel::dragLeaveEvent(QDragLeaveEvent* event) {
+    QFrame::dragLeaveEvent(event);
+}
+
+void MetaPanel::dragMoveEvent(QDragMoveEvent* event) {
+    QFrame::dragMoveEvent(event);
+}
+
+void MetaPanel::dropEvent(QDropEvent* event) {
+    QFrame::dropEvent(event);
+}
+
 } // namespace RapidNotes
