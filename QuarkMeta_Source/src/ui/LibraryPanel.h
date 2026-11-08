@@ -41,6 +41,7 @@ public:
     void setFilterKeyword(const QString& keyword) { m_filterKeyword = keyword; }
 
     static QRect addBtnRect(const QRect& optionRect);
+    static QRect sectionHeaderRect(const QRect& optionRect, const QString& text, const QFont& font);
 
 signals:
     void requestAddCategory(int nodeId);

@@ -41,11 +41,25 @@
 namespace QuarkMeta {
 
 QRect LibraryItemDelegate::addBtnRect(const QRect& optionRect) {
-    int size = 16;
+    int size = 20;
     int top = optionRect.top() + (optionRect.height() - size) / 2;
-    int rightPadding = 12;
+    int rightPadding = 10;
     int left = optionRect.right() - rightPadding - size;
     return QRect(left, top, size, size);
+}
+
+QRect LibraryItemDelegate::sectionHeaderRect(const QRect& optionRect, const QString& text, const QFont& font) {
+    QFontMetrics fm(font);
+    int textWidth = fm.horizontalAdvance(text);
+    int paddingLeft = 6;
+    int paddingRight = 6;
+    int arrowWidth = 14;
+    int arrowSpacing = 4;
+    int totalWidth = paddingLeft + textWidth + arrowSpacing + arrowWidth + paddingRight;
+    int height = 22;
+    int top = optionRect.top() + (optionRect.height() - height) / 2;
+    int left = optionRect.left() + 6;
+    return QRect(left, top, totalWidth, height);
 }
 
 QSize LibraryItemDelegate::sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const {
@@ -67,6 +81,7 @@ bool LibraryItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* model, 
         if (event->type() == QEvent::MouseButtonRelease) {
             QMouseEvent* mouseEv = static_cast<QMouseEvent*>(event);
             if (mouseEv && mouseEv->button() == Qt::LeftButton) {
+                // 1. 点击右侧“+”按钮：仅对智能文件夹与文件夹生效
                 if (nodeId == -20 || nodeId == 0) {
                     QRect btnRect = addBtnRect(option.rect);
                     if (btnRect.contains(mouseEv->pos())) {
@@ -75,7 +90,7 @@ bool LibraryItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* model, 
                     }
                 }
 
-                // 严格收窄 Hit-test 判定：仅当精准点击紧随标题右侧的折叠箭头时才触发折叠/展开
+                // 2. 点击③区域（折叠组件块：文字+折叠指示箭头全区域）：直接触发折叠/展开
                 int countVal = index.data(Qt::UserRole + 9).toInt();
                 QString sectionText;
                 if (nodeId == -10) sectionText = QString("快速访问(%1)").arg(countVal);
@@ -85,12 +100,9 @@ bool LibraryItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* model, 
                 QFont hdrFont = option.font;
                 hdrFont.setPointSize(10);
                 hdrFont.setBold(true);
-                QFontMetrics fm(hdrFont);
-                int textWidth = fm.horizontalAdvance(sectionText);
-                int arrowLeft = option.rect.left() + 10 + textWidth + 4;
-                QRect arrowClickRect(arrowLeft - 2, option.rect.top() + (option.rect.height() - 14) / 2 - 2, 18, 18);
 
-                if (arrowClickRect.contains(mouseEv->pos())) {
+                QRect hdrRect = sectionHeaderRect(option.rect, sectionText, hdrFont);
+                if (hdrRect.contains(mouseEv->pos())) {
                     emit requestToggleSection(nodeId);
                     return true;
                 }
@@ -196,12 +208,10 @@ void LibraryItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& o
 
     // 1. 渲染三大分组 Header (快速访问 -10, 智能文件夹 -20, 文件夹 0)，不得绘制选中/拖放背景
     if (nodeId == -10 || nodeId == -20 || nodeId == 0) {
-        bool isHovered = (opt.state & QStyle::State_MouseOver);
-        if (isHovered) {
-            painter->fillRect(opt.rect, QColor("#2A2D2E"));
-        } else {
-            painter->fillRect(opt.rect, Qt::transparent);
-        }
+        // 全行底色严格透明，保证②区域（中间空白留白）彻底透明，绝不与两端连接成一体
+        painter->fillRect(opt.rect, Qt::transparent);
+
+        bool isRowHovered = (opt.state & QStyle::State_MouseOver);
 
         const QTreeView* treeView = qobject_cast<const QTreeView*>(option.widget);
         bool isExpanded = treeView ? treeView->isExpanded(index) : true;
@@ -216,26 +226,48 @@ void LibraryItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& o
         hdrFont.setPointSize(10);
         hdrFont.setBold(true);
 
+        // 获取鼠标在树视图中的相对坐标，用于分别判定③与①区域的独立悬停状态
+        QPoint mousePos = treeView ? treeView->mapFromGlobal(QCursor::pos()) : QPoint(-1, -1);
+
+        // ③ 区域：折叠组件块（文字 + 折叠指示箭头全区域）
+        QRect hdrRect = sectionHeaderRect(opt.rect, sectionText, hdrFont);
+        bool isHdrHovered = isRowHovered && hdrRect.contains(mousePos);
+
+        // 独立绘制 ③ 区域的高亮背景与内容
+        if (isHdrHovered) {
+            painter->setPen(Qt::NoPen);
+            painter->setBrush(QColor("#2A2D2E"));
+            painter->drawRoundedRect(hdrRect, 3, 3);
+        }
+
         QFontMetrics fm(hdrFont);
         int textWidth = fm.horizontalAdvance(sectionText);
-        int textLeft = opt.rect.left() + 10;
+        int textLeft = hdrRect.left() + 6;
         QRect textRect(textLeft, opt.rect.top(), textWidth, opt.rect.height());
 
         painter->setFont(hdrFont);
-        painter->setPen(isHovered ? QColor("#FFFFFF") : QColor("#888888"));
+        painter->setPen(isHdrHovered ? QColor("#FFFFFF") : (isRowHovered ? QColor("#DDDDDD") : QColor("#888888")));
         painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, sectionText);
 
         // 绘制紧跟文字右侧的展开/折叠箭头 (chevron_down / chevron_right)
         QString arrowKey = isExpanded ? "chevron_down" : "chevron_right";
-        QIcon arrowIcon = UiHelper::getIcon(arrowKey, isHovered ? QColor("#CCCCCC") : QColor("#888888"), 14);
+        QIcon arrowIcon = UiHelper::getIcon(arrowKey, isHdrHovered ? QColor("#FFFFFF") : (isRowHovered ? QColor("#CCCCCC") : QColor("#888888")), 14);
         int arrowLeft = textRect.right() + 4;
         QRect arrowRect(arrowLeft, opt.rect.top() + (opt.rect.height() - 14) / 2, 14, 14);
         arrowIcon.paint(painter, arrowRect, Qt::AlignCenter, QIcon::Normal, QIcon::Off);
 
-        // 智能文件夹与文件夹分组：仅当鼠标悬停该行时，右侧才显示加号按钮 (+) 图标 ("add")
-        if ((nodeId == -20 || nodeId == 0) && isHovered) {
+        // ① 区域：右侧加号按钮 (+) 图标 ("add")，仅当整行处于悬停时才显示，且高亮完全独立
+        if ((nodeId == -20 || nodeId == 0) && isRowHovered) {
             QRect addRect = addBtnRect(opt.rect);
-            QIcon addIcon = UiHelper::getIcon("add", QColor("#FFFFFF"), 16);
+            bool isAddBtnHovered = addRect.contains(mousePos);
+
+            if (isAddBtnHovered) {
+                painter->setPen(Qt::NoPen);
+                painter->setBrush(QColor("#3A3D3E"));
+                painter->drawRoundedRect(addRect, 3, 3);
+            }
+
+            QIcon addIcon = UiHelper::getIcon("add", isAddBtnHovered ? QColor("#FFFFFF") : QColor("#CCCCCC"), 16);
             addIcon.paint(painter, addRect, Qt::AlignCenter, QIcon::Normal, QIcon::Off);
         }
 
