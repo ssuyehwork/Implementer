@@ -18,8 +18,94 @@
 #include "../core/AppConfig.h"
 #include <QHeaderView>
 #include <QTimer>
+#include <QMouseEvent>
+#include <QApplication>
 
 namespace QuarkMeta {
+
+void LibraryTreeView::setHoverState(const QPersistentModelIndex& index, SectionHoverArea area) {
+    if (m_hoveredIndex == index && m_hoveredArea == area) {
+        return;
+    }
+
+    QPersistentModelIndex oldIdx = m_hoveredIndex;
+    m_hoveredIndex = index;
+    m_hoveredArea = area;
+
+    // 同步给属性，供委托无缝访问
+    setProperty("_libTreeHoveredIndex", QVariant::fromValue<QModelIndex>(m_hoveredIndex));
+    setProperty("_libTreeHoveredArea", static_cast<int>(m_hoveredArea));
+
+    // 状态发生物理改变时，仅定向刷新旧行和新行视口区域
+    if (viewport()) {
+        if (oldIdx.isValid()) {
+            QRect oldRect = visualRect(oldIdx);
+            if (oldRect.isValid()) viewport()->update(oldRect);
+        }
+        if (m_hoveredIndex.isValid()) {
+            QRect newRect = visualRect(m_hoveredIndex);
+            if (newRect.isValid()) viewport()->update(newRect);
+        }
+    }
+}
+
+void LibraryTreeView::updateHoverState() {
+    if (!viewport()) return;
+    QPoint mousePos = viewport()->mapFromGlobal(QCursor::pos());
+    if (!viewport()->rect().contains(mousePos)) {
+        setHoverState(QPersistentModelIndex(), SectionHoverArea::None);
+        return;
+    }
+
+    QModelIndex idx = indexAt(mousePos);
+    if (!idx.isValid()) {
+        setHoverState(QPersistentModelIndex(), SectionHoverArea::None);
+        return;
+    }
+
+    LibraryNodeKind kind = static_cast<LibraryNodeKind>(idx.data(NodeKindRole).toInt());
+    if (isSectionKind(kind)) {
+        QRect rowR = visualRect(idx);
+        int countVal = idx.data(CountRole).toInt();
+        SectionHoverArea area = LibraryItemDelegate::hitTestSectionRow(rowR, kind, countVal, font(), mousePos);
+        setHoverState(QPersistentModelIndex(idx), area);
+    } else {
+        setHoverState(QPersistentModelIndex(idx), SectionHoverArea::Row);
+    }
+}
+
+void LibraryTreeView::mouseMoveEvent(QMouseEvent* event) {
+    DropTreeView::mouseMoveEvent(event);
+
+    QPoint pos = event->pos();
+    QModelIndex idx = indexAt(pos);
+    if (!idx.isValid()) {
+        setHoverState(QPersistentModelIndex(), SectionHoverArea::None);
+        return;
+    }
+
+    LibraryNodeKind kind = static_cast<LibraryNodeKind>(idx.data(NodeKindRole).toInt());
+    if (isSectionKind(kind)) {
+        QRect rowR = visualRect(idx);
+        int countVal = idx.data(CountRole).toInt();
+        SectionHoverArea area = LibraryItemDelegate::hitTestSectionRow(rowR, kind, countVal, font(), pos);
+        setHoverState(QPersistentModelIndex(idx), area);
+    } else {
+        setHoverState(QPersistentModelIndex(idx), SectionHoverArea::Row);
+    }
+}
+
+bool LibraryTreeView::viewportEvent(QEvent* event) {
+    if (event->type() == QEvent::Leave) {
+        setHoverState(QPersistentModelIndex(), SectionHoverArea::None);
+    }
+    return DropTreeView::viewportEvent(event);
+}
+
+void LibraryTreeView::scrollContentsBy(int dx, int dy) {
+    DropTreeView::scrollContentsBy(dx, dy);
+    updateHoverState();
+}
 
 LibraryPanel::LibraryPanel(QWidget* parent) : QFrame(parent) {
     setObjectName("LibraryContainer");
@@ -187,6 +273,8 @@ void LibraryPanel::loadLibrary() {
         if (buildRes.customSectionHeader) {
             m_treeView->setExpanded(buildRes.customSectionHeader->index(), !sectionCollapsed);
         }
+
+        m_treeView->updateHoverState();
     }
 
     m_isLoading = false;
@@ -272,6 +360,10 @@ void LibraryPanel::toggleSectionByNodeKind(LibraryNodeKind kind) {
     QString configKey = sectionCollapsedConfigKey(kind);
     if (!configKey.isEmpty()) {
         AppConfig::instance().setValue(configKey, isExpanded);
+    }
+
+    if (m_treeView) {
+        m_treeView->updateHoverState();
     }
 }
 

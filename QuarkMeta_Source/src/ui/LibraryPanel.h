@@ -16,6 +16,13 @@ public:
     explicit LibraryTreeView(QWidget* parent = nullptr) : DropTreeView(parent) {}
     ~LibraryTreeView() override = default;
 
+    // 只读悬停状态访问
+    QPersistentModelIndex hoveredIndex() const { return m_hoveredIndex; }
+    SectionHoverArea hoveredArea() const { return m_hoveredArea; }
+
+    // 重新按当前鼠标位置评估悬停状态（在折叠、展开、滚动等操作后调用）
+    void updateHoverState();
+
 protected:
     void drawBranches(QPainter* painter, const QRect& rect, const QModelIndex& index) const override {
         if (index.isValid()) {
@@ -26,6 +33,16 @@ protected:
         }
         DropTreeView::drawBranches(painter, rect, index);
     }
+
+    void mouseMoveEvent(QMouseEvent* event) override;
+    bool viewportEvent(QEvent* event) override;
+    void scrollContentsBy(int dx, int dy) override;
+
+private:
+    void setHoverState(const QPersistentModelIndex& index, SectionHoverArea area);
+
+    QPersistentModelIndex m_hoveredIndex;
+    SectionHoverArea m_hoveredArea = SectionHoverArea::None;
 };
 
 class LibraryDragController;

@@ -10,6 +10,16 @@
 namespace QuarkMeta {
 
 /**
+ * @brief 分组标头行内部子区域悬停/点击枚举
+ */
+enum class SectionHoverArea {
+    None,       // 无悬停
+    Row,        // 整行空白处悬停
+    Header,     // 折叠组件块区域（文字+箭头）
+    AddButton   // 右侧"+"按钮区域
+};
+
+/**
  * @brief 库树视图项目渲染委托
  * 物理独立拆分，严格遵循单一职责原则：只负责视觉绘制与交互点击检测，不含业务逻辑。
  */
@@ -25,6 +35,20 @@ public:
     bool editorEvent(QEvent* event, QAbstractItemModel* model, const QStyleOptionViewItem& option, const QModelIndex& index) override;
 
     void setFilterKeyword(const QString& keyword) { m_filterKeyword = keyword; }
+
+    // 静态布局与字体文字提取（单一真理源）
+    static QString sectionTitleText(LibraryNodeKind kind, int count) {
+        return sectionTitle(kind, count);
+    }
+
+    static QFont sectionFont(const QFont& baseFont) {
+        QFont font = baseFont;
+        font.setPointSize(10);
+        font.setBold(true);
+        return font;
+    }
+
+    static SectionHoverArea hitTestSectionRow(const QRect& rowRect, LibraryNodeKind kind, int count, const QFont& baseFont, const QPoint& pos);
 
     // 静态布局转发（兼容旧调用或布局查询）
     static QRect addBtnRect(const QRect& optionRect) {

@@ -2,9 +2,33 @@
 #include "UiHelper.h"
 #include "ViewDragDropHelper.h"
 #include <QTreeView>
-#include <QCursor>
 
 namespace QuarkMeta {
+
+SectionHoverArea LibraryItemDelegate::hitTestSectionRow(const QRect& rowRect, LibraryNodeKind kind, int count, const QFont& baseFont, const QPoint& pos) {
+    if (!rowRect.contains(pos)) {
+        return SectionHoverArea::None;
+    }
+
+    // 1. 优先判定"+"加号按钮（仅智能文件夹与文件夹存在）
+    if (kind == LibraryNodeKind::SectionSmartFolder || kind == LibraryNodeKind::SectionCustom) {
+        QRect btnRect = LibraryTreeLayout::addBtnRect(rowRect);
+        if (btnRect.contains(pos)) {
+            return SectionHoverArea::AddButton;
+        }
+    }
+
+    // 2. 判定折叠组件块（文字 + 折叠箭头区域）
+    QString text = sectionTitleText(kind, count);
+    QFont font = sectionFont(baseFont);
+    QRect hdrRect = LibraryTreeLayout::sectionHeaderRect(rowRect, text, font);
+    if (hdrRect.contains(pos)) {
+        return SectionHoverArea::Header;
+    }
+
+    // 3. 行内其余空白区域
+    return SectionHoverArea::Row;
+}
 
 QSize LibraryItemDelegate::sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const {
     QSize sz = QStyledItemDelegate::sizeHint(option, index);
@@ -27,29 +51,16 @@ bool LibraryItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* model, 
         if (event->type() == QEvent::MouseButtonRelease) {
             QMouseEvent* mouseEv = static_cast<QMouseEvent*>(event);
             if (mouseEv && mouseEv->button() == Qt::LeftButton) {
-                // 先判"+"加号按钮：仅对智能文件夹与文件夹生效
-                if (kind == LibraryNodeKind::SectionSmartFolder || kind == LibraryNodeKind::SectionCustom) {
-                    QRect btnRect = LibraryTreeLayout::addBtnRect(option.rect);
-                    if (btnRect.contains(mouseEv->pos())) {
-                        emit requestAddCategory(kind);
-                        return true;
-                    }
-                }
-
-                // 再判③区域（折叠组件块：文字+折叠指示箭头全区域）
                 int countVal = index.data(CountRole).toInt();
-                QString sectionText = sectionTitle(kind, countVal);
-
-                QFont hdrFont = option.font;
-                hdrFont.setPointSize(10);
-                hdrFont.setBold(true);
-
-                QRect hdrRect = LibraryTreeLayout::sectionHeaderRect(option.rect, sectionText, hdrFont);
-                if (hdrRect.contains(mouseEv->pos())) {
+                SectionHoverArea area = hitTestSectionRow(option.rect, kind, countVal, option.font, mouseEv->pos());
+                if (area == SectionHoverArea::AddButton) {
+                    emit requestAddCategory(kind);
+                    return true;
+                } else if (area == SectionHoverArea::Header) {
                     emit requestToggleSection(kind);
                     return true;
                 }
-                return true; // 其余点击消费掉，防止误触或漂移
+                return true; // 行内空白点击被消费掉，防止误触或漂移
             }
         }
     } else if (kind == LibraryNodeKind::Category && model && model->hasChildren(index)) {
@@ -146,24 +157,34 @@ void LibraryItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& o
         // 全行底色严格透明，保证②区域（中间空白留白）彻底透明，绝不与两端连接成一体
         painter->fillRect(opt.rect, Qt::transparent);
 
-        bool isRowHovered = (opt.state & QStyle::State_MouseOver);
-
+        // 从 LibraryTreeView 获取悬停状态作为唯一真理源（SSOT）
         const QTreeView* treeView = qobject_cast<const QTreeView*>(option.widget);
+        const auto* libTree = option.widget;
+        bool isRowHovered = false;
+        bool isHdrHovered = false;
+        bool isAddBtnHovered = false;
+
+        if (libTree) {
+            // 通过属性或直接反射调用读取悬停状态
+            QVariant hIdxVar = libTree->property("_libTreeHoveredIndex");
+            QVariant hAreaVar = libTree->property("_libTreeHoveredArea");
+            if (hIdxVar.isValid() && hIdxVar.canConvert<QModelIndex>()) {
+                QModelIndex hoveredIdx = hIdxVar.value<QModelIndex>();
+                if (hoveredIdx == index) {
+                    SectionHoverArea area = static_cast<SectionHoverArea>(hAreaVar.toInt());
+                    isRowHovered = (area != SectionHoverArea::None);
+                    isHdrHovered = (area == SectionHoverArea::Header);
+                    isAddBtnHovered = (area == SectionHoverArea::AddButton);
+                }
+            }
+        }
+
         bool isExpanded = treeView ? treeView->isExpanded(index) : true;
         int countVal = index.data(CountRole).toInt();
 
-        QString sectionText = sectionTitle(kind, countVal);
-
-        QFont hdrFont = opt.font;
-        hdrFont.setPointSize(10);
-        hdrFont.setBold(true);
-
-        // 获取鼠标在树视图中的相对坐标，用于分别判定③与①区域的独立悬停状态
-        QPoint mousePos = treeView ? treeView->mapFromGlobal(QCursor::pos()) : QPoint(-1, -1);
-
-        // ③ 区域：折叠组件块（文字 + 折叠指示箭头全区域）
+        QString sectionText = sectionTitleText(kind, countVal);
+        QFont hdrFont = sectionFont(opt.font);
         QRect hdrRect = LibraryTreeLayout::sectionHeaderRect(opt.rect, sectionText, hdrFont);
-        bool isHdrHovered = isRowHovered && hdrRect.contains(mousePos);
 
         // 独立绘制 ③ 区域的高亮背景与内容
         if (isHdrHovered) {
@@ -191,7 +212,6 @@ void LibraryItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& o
         // ① 区域：右侧加号按钮 (+) 图标 ("add")，仅当整行处于悬停时才显示，且高亮完全独立
         if ((kind == LibraryNodeKind::SectionSmartFolder || kind == LibraryNodeKind::SectionCustom) && isRowHovered) {
             QRect addRect = LibraryTreeLayout::addBtnRect(opt.rect);
-            bool isAddBtnHovered = addRect.contains(mousePos);
 
             if (isAddBtnHovered) {
                 painter->setPen(Qt::NoPen);
