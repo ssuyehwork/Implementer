@@ -356,7 +356,14 @@ void ContentPanel::initListView() {
 }
 
 bool ContentPanel::eventFilter(QObject* obj, QEvent* event) {
-    if (event && event->type() == QEvent::MouseButtonDblClick) {
+    if (!event) return QFrame::eventFilter(obj, event);
+
+    // 只要鼠标点击或键盘焦点进入当前面板或其子视口，立刻确立当前面板为分屏活跃目标
+    if (event->type() == QEvent::MouseButtonPress || event->type() == QEvent::FocusIn) {
+        setActivePane(true);
+    }
+
+    if (event->type() == QEvent::MouseButtonDblClick) {
         QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
         if (mouseEvent && mouseEvent->button() == Qt::LeftButton) {
             QAbstractItemView* view = nullptr;
@@ -524,7 +531,13 @@ void ContentPanel::requestClosePane() {
 
 void ContentPanel::setActivePane(bool active) {
     if (m_splitManager) m_splitManager->setActivePane(active);
-    if (active) emit panelActivated(this);
+    if (active) {
+        QAbstractItemView* curView = activeItemView();
+        if (curView && !curView->hasFocus()) {
+            curView->setFocus(Qt::MouseFocusReason);
+        }
+        emit panelActivated(this);
+    }
 }
 
 QString ContentPanel::activePath() const {

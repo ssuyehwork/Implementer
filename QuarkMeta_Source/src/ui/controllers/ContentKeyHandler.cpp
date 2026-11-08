@@ -448,6 +448,13 @@ bool ContentKeyHandler::handleKeyPress(QObject* obj, QEvent* event) {
     QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
     if (qobject_cast<QLineEdit*>(QApplication::focusWidget())) return false;
 
+    // 局部 F5 刷新当前聚焦窗格，坚决阻断按键冒泡至全局引发的主窗格错误刷新
+    if (keyEvent->key() == Qt::Key_F5 && keyEvent->modifiers() == Qt::NoModifier) {
+        m_panel->setActivePane(true);
+        m_panel->refreshAll();
+        return true;
+    }
+
     // 面板级全局快捷键（独立于 QAbstractItemView 焦点状态）
     if (keyEvent->modifiers() & Qt::ControlModifier) {
         if (keyEvent->key() == Qt::Key_S) {
@@ -634,6 +641,7 @@ bool ContentKeyHandler::handleKeyPress(QObject* obj, QEvent* event) {
             return true;
         }
         if (keyEvent->key() == Qt::Key_V) {
+            m_panel->setActivePane(true);
             m_panel->performPaste();
             return true;
         }

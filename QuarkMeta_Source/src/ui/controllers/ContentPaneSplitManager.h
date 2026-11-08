@@ -28,6 +28,10 @@ public:
 
     ContentPanel* secondaryContentPanel() const;
     /**
+     * @brief 获取当前处于活跃激活态的窗格（若无则安全回退至宿主主窗格）
+     */
+    ContentPanel* activePane() const { return m_activePaneForSplit ? m_activePaneForSplit : m_panel; }
+    /**
      * @brief 获取管理的全部副窗格列表（扁平一维列表）
      * @note 严禁调用方对列表中的各副窗格再次递归调用 panes()。
      */
