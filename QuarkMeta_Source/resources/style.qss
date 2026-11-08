@@ -551,7 +551,7 @@ QLabel#QLSearchStatus {
     padding: 0 4px;
 }
 QPlainTextEdit#QLPlainTextEdit QScrollBar:vertical {
-    width: 10px;
+    width: 7px;
     background: transparent;
 }
 QPlainTextEdit#QLPlainTextEdit QScrollBar::handle:vertical {
@@ -1519,7 +1519,7 @@ QScrollArea#FilterScrollArea {
     background: transparent;
 }
 QScrollArea#FilterScrollArea QScrollBar:vertical {
-    border-left: 1px solid #333333;
+    border: none;
 }
 QLineEdit#FilterSearchEdit {
     background: #2D2D2D;
@@ -1885,7 +1885,7 @@ QMenu::separator {
 QScrollBar:vertical {
     border: none;
     background: transparent;
-    width: 10px;
+    width: 7px;
     margin: 0px;
 }
 QScrollBar::handle:vertical {
