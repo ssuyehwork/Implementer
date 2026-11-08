@@ -5,6 +5,7 @@
 #include <QFileInfo>
 #include <QDir>
 #include <QStringList>
+#include <QColor>
 
 namespace QuarkMeta {
 
@@ -33,12 +34,12 @@ void MetaEditController::wire() {
         CoreEngine::instance().executeCommand(cmd);
     });
 
-    connect(m_metaPanel, &MetaPanel::primaryColorChanged, this, [](const QStringList& paths, const QString& hex) {
-        if (paths.isEmpty()) return;
+    connect(m_metaPanel, &MetaPanel::primaryColorChanged, this, [](const QString& path, const QColor& color) {
+        if (path.isEmpty()) return;
         AppCommand cmd;
         cmd.type = AppCommandType::SetColor;
-        cmd.targetPaths = paths;
-        cmd.params["color"] = hex;
+        cmd.targetPaths = {path};
+        cmd.params["color"] = color.name(QColor::HexRgb);
         CoreEngine::instance().executeCommand(cmd);
     });
 

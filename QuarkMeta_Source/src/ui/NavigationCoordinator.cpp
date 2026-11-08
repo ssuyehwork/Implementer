@@ -1,5 +1,6 @@
 #include "NavigationCoordinator.h"
 #include "ActivePaneCoordinator.h"
+#include "ColumnViewWidget.h"
 #include "../core/NavigationService.h"
 #include "../meta/FavoriteService.h"
 #include "../meta/LibrarySyncService.h"
