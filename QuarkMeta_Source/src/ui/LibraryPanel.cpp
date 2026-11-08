@@ -196,7 +196,12 @@ void LibraryItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& o
 
     // 1. 渲染三大分组 Header (快速访问 -10, 智能文件夹 -20, 文件夹 0)，不得绘制选中/拖放背景
     if (nodeId == -10 || nodeId == -20 || nodeId == 0) {
-        painter->fillRect(opt.rect, Qt::transparent);
+        bool isHovered = (opt.state & QStyle::State_MouseOver);
+        if (isHovered) {
+            painter->fillRect(opt.rect, QColor("#2A2D2E"));
+        } else {
+            painter->fillRect(opt.rect, Qt::transparent);
+        }
 
         const QTreeView* treeView = qobject_cast<const QTreeView*>(option.widget);
         bool isExpanded = treeView ? treeView->isExpanded(index) : true;
@@ -217,20 +222,20 @@ void LibraryItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& o
         QRect textRect(textLeft, opt.rect.top(), textWidth, opt.rect.height());
 
         painter->setFont(hdrFont);
-        painter->setPen((opt.state & QStyle::State_MouseOver) ? QColor("#FFFFFF") : QColor("#888888"));
+        painter->setPen(isHovered ? QColor("#FFFFFF") : QColor("#888888"));
         painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, sectionText);
 
         // 绘制紧跟文字右侧的展开/折叠箭头 (chevron_down / chevron_right)
         QString arrowKey = isExpanded ? "chevron_down" : "chevron_right";
-        QIcon arrowIcon = UiHelper::getIcon(arrowKey, QColor("#888888"), 14);
+        QIcon arrowIcon = UiHelper::getIcon(arrowKey, isHovered ? QColor("#CCCCCC") : QColor("#888888"), 14);
         int arrowLeft = textRect.right() + 4;
         QRect arrowRect(arrowLeft, opt.rect.top() + (opt.rect.height() - 14) / 2, 14, 14);
         arrowIcon.paint(painter, arrowRect, Qt::AlignCenter, QIcon::Normal, QIcon::Off);
 
-        // 智能文件夹与文件夹分组右侧绘制加号按钮 (+) 图标 ("add")
-        if (nodeId == -20 || nodeId == 0) {
+        // 智能文件夹与文件夹分组：仅当鼠标悬停该行时，右侧才显示加号按钮 (+) 图标 ("add")
+        if ((nodeId == -20 || nodeId == 0) && isHovered) {
             QRect addRect = addBtnRect(opt.rect);
-            QIcon addIcon = UiHelper::getIcon("add", (opt.state & QStyle::State_MouseOver) ? QColor("#FFFFFF") : QColor("#888888"), 16);
+            QIcon addIcon = UiHelper::getIcon("add", QColor("#FFFFFF"), 16);
             addIcon.paint(painter, addRect, Qt::AlignCenter, QIcon::Normal, QIcon::Off);
         }
 
@@ -408,10 +413,12 @@ void LibraryPanel::initUi() {
     m_treeView->setDropIndicatorShown(true);
     m_treeView->setDefaultDropAction(Qt::MoveAction);
     m_treeView->setDragDropMode(QAbstractItemView::DragDrop);
+    m_treeView->setMouseTracking(true);
     m_treeView->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     m_treeView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_treeView->installEventFilter(this);
     if (m_treeView->viewport()) {
+        m_treeView->viewport()->setMouseTracking(true);
         m_treeView->viewport()->installEventFilter(this);
     }
 
