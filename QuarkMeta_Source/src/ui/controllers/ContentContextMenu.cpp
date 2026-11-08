@@ -681,22 +681,10 @@ void ContentContextMenu::showMenu(QAbstractItemView* view, const QPoint& pos) {
             break;
         }
         case ContentPanel::ActionShowInQuarkMeta: {
-            QStringList selectedPaths = m_panel->getSelectedPaths();
+            QStringList selectedPaths = m_panel ? m_panel->getSelectedPaths() : QStringList();
             QString targetPath = !selectedPaths.isEmpty() ? selectedPaths.first() : path;
             if (!targetPath.isEmpty()) {
-                QFileInfo fi(targetPath);
-                QString targetDir = fi.absolutePath();
-                m_panel->setPendingSelectPath(targetPath, false);
-
-                QString currentNative = QDir::toNativeSeparators(QDir::cleanPath(currentPath));
-                QString targetNative = QDir::toNativeSeparators(QDir::cleanPath(targetDir));
-
-                if (QString::compare(currentNative, targetNative, Qt::CaseInsensitive) == 0 && !m_panel->isRecursive()) {
-                    // 目标就在当前目录且当前非递归视图：直接就地恢复选中并高亮滚动
-                    m_panel->restoreSelections();
-                } else {
-                    NavigationService::instance().navigateTo(targetDir);
-                }
+                NavigationService::instance().locateItem(targetPath);
             }
             break;
         }

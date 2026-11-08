@@ -19,6 +19,7 @@ public:
     void goForward();
     void goUp();
     void refresh();
+    void locateItem(const QString& fullPath);
 
     QString takePendingTargetChildPath(const QString& targetUrl);
     static QString computeAscendingTarget(const QString& fromPath, const QString& toPath);
@@ -36,6 +37,11 @@ signals:
      * @brief 全局请求在新标签页打开路径信号
      */
     void requestOpenInNewTab(const QString& url);
+
+    /**
+     * @brief 全局请求定位具体项目信号 (由主中介层统一调度并在目标视图高亮选中)
+     */
+    void requestLocateItem(const QString& fullPath);
 
     /**
      * @brief 全局统一路径变更信号 (驱动各子面板单向加载数据)

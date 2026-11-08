@@ -77,10 +77,45 @@ PanelMediator::~PanelMediator() {
     }
 }
 
+void PanelMediator::locateItem(const QString& fullPath) {
+    if (fullPath.isEmpty() || fullPath.contains("://")) return;
+
+    QFileInfo fi(fullPath);
+    QString targetDir = fi.absolutePath();
+    ContentPanel* target = (m_activeContentPanel && m_activeContentPanel->isVisible()) ? m_activeContentPanel.data() : m_contentPanel.data();
+    if (!target) return;
+
+    target->setPendingSelectPath(fullPath, false);
+
+    if (m_filterPanel) {
+        m_filterPanel->clearAllFilters();
+        m_filterPanel->clearStats();
+    }
+    if (m_searchController) {
+        m_searchController->clearSearch(true);
+    }
+    target->search("");
+
+    QString currentNative = QDir::toNativeSeparators(QDir::cleanPath(target->currentPath()));
+    QString targetDirNative = QDir::toNativeSeparators(QDir::cleanPath(targetDir));
+
+    bool isSameDir = (QString::compare(currentNative, targetDirNative, Qt::CaseInsensitive) == 0);
+
+    if (isSameDir && !target->isRecursive()) {
+        target->restoreSelections();
+    } else if (isSameDir && target->isRecursive()) {
+        target->loadDirectory(targetDir, false);
+    } else {
+        NavigationService::instance().navigateTo(targetDir, true, false);
+    }
+}
+
 void PanelMediator::setupConnections() {
     NavPanel* navPanel = m_navPanel;
 
     // 🚀【Tab页在新标签中打开路由】：从 NavigationService 接收在 Tab 栏打开请求，解耦控制器下钻
+    connect(&NavigationService::instance(), &NavigationService::requestLocateItem, this, &PanelMediator::locateItem);
+
     connect(&NavigationService::instance(), &NavigationService::requestOpenInNewTab, this, [this](const QString& url) {
         if (m_titleBar && m_titleBar->tabBar()) {
             m_titleBar->tabBar()->openInNewTab(url);
@@ -371,13 +406,7 @@ void PanelMediator::setupConnections() {
             NavigationService::instance().navigateTo(path);
         });
 
-        connect(navPanel, &NavPanel::requestLocateFile, this, [this, contentPanel](const QString& path) {
-            ContentPanel* target = (m_activeContentPanel && m_activeContentPanel->isVisible()) ? m_activeContentPanel.data() : contentPanel;
-            if (target) {
-                target->setPendingSelectPath(path, false);
-            }
-            NavigationService::instance().navigateTo(QFileInfo(path).absolutePath());
-        });
+        connect(navPanel, &NavPanel::requestLocateFile, this, &PanelMediator::locateItem);
 
         connect(navPanel, &NavPanel::requestOpenTrash, &NavigationService::instance(), []() {
             NavigationService::instance().navigateTo("trash://");
@@ -406,13 +435,7 @@ void PanelMediator::setupConnections() {
             NavigationService::instance().navigateTo(path, true, recursive);
         });
 
-        connect(favoritePanel, &FavoritePanel::requestLocateFile, this, [this, contentPanel](const QString& path) {
-            ContentPanel* target = (m_activeContentPanel && m_activeContentPanel->isVisible()) ? m_activeContentPanel.data() : contentPanel;
-            if (target) {
-                target->setPendingSelectPath(path, false);
-            }
-            NavigationService::instance().navigateTo(QFileInfo(path).absolutePath());
-        });
+        connect(favoritePanel, &FavoritePanel::requestLocateFile, this, &PanelMediator::locateItem);
     }
 
         if (markedPanel) {
