@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <QString>
+#include <QPointer>
 #include "ContentPanel.h"
 #include "MetaPanel.h"
 

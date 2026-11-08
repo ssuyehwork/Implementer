@@ -2,6 +2,9 @@
 #include "ActivePaneCoordinator.h"
 #include "../core/CoreEngine.h"
 #include "../util/ShellHelper.h"
+#include <QFileInfo>
+#include <QDir>
+#include <QStringList>
 
 namespace QuarkMeta {
 
