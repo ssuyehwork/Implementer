@@ -6,6 +6,7 @@
 #include <QVBoxLayout>
 #include <QLineEdit>
 #include <QStyledItemDelegate>
+#include <QMouseEvent>
 #include "DropTreeView.h"
 #include "../meta/SmartFolderDao.h"
 
@@ -26,6 +27,20 @@ protected:
             }
         }
         DropTreeView::drawBranches(painter, rect, index);
+    }
+
+    void mouseMoveEvent(QMouseEvent* event) override {
+        DropTreeView::mouseMoveEvent(event);
+        if (viewport()) {
+            viewport()->update();
+        }
+    }
+
+    void leaveEvent(QEvent* event) override {
+        DropTreeView::leaveEvent(event);
+        if (viewport()) {
+            viewport()->update();
+        }
     }
 };
 
