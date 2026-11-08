@@ -28,15 +28,14 @@ constexpr int kParentIdSmartFolderSection = -20;
 
 /**
  * @brief 库树模型独立数据角色（起始值 500，严格避开 ModelContract.h 中的所有已有角色）
+ * 注：置顶状态与计数直接复用 ModelContract.h 中的 SSOT 角色定义（PinnedRole 与 CountRole），避免重定义冲突。
  */
 enum LibraryItemRole {
     NodeKindRole       = Qt::UserRole + 500, // 节点种类 (int, 对应 static_cast<int>(LibraryNodeKind))
     CategoryIdRole     = Qt::UserRole + 501, // 分类及镜像节点的分类 ID (int)
     SmartFolderIdRole  = Qt::UserRole + 502, // 智能文件夹专属 ID (int)
     IconKeyRole        = Qt::UserRole + 503, // 矢量图标标识 (QString)
-    ColorHexRole       = Qt::UserRole + 504, // 颜色代码 Hex (QString)
-    PinnedRole         = Qt::UserRole + 505, // 置顶状态 (bool)
-    CountRole          = Qt::UserRole + 506  // 子项数量/匹配计数 (int)
+    ColorHexRole       = Qt::UserRole + 504  // 颜色代码 Hex (QString)
 };
 
 /**

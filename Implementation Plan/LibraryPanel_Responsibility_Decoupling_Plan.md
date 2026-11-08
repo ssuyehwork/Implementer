@@ -120,9 +120,8 @@ enum LibraryItemRole {
     CategoryIdRole     = Qt::UserRole + 501, // 分类及镜像节点的分类 ID (int)
     SmartFolderIdRole  = Qt::UserRole + 502, // 智能文件夹专属 ID (int)
     IconKeyRole        = Qt::UserRole + 503, // 矢量图标标识 (QString)
-    ColorHexRole       = Qt::UserRole + 504, // 颜色代码 Hex (QString)
-    PinnedRole         = Qt::UserRole + 505, // 置顶状态 (bool)
-    CountRole          = Qt::UserRole + 506  // 子项数量/匹配计数 (int)
+    ColorHexRole       = Qt::UserRole + 504  // 颜色代码 Hex (QString)
+    // 注：PinnedRole (Qt::UserRole + 101) 与 CountRole (Qt::UserRole + 204) 直接复用 ModelContract.h 的 SSOT 定义，避免枚举重定义
 };
 
 /**
