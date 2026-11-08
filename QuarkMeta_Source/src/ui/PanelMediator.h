@@ -58,6 +58,12 @@ public:
      */
     void setupConnections();
 
+    /**
+     * @brief 统一在主视图中定位目标项目 (SSOT)
+     * @param fullPath 目标文件或文件夹完整物理路径
+     */
+    void locateItem(const QString& fullPath);
+
 signals:
     /**
      * @brief 统一向 MainWindow 发送状态栏消息更新请求

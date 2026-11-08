@@ -214,4 +214,9 @@ void NavigationService::refresh() {
     }
 }
 
+void NavigationService::locateItem(const QString& fullPath) {
+    if (fullPath.isEmpty()) return;
+    emit requestLocateItem(fullPath);
+}
+
 } // namespace QuarkMeta

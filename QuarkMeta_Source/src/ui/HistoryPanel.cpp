@@ -2,6 +2,7 @@
 #include "UiHelper.h"
 #include "ToolTipOverlay.h"
 #include "controllers/ContextMenuFactory.h"
+#include "../core/NavigationService.h"
 #include "../core/ClipboardService.h"
 #include "../meta/FavoriteService.h"
 #include "../meta/HistoryService.h"
@@ -173,12 +174,12 @@ void HistoryPanel::onContextMenuRequested(const QPoint& pos) {
             }
         });
 
-        // 3. 在 QuarkMeta 中显示 (单选可用，多选时置灰禁用)
+        // 3. 在 QuarkMeta 中显示 (单选可用，多选时置灰禁用，SSOT 调用 NavigationService::locateItem)
         QAction* actShowInApp = menu.addAction(UiHelper::getIcon("folder_filled", QColor("#EEEEEE"), 18), "在 QuarkMeta 中显示");
         if (selectedPaths.size() == 1) {
             QString singlePath = selectedPaths.first();
-            connect(actShowInApp, &QAction::triggered, this, [this, singlePath]() {
-                emit requestLocateFile(singlePath);
+            connect(actShowInApp, &QAction::triggered, this, [singlePath]() {
+                NavigationService::instance().locateItem(singlePath);
             });
         } else {
             actShowInApp->setEnabled(false);
