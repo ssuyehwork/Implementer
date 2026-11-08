@@ -602,4 +602,41 @@ QStringList LibraryDao::getCategoryPaths(int id, bool verifyExistence) {
     return validPaths;
 }
 
+QMap<int, int> LibraryDao::getCategoryPathCountsBatch() {
+    QMap<int, int> counts;
+    sqlite3* db = DatabaseManager::instance().getGlobalDb();
+    if (!db) return counts;
+
+    std::lock_guard<std::mutex> lock(DatabaseManager::instance().getGlobalMutex());
+
+    const char* sql = "WITH RECURSIVE cat_tree(root_id, child_id) AS ("
+                      "  SELECT id, id FROM library_categories "
+                      "  UNION ALL "
+                      "  SELECT ct.root_id, lc.id "
+                      "  FROM library_categories lc "
+                      "  JOIN cat_tree ct ON lc.parent_id = ct.child_id"
+                      ") "
+                      "SELECT -1 AS cid, COUNT(DISTINCT path) FROM library_category_paths "
+                      "UNION ALL "
+                      "SELECT -2 AS cid, COUNT(DISTINCT path) FROM library_category_paths WHERE category_id <= 0 "
+                      "UNION ALL "
+                      "SELECT lc.id AS cid, COUNT(DISTINCT lcp.path) "
+                      "FROM library_categories lc "
+                      "LEFT JOIN cat_tree ct ON lc.id = ct.root_id "
+                      "LEFT JOIN library_category_paths lcp ON ct.child_id = lcp.category_id "
+                      "GROUP BY lc.id;";
+
+    sqlite3_stmt* stmt = nullptr;
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) == SQLITE_OK) {
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            int cid = sqlite3_column_int(stmt, 0);
+            int count = sqlite3_column_int(stmt, 1);
+            counts.insert(cid, count);
+        }
+        sqlite3_finalize(stmt);
+    }
+
+    return counts;
+}
+
 } // namespace QuarkMeta

@@ -1,12 +1,11 @@
 #pragma once
 
 #include <QFrame>
-#include <QTreeView>
 #include <QStandardItemModel>
 #include <QVBoxLayout>
-#include <QLineEdit>
-#include <QStyledItemDelegate>
 #include "DropTreeView.h"
+#include "LibraryNodeKind.h"
+#include "LibraryItemDelegate.h"
 #include "../meta/SmartFolderDao.h"
 
 namespace QuarkMeta {
@@ -20,8 +19,8 @@ public:
 protected:
     void drawBranches(QPainter* painter, const QRect& rect, const QModelIndex& index) const override {
         if (index.isValid()) {
-            int nodeId = index.data(Qt::UserRole + 1).toInt();
-            if (nodeId == -10 || nodeId == -20 || nodeId == 0) {
+            LibraryNodeKind kind = static_cast<LibraryNodeKind>(index.data(NodeKindRole).toInt());
+            if (isSectionKind(kind)) {
                 return;
             }
         }
@@ -29,30 +28,13 @@ protected:
     }
 };
 
-class LibraryItemDelegate : public QStyledItemDelegate {
-    Q_OBJECT
-public:
-    explicit LibraryItemDelegate(QObject* parent = nullptr) : QStyledItemDelegate(parent) {}
-    QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override;
-    void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
-    void updateEditorGeometry(QWidget* editor, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
-    bool editorEvent(QEvent* event, QAbstractItemModel* model, const QStyleOptionViewItem& option, const QModelIndex& index) override;
+class LibraryDragController;
+class SmartFolderCountService;
 
-    void setFilterKeyword(const QString& keyword) { m_filterKeyword = keyword; }
-
-    static QRect addBtnRect(const QRect& optionRect);
-    static QRect sectionHeaderRect(const QRect& optionRect, const QString& text, const QFont& font);
-
-signals:
-    void requestAddCategory(int nodeId);
-    void requestToggleSection(int nodeId);
-
-private:
-    void paintHighlightedText(QPainter* painter, const QRect& rect, const QString& text, const QString& keyword, const QFont& font, const QColor& normalColor, const QColor& matchColor) const;
-
-    QString m_filterKeyword;
-};
-
+/**
+ * @brief 库面板 (LibraryPanel)
+ * 作为组装与信号协调的纯瘦容器视图，外观、交互与对外公共契约 100% 保持不变。
+ */
 class LibraryPanel : public QFrame {
     Q_OBJECT
 
@@ -74,6 +56,9 @@ public:
     void invalidateSmartFolderCache(int smartFolderId = 0);
     void refreshSmartFolderCounts();
 
+    // 统一的新建智能文件夹方法（右键菜单与"+"按钮共用）
+    void createNewSmartFolder();
+
 signals:
     void categoryPathsSelected(const QStringList& paths, const QString& name = QString(), int categoryId = 0);
     void smartFolderSelected(const SmartFolderRecord& record);
@@ -85,32 +70,23 @@ private slots:
     void onCategoryContextMenu(const QPoint& pos);
     void onPinCategoryTriggered(int nodeId, bool pin);
     void onPathsDroppedToCategory(const QStringList& paths, const QModelIndex& target);
-    void onInternalMoveRequested(const QList<QPersistentModelIndex>& sources, const QModelIndex& target, InternalDropZone zone);
-    void markOrderDirty();
-    void flushOrder();
     void toggleSection();
+    void toggleSectionByNodeKind(LibraryNodeKind kind);
 
 private:
     void initUi();
     void createAndEditCategory(int parentId = 0);
-    QStandardItem* findItemByNodeId(QStandardItem* parent, int nodeId, const QString& type = QString());
-    void toggleSectionByNodeId(int nodeId);
-
-    void updateSmartFolderCountsAsync(uint64_t reqId, const QList<SmartFolderRecord>& smartFolders);
 
     QVBoxLayout* m_mainLayout = nullptr;
     LibraryTreeView* m_treeView = nullptr;
     QStandardItemModel* m_model = nullptr;
     LibraryItemDelegate* m_delegate = nullptr;
-    bool m_isLoading = false;
-    bool m_orderDirty = false;
-    int m_pendingEditNodeId = 0;
+    LibraryDragController* m_dragController = nullptr;
+    SmartFolderCountService* m_countService = nullptr;
 
-    // 智能文件夹异步匹配数量内存缓存
-    QMap<int, int> m_smartFolderCountCache;
-    uint64_t m_currentCountReqId = 0;
-    QTimer* m_countDebounceTimer = nullptr;
+    bool m_isLoading = false;
     bool m_isUpdatingCounts = false;
+    int m_pendingEditNodeId = 0;
 };
 
 } // namespace QuarkMeta

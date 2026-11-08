@@ -148,6 +148,18 @@ set(SOURCES
     src/meta/LibrarySyncService.h
     src/meta/LibraryValidationService.cpp
     src/meta/LibraryValidationService.h
+    src/meta/SmartFolderCountService.h
+    src/meta/SmartFolderCountService.cpp
+    src/ui/LibraryNodeKind.h
+    src/ui/LibraryTreeLayout.h
+    src/ui/LibraryItemDelegate.h
+    src/ui/LibraryItemDelegate.cpp
+    src/ui/LibraryModelBuilder.h
+    src/ui/LibraryModelBuilder.cpp
+    src/ui/LibraryDragController.h
+    src/ui/LibraryDragController.cpp
+    src/ui/LibraryMenuBuilder.h
+    src/ui/LibraryMenuBuilder.cpp
     src/ui/LibraryPanel.h
     src/ui/LibraryPanel.cpp
     src/ui/SidebarContainerWidget.h
