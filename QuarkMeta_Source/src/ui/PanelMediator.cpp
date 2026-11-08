@@ -413,19 +413,11 @@ void PanelMediator::setupConnections() {
         });
 
         if (favoritePanel) {
-            connect(navPanel, &NavPanel::requestAddFavorite, favoritePanel, [favoritePanel](const QString& path) {
-                if (FavoriteService::instance().isFavorite(path)) {
-                    ToolTipOverlay::instance()->showToast("该文件夹已在收藏夹中，请勿重复添加", 2000, QColor("#e81123"));
-                } else {
-                    favoritePanel->addFavoriteItem(path);
-                    favoritePanel->saveFavorites();
-                    ToolTipOverlay::instance()->showToast("已成功添加至收藏夹", 1500, QColor("#2ecc71"));
-                }
+            connect(navPanel, &NavPanel::requestAddFavorite, this, [](const QString& path) {
+                FavoriteService::instance().addFavorites({path});
             });
-            connect(navPanel, &NavPanel::requestRemoveFavorite, favoritePanel, [favoritePanel](const QString& path) {
-                favoritePanel->removeFavoriteItem(path);
-                favoritePanel->saveFavorites();
-                ToolTipOverlay::instance()->showToast("已从收藏夹移除", 1500, QColor("#e74c3c"));
+            connect(navPanel, &NavPanel::requestRemoveFavorite, this, [](const QString& path) {
+                FavoriteService::instance().removeFavorites({path});
             });
         }
     }
@@ -523,17 +515,11 @@ void PanelMediator::setupConnections() {
         }
 
         if (favoritePanel) {
-            connect(contentPanel, &ContentPanel::requestAddFavorite, favoritePanel, [favoritePanel](const QStringList& paths) {
-                for (const QString& p : paths) {
-                    favoritePanel->addFavoriteItem(p);
-                }
-                favoritePanel->saveFavorites();
+            connect(contentPanel, &ContentPanel::requestAddFavorite, this, [](const QStringList& paths) {
+                FavoriteService::instance().addFavorites(paths);
             });
-            connect(contentPanel, &ContentPanel::requestRemoveFavorite, favoritePanel, [favoritePanel](const QStringList& paths) {
-                for (const QString& p : paths) {
-                    favoritePanel->removeFavoriteItem(p);
-                }
-                favoritePanel->saveFavorites();
+            connect(contentPanel, &ContentPanel::requestRemoveFavorite, this, [](const QStringList& paths) {
+                FavoriteService::instance().removeFavorites(paths);
             });
         }
     }
@@ -811,34 +797,11 @@ void PanelMediator::setupConnections() {
 
         // 2. 收藏夹请求
         if (favoritePanel) {
-            connect(panel, &ContentPanel::requestAddFavorite, favoritePanel, [favoritePanel](const QStringList& paths) {
-                int addedCount = 0;
-                int duplicateCount = 0;
-                for (const QString& p : paths) {
-                    if (FavoriteService::instance().isFavorite(p)) {
-                        duplicateCount++;
-                    } else {
-                        favoritePanel->addFavoriteItem(p);
-                        addedCount++;
-                    }
-                }
-                if (addedCount > 0) {
-                    favoritePanel->saveFavorites();
-                    if (duplicateCount == 0) {
-                        ToolTipOverlay::instance()->showToast("已成功添加至收藏夹", 1500, QColor("#2ecc71"));
-                    } else {
-                        ToolTipOverlay::instance()->showToast(QString("已添加 %1 个项目 (其余 %2 个已在收藏夹中)").arg(addedCount).arg(duplicateCount), 2000, QColor("#3498db"));
-                    }
-                } else if (duplicateCount > 0) {
-                    ToolTipOverlay::instance()->showToast("该文件夹已在收藏夹中，请勿重复添加", 2000, QColor("#e81123"));
-                }
+            connect(panel, &ContentPanel::requestAddFavorite, this, [](const QStringList& paths) {
+                FavoriteService::instance().addFavorites(paths);
             });
-            connect(panel, &ContentPanel::requestRemoveFavorite, favoritePanel, [favoritePanel](const QStringList& paths) {
-                for (const QString& p : paths) {
-                    favoritePanel->removeFavoriteItem(p);
-                }
-                favoritePanel->saveFavorites();
-                ToolTipOverlay::instance()->showToast("已从收藏夹移除", 1500, QColor("#e74c3c"));
+            connect(panel, &ContentPanel::requestRemoveFavorite, this, [](const QStringList& paths) {
+                FavoriteService::instance().removeFavorites(paths);
             });
         }
 
@@ -1173,21 +1136,15 @@ void PanelMediator::setupConnections() {
         });
 
         if (favoritePanel) {
-            connect(addressBar, &AddressBar::requestAddFavorite, favoritePanel, [favoritePanel](const QString& path) {
-                if (favoritePanel->containsPath(path)) {
-                    favoritePanel->removeFavoriteItem(path);
-                    favoritePanel->saveFavorites();
-                    ToolTipOverlay::instance()->showToast("已从收藏夹移除", 1500, QColor("#e74c3c"));
+            connect(addressBar, &AddressBar::requestAddFavorite, this, [](const QString& path) {
+                if (FavoriteService::instance().isFavorite(path)) {
+                    FavoriteService::instance().removeFavorites({path});
                 } else {
-                    favoritePanel->addFavoriteItem(path);
-                    favoritePanel->saveFavorites();
-                    ToolTipOverlay::instance()->showToast("已成功添加至收藏夹", 1500, QColor("#2ecc71"));
+                    FavoriteService::instance().addFavorites({path});
                 }
             });
-            connect(addressBar, &AddressBar::requestRemoveFavorite, favoritePanel, [favoritePanel](const QString& path) {
-                favoritePanel->removeFavoriteItem(path);
-                favoritePanel->saveFavorites();
-                ToolTipOverlay::instance()->showToast("已从收藏夹移除", 1500, QColor("#e74c3c"));
+            connect(addressBar, &AddressBar::requestRemoveFavorite, this, [](const QString& path) {
+                FavoriteService::instance().removeFavorites({path});
             });
         }
     }

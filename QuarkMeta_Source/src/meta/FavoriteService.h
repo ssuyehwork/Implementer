@@ -20,6 +20,16 @@ public:
     bool removeFavoriteById(int id);
     bool toggleFavorite(const QString& path);
 
+    /**
+     * @brief 统一批量添加至收藏夹并触发全局统一交互反馈 (SSOT)
+     */
+    void addFavorites(const QStringList& paths, int parentId = 0);
+
+    /**
+     * @brief 统一批量从收藏夹移除并触发全局统一交互反馈 (SSOT)
+     */
+    void removeFavorites(const QStringList& paths);
+
     QAction* buildFavoriteAction(QMenu* parentMenu, const QString& path, QObject* receiver = nullptr);
 
 signals:

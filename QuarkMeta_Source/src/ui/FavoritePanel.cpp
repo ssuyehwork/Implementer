@@ -854,31 +854,7 @@ void FavoritePanel::onPathsDroppedToFavorite(const QStringList& paths, const QMo
         }
     }
 
-    int addedCount = 0;
-    int duplicateCount = 0;
-    for (const QString& path : paths) {
-        if (FavoriteService::instance().isFavorite(path)) {
-            duplicateCount++;
-        } else {
-            // 🚀【智能入库状态判定】：先校验项目是否在库中，避免盲目入库
-            bool inLib = LibraryService::instance().isInLibrary(path);
-            Q_UNUSED(inLib);
-            addFavoriteItem(path, parentId);
-            addedCount++;
-        }
-    }
-
-    if (addedCount > 0) {
-        saveFavorites();
-        m_orderDirty = false;
-        if (duplicateCount == 0) {
-            ToolTipOverlay::instance()->showToast("已成功添加至收藏夹", 1500, QColor("#2ecc71"));
-        } else {
-            ToolTipOverlay::instance()->showToast(QString("已添加 %1 个项目 (其余 %2 个已在收藏夹中)").arg(addedCount).arg(duplicateCount), 2000, QColor("#3498db"));
-        }
-    } else if (duplicateCount > 0) {
-        ToolTipOverlay::instance()->showToast("该文件夹已在收藏夹中，请勿重复添加", 2000, QColor("#e81123"));
-    }
+    FavoriteService::instance().addFavorites(paths, parentId);
 }
 
 void FavoritePanel::refreshItemIcons() {

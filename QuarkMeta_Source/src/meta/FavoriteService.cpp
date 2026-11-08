@@ -4,6 +4,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QCursor>
+#include <QColor>
 
 namespace QuarkMeta {
 
@@ -77,6 +78,69 @@ bool FavoriteService::removeFavorite(const QString& path) {
         emit favoriteChanged(cleanPath, false);
     }
     return ok;
+}
+
+
+void FavoriteService::addFavorites(const QStringList& paths, int parentId) {
+    if (paths.isEmpty()) return;
+
+    int addedCount = 0;
+    int duplicateCount = 0;
+
+    for (const QString& path : paths) {
+        if (isFavorite(path)) {
+            duplicateCount++;
+        } else {
+            QString cleanPath = QDir::toNativeSeparators(QDir::cleanPath(path));
+            if (cleanPath.isEmpty()) continue;
+
+            QFileInfo fi(cleanPath);
+            if (!fi.exists()) continue;
+
+            bool isDir = fi.isDir();
+            QString finalColorHex = "#888888";
+            if (isDir) {
+                bool isDriveRoot = fi.isRoot() || cleanPath.endsWith(":\\") || cleanPath.endsWith(":/") || (cleanPath.length() == 2 && cleanPath.endsWith(':'));
+                if (isDriveRoot) {
+                    finalColorHex = "#378ADD";
+                }
+            }
+
+            if (FavoriteDao::addFavorite(cleanPath, parentId, "folder_filled", finalColorHex)) {
+                addedCount++;
+            }
+        }
+    }
+
+    if (addedCount > 0) {
+        emit favoritesReloaded();
+        if (duplicateCount == 0) {
+            ToolTipOverlay::instance()->showToast("已成功添加至收藏夹", 1500, QColor("#2ecc71"));
+        } else {
+            ToolTipOverlay::instance()->showToast(QString("已添加 %1 个项目 (其余 %2 个已在收藏夹中)").arg(addedCount).arg(duplicateCount), 2000, QColor("#3498db"));
+        }
+    } else if (duplicateCount > 0) {
+        ToolTipOverlay::instance()->showToast("该文件夹已在收藏夹中，请勿重复添加", 2000, QColor("#e81123"));
+    }
+}
+
+void FavoriteService::removeFavorites(const QStringList& paths) {
+    if (paths.isEmpty()) return;
+
+    int removedCount = 0;
+    for (const QString& path : paths) {
+        if (isFavorite(path)) {
+            QString cleanPath = QDir::toNativeSeparators(QDir::cleanPath(path));
+            if (FavoriteDao::removeFavorite(cleanPath)) {
+                removedCount++;
+            }
+        }
+    }
+
+    if (removedCount > 0) {
+        emit favoritesReloaded();
+        ToolTipOverlay::instance()->showToast("已从收藏夹移除", 1500, QColor("#e74c3c"));
+    }
 }
 
 bool FavoriteService::toggleFavorite(const QString& path) {

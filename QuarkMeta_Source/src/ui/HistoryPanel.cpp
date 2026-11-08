@@ -190,22 +190,10 @@ void HistoryPanel::onContextMenuRequested(const QPoint& pos) {
 
         menu.addSeparator();
 
-        // 5. 添加至收藏夹 (批量添加)
+        // 5. 添加至收藏夹 (批量添加，SSOT 调用 FavoriteService::addFavorites)
         QAction* actAddFav = menu.addAction(UiHelper::getIcon("Favorites.svg", QColor("#EEEEEE"), 18), "添加至收藏夹");
-        connect(actAddFav, &QAction::triggered, this, [this, selectedPaths]() {
-            int addedCount = 0;
-            for (const QString& path : selectedPaths) {
-                if (!FavoriteService::instance().isFavorite(path)) {
-                    if (FavoriteService::instance().addFavorite(path)) {
-                        addedCount++;
-                    }
-                }
-            }
-            if (addedCount > 0) {
-                ToolTipOverlay::instance()->showToast(QString("已将 %1 个项目添加至收藏夹").arg(addedCount), 1500, QColor("#2ecc71"));
-            } else {
-                ToolTipOverlay::instance()->showToast("所选项目已全部在收藏夹中", 1500, QColor("#3498db"));
-            }
+        connect(actAddFav, &QAction::triggered, this, [selectedPaths]() {
+            FavoriteService::instance().addFavorites(selectedPaths);
         });
 
         // 6. 添加至“库” (批量)
