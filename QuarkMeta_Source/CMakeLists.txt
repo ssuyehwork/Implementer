@@ -258,6 +258,22 @@ set(SOURCES
     src/ui/AppShortcutController.cpp
     src/ui/LocalShortcutInterceptor.h
     src/ui/LocalShortcutInterceptor.cpp
+    src/ui/ActivePaneCoordinator.h
+    src/ui/ActivePaneCoordinator.cpp
+    src/ui/MetaPanelPresenter.h
+    src/ui/MetaPanelPresenter.cpp
+    src/ui/MetaEditController.h
+    src/ui/MetaEditController.cpp
+    src/ui/QuickLookController.h
+    src/ui/QuickLookController.cpp
+    src/ui/ShortcutActionRouter.h
+    src/ui/ShortcutActionRouter.cpp
+    src/ui/TabBarCoordinator.h
+    src/ui/TabBarCoordinator.cpp
+    src/ui/NavigationCoordinator.h
+    src/ui/NavigationCoordinator.cpp
+    src/ui/FilterStatsBinder.h
+    src/ui/FilterStatsBinder.cpp
     src/ui/PanelMediator.h
     src/ui/PanelMediator.cpp
     src/ui/MainWindow.cpp

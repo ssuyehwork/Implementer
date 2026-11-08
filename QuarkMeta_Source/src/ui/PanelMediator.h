@@ -18,7 +18,15 @@ class SearchController;
 class TitleBarWidget;
 class PanelLayoutManager;
 class AppShortcutController;
-class PaneActivationTracker;
+
+class ActivePaneCoordinator;
+class MetaPanelPresenter;
+class MetaEditController;
+class QuickLookController;
+class ShortcutActionRouter;
+class TabBarCoordinator;
+class NavigationCoordinator;
+class FilterStatsBinder;
 
 /**
  * @brief 面板中介者组件依赖包
@@ -39,8 +47,8 @@ struct PanelMediatorComponents {
 };
 
 /**
- * @brief 面板中介者
- * 负责各面板与控制器之间的信号槽连接与协同动作，彻底解耦 MainWindow
+ * @brief 面板中介者 (瘦身重构版)
+ * 作为各专职协调器的装配中枢与对外门面，完全冻结对外公开接口契约。
  */
 class PanelMediator : public QObject {
     Q_OBJECT
@@ -51,7 +59,7 @@ public:
 
     static PanelMediator* instance();
 
-    ContentPanel* activeContentPanel() const { return m_activeContentPanel.data(); }
+    ContentPanel* activeContentPanel() const;
 
     /**
      * @brief 建立各面板间的信号槽连接
@@ -76,12 +84,13 @@ signals:
     void activeContentPanelChanged(ContentPanel* panel);
 
 private:
+    void distributeBindPane(ContentPanel* pane);
+
     QPointer<NavPanel> m_navPanel;
     QPointer<FavoritePanel> m_favoritePanel;
     QPointer<LibraryPanel> m_libraryPanel;
     QPointer<MarkedPanel> m_markedPanel;
     QPointer<ContentPanel> m_contentPanel;
-    QPointer<ContentPanel> m_activeContentPanel;
     QPointer<MetaPanel> m_metaPanel;
     QPointer<FilterPanel> m_filterPanel;
     QPointer<AddressBar> m_addressBar;
@@ -89,13 +98,15 @@ private:
     QPointer<TitleBarWidget> m_titleBar;
     QPointer<PanelLayoutManager> m_layoutManager;
     QPointer<AppShortcutController> m_shortcutController;
-    PaneActivationTracker* m_activationTracker = nullptr;
 
-    struct PanelMetaDebounceState {
-        QTimer* timer = nullptr;
-        QSet<QString> pendingCleanPaths;
-    };
-    QMap<ContentPanel*, PanelMetaDebounceState> m_panelMetaDebounceMap;
+    ActivePaneCoordinator* m_activeCoordinator = nullptr;
+    MetaPanelPresenter* m_metaPresenter = nullptr;
+    MetaEditController* m_metaEditController = nullptr;
+    QuickLookController* m_quickLookController = nullptr;
+    ShortcutActionRouter* m_shortcutRouter = nullptr;
+    TabBarCoordinator* m_tabBarCoordinator = nullptr;
+    NavigationCoordinator* m_navCoordinator = nullptr;
+    FilterStatsBinder* m_filterStatsBinder = nullptr;
 };
 
 } // namespace QuarkMeta
