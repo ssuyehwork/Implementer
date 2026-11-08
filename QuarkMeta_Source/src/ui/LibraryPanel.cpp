@@ -271,7 +271,7 @@ void LibraryItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& o
     int leftMargin = 10 + customDepth * 14;
     int iconSize = 18;
     int spacing = 8;
-    int rightMargin = 10;
+    int rightMargin = 20; // 向左偏移10像素，与10px垂直滚动条保持10像素视觉安全间距
 
     // 若当前为包含子分类的父分类节点，在其图标左侧绘制折叠箭头 (chevron_down / chevron_right)
     const QTreeView* treeView = qobject_cast<const QTreeView*>(option.widget);
@@ -355,7 +355,7 @@ void LibraryItemDelegate::updateEditorGeometry(QWidget* editor, const QStyleOpti
     int leftMargin = 10 + customDepth * 14;
     int iconSize = 18;
     int spacing = 8;
-    int rightMargin = 10;
+    int rightMargin = 20; // 保持与绘制坐标一致的20px右边距
 
     int iconLeft = option.rect.left() + leftMargin + (nodeId > 0 ? (arrowSize + arrowSpacing) : 0);
     int textLeft = iconLeft + iconSize + spacing;

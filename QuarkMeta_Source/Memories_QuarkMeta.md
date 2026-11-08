@@ -1192,3 +1192,31 @@ QuarkMeta 采用“侧车文件持久化 + 中心数据库索引”的读写分�
 3. **动态监控同步与 UI 原位刷新**：
    - `DirectoryWatchService` 检测到文件或子文件夹增删变动时，实时自动维护分类树层级与文件绑定；
    - 统一通过 `LibraryService::instance().libraryChanged` 信号驱动侧边栏 `LibraryPanel` 原位刷出最新分类结构。
+
+---
+
+## 44. 主界面栏区垂直滚动条规范与“库”面板分类计数边距设计理念 (Scrollbar Consistency & Category Count Spacing SSOT)
+
+> 本章节记录主界面栏区垂直滚动条宽度一致性规范，以及侧边栏“库”面板分类项计数右侧间距的交互美学设计理念。
+
+### 44.1 主界面五个栏区垂直滚动条一致性规范
+1. **全局统一度量标准**：
+   - 在 `QuarkMeta_Source/resources/style.qss` 中，垂直滚动条通过 `QScrollBar:vertical` 全局选择器统一定义：
+     ```qss
+     QScrollBar:vertical {
+         border: none;
+         background: transparent;
+         width: 10px;
+         margin: 0px;
+     }
+     ```
+   - 主界面五大核心栏区（导航栏 `NavPanel`、侧边栏 `LibraryPanel`/`FavoritePanel`、主内容区 `ContentPanel`、元数据面板 `MetaPanel`、过滤面板 `FilterPanel`）的垂直滚动条宽度严格一致，均为 **10 像素 (10px)**，滑块最小高度为 20px，圆角为 3px。
+
+### 44.2 “库”选项卡分类计数紧致痛点与向左偏移 10px 优化
+1. **交互痛点分析**：
+   - 原绘制逻辑中，分类项的数字计数（Count）右侧边距 `rightMargin` 设定为 10px（即 `QRect countRect(opt.rect.right() - countWidth - 10, ...)`）。
+   - 在侧边栏出现垂直滚动条时，滚动条本身宽度即为 10px，导致分类计数与滚动条外缘/视口边缘紧贴、视觉拥挤狭窄，造成眼神辨识吃力、界面呼吸感不足。
+2. **黄金间距设计理念**：
+   - 将分类项的 `rightMargin` 调整为 **20 像素**（在原基础上向左偏移 10 像素）；
+   - **几何计算效果**：在 10px 垂直滚动条存在时，分类计数与滚动条左边缘保持恰好 **10 像素的安全呼吸留白间距**；
+   - 同步修正分类行内重命名编辑器 `updateEditorGeometry` 的右侧边界，确保文字编辑框与右侧计数的间距协调对齐，消除视觉拥挤感。
