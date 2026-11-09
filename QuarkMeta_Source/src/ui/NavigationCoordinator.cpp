@@ -182,6 +182,7 @@ void NavigationCoordinator::wire() {
         connect(m_libraryPanel, &LibraryPanel::categoryPathsSelected, this, [this](const QStringList& paths, const QString& name, int categoryId) {
             ContentPanel* target = m_activeCoordinator ? m_activeCoordinator->currentTarget() : nullptr;
             if (target) {
+                target->setActivePane(true);
                 target->search("");
                 target->applyViewTarget(QString("library://%1").arg(categoryId), "library", name, categoryId, false);
                 target->setLastLoadedLibraryPaths(paths);
@@ -193,6 +194,7 @@ void NavigationCoordinator::wire() {
         connect(m_libraryPanel, &LibraryPanel::smartFolderSelected, this, [this](const SmartFolderRecord& record) {
             ContentPanel* target = m_activeCoordinator ? m_activeCoordinator->currentTarget() : nullptr;
             if (target) {
+                target->setActivePane(true);
                 target->loadSmartFolder(record, record.name);
             }
             showLocation("库 → " + record.name, record.name, "smartfolder://" + QString::number(record.id));
@@ -202,6 +204,7 @@ void NavigationCoordinator::wire() {
             QString displayName = record.name.isEmpty() ? "智能文件夹预览" : record.name;
             ContentPanel* target = m_activeCoordinator ? m_activeCoordinator->currentTarget() : nullptr;
             if (target) {
+                target->setActivePane(true);
                 target->loadSmartFolder(record, displayName);
             }
             showLocation("库 → " + displayName, displayName, "smartfolder://" + QString::number(record.id));
@@ -215,6 +218,7 @@ void NavigationCoordinator::wire() {
         }
         ContentPanel* target = m_activeCoordinator ? m_activeCoordinator->currentTarget() : nullptr;
         if (target) {
+            target->setActivePane(true);
             target->search("");
         }
 

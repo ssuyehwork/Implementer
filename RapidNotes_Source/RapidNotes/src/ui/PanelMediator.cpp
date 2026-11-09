@@ -340,6 +340,7 @@ void PanelMediator::setupConnections() {
         }
         ContentPanel* targetPanel = (m_activeContentPanel && m_activeContentPanel->isVisible()) ? m_activeContentPanel.data() : contentPanel;
         if (targetPanel) {
+            targetPanel->setActivePane(true);
             targetPanel->search("");
         }
         if (filterPanel) {
@@ -432,6 +433,7 @@ void PanelMediator::setupConnections() {
                     filterPanel->clearAllFilters(true);
                 }
                 if (target) {
+                    target->setActivePane(true);
                     target->search("");
                     target->applyViewTarget(QString("library://%1").arg(categoryId), "library", name, categoryId, false);
                     target->setLastLoadedLibraryPaths(paths);
@@ -448,6 +450,7 @@ void PanelMediator::setupConnections() {
             connect(libraryPanel, &LibraryPanel::smartFolderSelected, this, [this, contentPanel, filterPanel, addressBar, titleBar](const SmartFolderRecord& record) {
                 ContentPanel* target = m_activeContentPanel ? m_activeContentPanel.data() : contentPanel;
                 if (target) {
+                    target->setActivePane(true);
                     target->loadSmartFolder(record, record.name);
                 }
                 if (addressBar) {
@@ -465,6 +468,7 @@ void PanelMediator::setupConnections() {
                 QString displayName = record.name.isEmpty() ? "智能文件夹预览" : record.name;
                 ContentPanel* target = m_activeContentPanel ? m_activeContentPanel.data() : contentPanel;
                 if (target) {
+                    target->setActivePane(true);
                     target->loadSmartFolder(record, displayName);
                 }
                 if (addressBar) {

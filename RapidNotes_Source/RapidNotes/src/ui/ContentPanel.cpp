@@ -524,7 +524,13 @@ void ContentPanel::requestClosePane() {
 
 void ContentPanel::setActivePane(bool active) {
     if (m_splitManager) m_splitManager->setActivePane(active);
-    if (active) emit panelActivated(this);
+    if (active) {
+        QAbstractItemView* curView = activeItemView();
+        if (curView && !curView->hasFocus()) {
+            curView->setFocus(Qt::MouseFocusReason);
+        }
+        emit panelActivated(this);
+    }
 }
 
 QString ContentPanel::activePath() const {
@@ -1404,6 +1410,7 @@ void ContentPanel::restoreSelections() {
     }
 
     m_isRestoringSelections = false;
+    setActivePane(true);
 }
 
 void ContentPanel::setPendingSelectPath(const QString& fullPath, bool edit) {

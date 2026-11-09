@@ -1430,6 +1430,7 @@ void ContentPanel::restoreSelections() {
     }
 
     m_isRestoringSelections = false;
+    setActivePane(true);
 }
 
 void ContentPanel::setPendingSelectPath(const QString& fullPath, bool edit) {
