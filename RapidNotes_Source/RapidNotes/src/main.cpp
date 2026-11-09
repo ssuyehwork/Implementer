@@ -167,10 +167,24 @@ int main(int argc, char *argv[]) {
             }
         }
 
+        // 告知看门狗：本次为主程序正常主动退出，无需重启
+        QString lockPath = QCoreApplication::applicationDirPath() + "/exit_gracefully.lock";
+        QFile lockFile(lockPath);
+        if (lockFile.open(QIODevice::WriteOnly)) {
+            lockFile.write("1");
+            lockFile.close();
+        }
+
         // [DE-SHELL] 数据库已改为明文直连，退出不再有耗时的加密操作，实现秒级退出
         DatabaseManager::instance().closeAndPack();
         QApplication::quit();
     };
+
+    // 启动独立看门狗守护进程 (若存在)
+    QString watchdogExe = QCoreApplication::applicationDirPath() + "/RapidNotesWatchdog.exe";
+    if (QFile::exists(watchdogExe)) {
+        QProcess::startDetached(watchdogExe, {"--pid", QString::number(QCoreApplication::applicationPid())});
+    }
 
     // 1.1 2026-03-xx 按照用户要求：正版授权强制校验逻辑
     QVariantMap trialStatus = DatabaseManager::instance().getTrialStatus();
