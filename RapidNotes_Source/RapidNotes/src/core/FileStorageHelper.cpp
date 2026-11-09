@@ -79,7 +79,14 @@ static void exportNotesToDirectory(const QList<QVariantMap>& notes, const QStrin
 
             QFile f(exportPath + "/" + finalName);
             if (f.open(QIODevice::WriteOnly)) {
-                f.write(blob);
+                if (!blob.isEmpty()) {
+                    f.write(blob);
+                } else if (type == "image" && !content.isEmpty() && QFile::exists(content)) {
+                    QFile src(content);
+                    if (src.open(QIODevice::ReadOnly)) {
+                        f.write(src.readAll());
+                    }
+                }
                 f.close();
             }
         } else if (type == "local_file" || type == "local_folder" || type == "local_batch") {

@@ -55,7 +55,12 @@ QVariant NoteModel::data(const QModelIndex& index, int role) const {
                 if (m_thumbnailCache.contains(id)) return m_thumbnailCache[id];
 
                 QImage img;
-                img.loadFromData(note.value("data_blob").toByteArray());
+                QByteArray blob = note.value("data_blob").toByteArray();
+                if (!blob.isEmpty()) {
+                    img.loadFromData(blob);
+                } else if (!content.isEmpty()) {
+                    img.load(content);
+                }
                 if (!img.isNull()) {
                     if (m_thumbnailCache.size() > 500) m_thumbnailCache.clear();
                     QIcon thumb = RapidNotes::ThumbnailMaker::makeThumbnailIcon(img);
@@ -108,6 +113,12 @@ QVariant NoteModel::data(const QModelIndex& index, int role) const {
             RapidNotes::ItemType::Type itype = RapidNotes::ItemType::fromString(note.value("item_type").toString());
             if (itype == RapidNotes::ItemType::Type::Image) {
                 QByteArray ba = note.value("data_blob").toByteArray();
+                if (ba.isEmpty() && !content.isEmpty()) {
+                    QFile file(content);
+                    if (file.open(QIODevice::ReadOnly)) {
+                        ba = file.readAll();
+                    }
+                }
                 preview = QString("<img src='data:image/png;base64,%1' width='300'>").arg(QString(ba.toBase64()));
             } else {
                 // 2026-03-15 按照用户意图：如果内容与标题重复，则不显示预览区，保持干练

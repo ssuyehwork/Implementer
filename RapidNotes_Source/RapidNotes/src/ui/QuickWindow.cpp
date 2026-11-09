@@ -1700,10 +1700,17 @@ void QuickWindow::activateNote(const QModelIndex& index) {
     QByteArray blob = note.value("data_blob").toByteArray();
 
     if (itemType == "image") {
-        QImage img;
-        img.loadFromData(blob);
         ClipboardMonitor::instance().skipNext();
-        QApplication::clipboard()->setImage(img);
+        if (!blob.isEmpty()) {
+            QImage img;
+            img.loadFromData(blob);
+            QApplication::clipboard()->setImage(img);
+        } else if (!content.isEmpty() && QFile::exists(content)) {
+            QMimeData* mimeData = new QMimeData();
+            mimeData->setUrls({QUrl::fromLocalFile(content)});
+            mimeData->setImageData(QImage(content));
+            QApplication::clipboard()->setMimeData(mimeData);
+        }
     } else if (itemType == "local_file" || itemType == "local_folder" || itemType == "local_batch" ||
                (QFileInfo(StringUtils::htmlToPlainText(content).trimmed()).exists() && QFileInfo(StringUtils::htmlToPlainText(content).trimmed()).isAbsolute())) {
 
@@ -3004,10 +3011,17 @@ void QuickWindow::sendNote(const QVariantMap& note) {
     DatabaseManager::instance().recordAccess(id);
 
     if (itemType == "image") {
-        QImage img;
-        img.loadFromData(blob);
         ClipboardMonitor::instance().skipNext();
-        QApplication::clipboard()->setImage(img);
+        if (!blob.isEmpty()) {
+            QImage img;
+            img.loadFromData(blob);
+            QApplication::clipboard()->setImage(img);
+        } else if (!content.isEmpty() && QFile::exists(content)) {
+            QMimeData* mimeData = new QMimeData();
+            mimeData->setUrls({QUrl::fromLocalFile(content)});
+            mimeData->setImageData(QImage(content));
+            QApplication::clipboard()->setMimeData(mimeData);
+        }
     } else {
         StringUtils::copyNoteToClipboard(content);
     }

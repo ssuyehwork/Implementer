@@ -16,6 +16,28 @@
 #include <psapi.h>
 #endif
 
+namespace {
+// 将纯内存截图（没有物理文件的图片）保存到本地磁盘，返回物理绝对路径
+QString saveMemoryImageToDisk(const QImage& image) {
+    if (image.isNull()) return "";
+    QString mediaDir = QCoreApplication::applicationDirPath() + "/data/media";
+    QDir().mkpath(mediaDir);
+
+    // 用图片字节哈希做文件名，天然防重复
+    QByteArray ba;
+    QBuffer buffer(&ba);
+    buffer.open(QIODevice::WriteOnly);
+    image.save(&buffer, "PNG");
+    QString hash = QCryptographicHash::hash(ba, QCryptographicHash::Sha256).toHex().left(16);
+
+    QString filePath = mediaDir + "/" + hash + ".png";
+    if (!QFile::exists(filePath)) {
+        image.save(filePath, "PNG");
+    }
+    return filePath; // 返回绝对路径，如 "D:/RapidNotes/data/media/a1b2c3d4.png"
+}
+} // namespace
+
 ClipboardMonitor& ClipboardMonitor::instance() {
     static ClipboardMonitor inst;
     return inst;
@@ -107,20 +129,22 @@ void ClipboardMonitor::onClipboardChanged() {
         }
 #endif
 
-        // 后台处理图片降采样与编码 (使用主线程捕获的副本)
+        QString finalContent = content;
+        // 后台处理图片落盘：纯内存截图保存到本地物理磁盘，content 记录绝对路径，dataBlob 保持为空
         if (type == "image" && !sourceImage.isNull()) {
             QImage img = sourceImage;
             if (img.width() * img.height() * 4 > 20 * 1024 * 1024) {
                 img = img.scaled(2560, 2560, Qt::KeepAspectRatio, Qt::SmoothTransformation);
             }
-            QBuffer buffer(&dataBlob);
-            buffer.open(QIODevice::WriteOnly);
-            img.save(&buffer, "PNG");
+            QString localPath = saveMemoryImageToDisk(img);
+            if (!localPath.isEmpty()) {
+                finalContent = localPath;
+            }
+            dataBlob.clear();
         }
 
         // 后台去重校验 (使用互斥锁保护线程安全)
-        QByteArray hashData = dataBlob.isEmpty() ? content.toUtf8() : dataBlob;
-        QString currentHash = QCryptographicHash::hash(hashData, QCryptographicHash::Sha256).toHex();
+        QString currentHash = QCryptographicHash::hash(finalContent.toUtf8(), QCryptographicHash::Sha256).toHex();
         
         {
             QMutexLocker locker(&m_hashMutex);
@@ -133,7 +157,7 @@ void ClipboardMonitor::onClipboardChanged() {
         
         // 最终发射唯一的业务信号，触发数据库入库
         QMetaObject::invokeMethod(this, [=]() {
-            emit newContentDetected(content, type, dataBlob, finalApp, finalTitle);
+            emit newContentDetected(finalContent, type, dataBlob, finalApp, finalTitle);
         }, Qt::QueuedConnection);
     });
 }
