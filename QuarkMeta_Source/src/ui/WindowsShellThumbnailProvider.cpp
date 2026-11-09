@@ -62,15 +62,24 @@ bool WindowsShellThumbnailProvider::isDriveRootPath(const QString& filePath) {
     return filePath.endsWith(":\\") || filePath.endsWith(":/") || filePath.length() <= 3;
 }
 
+bool WindowsShellThumbnailProvider::isCustomIconExtension(const QString& suffix) {
+    QString ext = suffix.toLower();
+    return (ext == QStringLiteral("exe") ||
+            ext == QStringLiteral("lnk") ||
+            ext == QStringLiteral("ico") ||
+            ext == QStringLiteral("scr"));
+}
+
 // 缓存键唯一计算入口
 QString WindowsShellThumbnailProvider::iconKey(const QString& filePath, bool isDir, const QString& suffix) {
     QString key;
     if (isDir) {
         key = isDriveRootPath(filePath) ? filePath : QStringLiteral("folder");
+    } else if (isCustomIconExtension(suffix) && !filePath.isEmpty()) {
+        key = QDir::cleanPath(filePath);
     } else {
         key = suffix.toLower();
     }
-    if (key.length() > 128) key = QStringLiteral("unknown");
     return key;
 }
 
@@ -171,7 +180,12 @@ void WindowsShellThumbnailProvider::handleIconLoad(const QString& filePath, cons
                 if (!checkCircuitBreaker()) {
                     icon = provider.icon(QFileIconProvider::File);
                 } else {
-                    icon = provider.icon(QFileInfo("dummy." + key));
+                    QFileInfo targetInfo(filePath);
+                    if (isCustomIconExtension(targetInfo.suffix()) && targetInfo.exists()) {
+                        icon = provider.icon(targetInfo);
+                    } else {
+                        icon = provider.icon(QFileInfo("dummy." + key));
+                    }
                     if (icon.isNull()) {
                         icon = provider.icon(QFileIconProvider::File);
                     }

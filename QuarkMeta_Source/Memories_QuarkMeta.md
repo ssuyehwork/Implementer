@@ -1298,3 +1298,21 @@ QuarkMeta 采用“侧车文件持久化 + 中心数据库索引”的读写分�
    - 两者互斥单选，必选其一，勾选状态持久化至 `AppConfig` 的 `QuickLook/ThumbnailSource` 键中；界面配备详细思量说明注释。
 2. **平滑降级防黑屏兜底**：
    - 当配置为 `disk_thumbs` 时，若特定文件尚未生成缩略图或已过期，自动向下穿透至实时解码高清管线，绝对杜绝黑屏现象。
+
+---
+
+## 48. 可执行文件与独立图标格式真机专属 Logo 提取与隔离缓存规范 (Executable & Custom Icon File Genuine Logo Extraction SSOT)
+
+> 本章节记录 `.exe`、`.lnk`、`.ico`、`.scr` 这类自身内嵌独立图形外观的文件格式真机专属 Logo 提取与独立缓存隔离机制。
+
+### 48.1 独立图标文件专用判定与缓存键隔离
+1. **独立扩展名白名单**：
+   - 包含 `.exe`、`.lnk`、`.ico`、`.scr` 四种格式（由 `isCustomIconExtension(suffix)` 判定）；
+   - 普通文件继续使用小写扩展名（如 `"pdf"`、`"txt"`）作为缓存键，避免缓存条目过度膨胀；
+   - 独立图标文件强制采用规范化绝对物理路径 `QDir::cleanPath(filePath)` 作为独立缓存键，确保每一个 exe/快捷方式拥有独一无二的专属缓存槽位，杜绝全局通用图标同化。
+
+### 48.2 真机 PE 资源提取与安全降级
+1. **真机资源提取管线**：
+   - 在后台子线程中，命中白名单且文件真实存在时，使用 `QFileInfo targetInfo(filePath)` 调用 `provider.icon(targetInfo)` 提取 PE 文件或独立图标的真实彩色 Logo，而非请求 `dummy.exe` 虚拟名称；
+   - 若提取失败或文件处于未就绪状态，安全回退至系统通用占位符 `provider.icon(QFileIconProvider::File)`；
+   - 全程在 COM 线程套间环境与熔断冷却机制保护下运行，确保主线程界面零卡顿与绝对高可靠性。

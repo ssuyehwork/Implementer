@@ -57,6 +57,7 @@ private:
     ~WindowsShellThumbnailProvider() override = default;
 
     static bool isDriveRootPath(const QString& filePath);
+    static bool isCustomIconExtension(const QString& suffix);
 
     static QMutex& fileIconMutex();
     static QMap<QString, QIcon>& fileIconCache();
