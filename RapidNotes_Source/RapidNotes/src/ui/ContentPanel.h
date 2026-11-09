@@ -61,9 +61,9 @@ public:
     enum ContextAction {
         ActionNone, ActionOpen, ActionOpenInNewTab, ActionOpenDefault, ActionShowInExplorer, ActionShowInRapidNotes, ActionNewFolder, ActionNewMd, ActionNewTxt, ActionCreateFolderWithSelectedItems,
         ActionPin, ActionUnpin, ActionColorTag, ActionEncrypt, ActionDecrypt, ActionChangePwd,
-        ActionBatchRename, ActionRename, ActionCopy, ActionCut, ActionDuplicate, ActionPaste, ActionCopyTags, ActionPasteTags, ActionRepeatLastOp, ActionDelete,
+        ActionRename, ActionCopy, ActionCut, ActionDuplicate, ActionPaste, ActionCopyTags, ActionPasteTags, ActionRepeatLastOp, ActionDelete,
         ActionPermanentDelete, ActionSecureDelete, ActionRestore, ActionRestoreAll, ActionEmptyTrash,
-        ActionCopyName, ActionCopyPath, ActionAddToFavorites, ActionRefresh, ActionReextractThumbnail, ActionBatchCreate, ActionFileCompare,
+        ActionCopyName, ActionCopyPath, ActionAddToFavorites, ActionRefresh, ActionReextractThumbnail, ActionFileCompare,
         ActionOpenDirectoryInExplorer, ActionExtractArchive, ActionCompressToZip
     };
 
@@ -178,7 +178,6 @@ public:
     // 5. 业务操作分发
     void performCopy(bool cutMode);
     void performPaste();
-    void performBatchRename();
     bool resolvePasteDestination();
     void setViewMode(ViewMode mode);
     void toggleFolderSectionCollapse();

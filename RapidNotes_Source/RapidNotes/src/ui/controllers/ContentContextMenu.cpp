@@ -10,8 +10,6 @@
 #include "../ToolTipOverlay.h"
 #include "../ColorPicker.h"
 #include "../FavoritePanel.h"
-#include "../BatchRenameDialog.h"
-#include "../BatchCreateDialog.h"
 #include "../FramelessDialog.h"
 #include "../dialogs/FramelessInputDialog.h"
 #include "../dialogs/CreateFolderWithItemsDialog.h"
@@ -552,8 +550,6 @@ void ContentContextMenu::showMenu(QAbstractItemView* view, const QPoint& pos) {
                 newMenu->addAction(UiHelper::getIcon("text", QColor("#EEEEEE")), "创建纯文本文件 (txt)")->setData(ContentPanel::ActionNewTxt);
 
                 menu.addSeparator();
-                menu.addAction(UiHelper::getIcon("add", QColor("#EEEEEE")), "批量创建项目...")->setData(ContentPanel::ActionBatchCreate);
-                menu.addSeparator();
             }
 
             QAction* actPaste = menu.addAction(UiHelper::getIcon("paste", QColor("#EEEEEE"), 18), "粘贴（Ctrl+V）");
@@ -876,14 +872,8 @@ void ContentContextMenu::showMenu(QAbstractItemView* view, const QPoint& pos) {
             });
             break;
         }
-        case ContentPanel::ActionBatchRename:
         case ContentPanel::ActionRename: {
-            QStringList selectedPaths = m_panel->getSelectedPaths();
-            if (selectedPaths.size() > 1) {
-                m_panel->performBatchRename();
-            } else {
-                view->edit(currentIndex);
-            }
+            view->edit(currentIndex);
             break;
         }
         case ContentPanel::ActionCopy:
@@ -952,13 +942,6 @@ void ContentContextMenu::showMenu(QAbstractItemView* view, const QPoint& pos) {
         }
         case ContentPanel::ActionPasteTags: {
             ClipboardService::instance().executePasteTags(view);
-            break;
-        }
-        case ContentPanel::ActionBatchCreate: {
-            BatchCreateDialog dlg(currentPath, m_panel);
-            if (dlg.exec() == QDialog::Accepted) {
-                m_panel->refreshAll();
-            }
             break;
         }
         case ContentPanel::ActionRestore: {

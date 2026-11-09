@@ -796,10 +796,6 @@ void ContentPanel::createNewItem(const QString& type) {
     if (m_fileOpsHandler) m_fileOpsHandler->createNewItem(type);
 }
 
-void ContentPanel::performBatchRename() {
-    if (m_fileOpsHandler) m_fileOpsHandler->performBatchRename();
-}
-
 void ContentPanel::onPathsDropped(const QStringList& paths, const QModelIndex& targetIndex, const QString& targetDirOverride, Qt::DropAction action) {
     if (m_fileOpsHandler) m_fileOpsHandler->onPathsDropped(paths, targetIndex, targetDirOverride, action);
 }

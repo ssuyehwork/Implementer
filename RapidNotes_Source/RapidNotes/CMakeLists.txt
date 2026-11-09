@@ -409,8 +409,6 @@ set(SOURCES
     src/ui/workers/ContentStatsWorker.h
     src/core/ActionCommand.h
     src/core/BasicCommands.h
-    src/core/BatchRenameService.cpp
-    src/core/BatchRenameService.h
     src/core/CoreController.cpp
     src/core/CoreController.h
     src/core/DeviceWatcher.cpp
@@ -440,7 +438,6 @@ set(SOURCES
     src/core/UndoManager.h
     src/core/VolumeOnlineManager.cpp
     src/core/VolumeOnlineManager.h
-    src/core/commands/BatchRenameCommand.h
     src/core/commands/MetadataCommand.h
     src/core/commands/MoveCommand.h
     src/core/commands/RenameCommand.h
@@ -450,8 +447,6 @@ set(SOURCES
     src/crypto/EncryptionManager.h
     src/meta/AssociationCascadeService.cpp
     src/meta/AssociationCascadeService.h
-    src/meta/BatchRenameEngine.cpp
-    src/meta/BatchRenameEngine.h
     src/meta/DatabaseManager.cpp
     src/meta/DatabaseManager.h
     src/meta/DatabaseMigrator.h
@@ -561,13 +556,7 @@ set(SOURCES
     src/ui/AspectRatioGroup.h
     src/ui/AutoColorGroup.cpp
     src/ui/AutoColorGroup.h
-    src/ui/BatchCreateDialog.cpp
-    src/ui/BatchCreateDialog.h
     src/ui/BatchProgressDialog.h
-    src/ui/BatchRenameDialog.cpp
-    src/ui/BatchRenameDialog.h
-    src/ui/CreateRuleRow.cpp
-    src/ui/CreateRuleRow.h
     src/ui/DriveButton.cpp
     src/ui/DriveButton.h
     src/ui/DuplicateConflictDialog.cpp
@@ -600,8 +589,6 @@ set(SOURCES
     src/ui/MarkedPanel.h
     src/ui/NavPanel.cpp
     src/ui/NavPanel.h
-    src/ui/PresetManager.cpp
-    src/ui/PresetManager.h
     src/ui/QuarkApplication.cpp
     src/ui/QuarkApplication.h
     src/ui/QuickLookGraphicsView.cpp
@@ -609,8 +596,6 @@ set(SOURCES
     src/ui/QuickLookMinimap.cpp
     src/ui/QuickLookMinimap.h
     src/ui/QuickLookWindow.cpp
-    src/ui/RuleRow.cpp
-    src/ui/RuleRow.h
     src/ui/ShellIconManager.h
     src/ui/StatusTextCoordinator.cpp
     src/ui/StatusTextCoordinator.h

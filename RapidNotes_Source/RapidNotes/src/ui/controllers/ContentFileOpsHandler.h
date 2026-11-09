@@ -15,7 +15,6 @@ public:
     ~ContentFileOpsHandler() override = default;
 
     void createNewItem(const QString& type);
-    void performBatchRename();
     bool resolvePasteDestination();
     void onPathsDropped(const QStringList& paths, const QModelIndex& targetIndex, const QString& targetDirOverride = QString(), Qt::DropAction action = Qt::CopyAction);
 

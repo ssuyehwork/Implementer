@@ -4,4 +4,3 @@
 #include "commands/MetadataCommand.h"
 #include "commands/SecureDeleteCommand.h"
 #include "commands/ShellProtectionCommand.h"
-#include "commands/BatchRenameCommand.h"

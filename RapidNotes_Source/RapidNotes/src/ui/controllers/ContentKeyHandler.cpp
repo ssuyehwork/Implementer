@@ -594,7 +594,7 @@ bool ContentKeyHandler::handleKeyPress(QObject* obj, QEvent* event) {
         Logger::log("[CONTENT_KEY_DEBUG] F2 intercepted in ContentKeyHandler::handleKeyPress!");
         QStringList selectedPaths = m_panel->getSelectedPaths();
         if (selectedPaths.size() > 1) {
-            m_panel->performBatchRename();
+            // 数据库笔记模型多选时不执行物理批量改名
         } else {
             QModelIndex idx = view->currentIndex();
             if (!idx.isValid() && view->selectionModel()) {
