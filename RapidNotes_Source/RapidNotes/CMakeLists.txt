@@ -664,7 +664,6 @@ set(SOURCES
     src/util/ThumbnailPipelineService.h
     src/util/VolumePathResolver.cpp
     src/util/VolumePathResolver.h
-    src/watchdog/main.cpp
     resources/resources.qrc
     resources/app.manifest
 )
@@ -713,6 +712,34 @@ if(WIN32)
         version crypt32 windowsapp dbghelp
     )
     set_target_properties(RapidNotes PROPERTIES
+        WIN32_EXECUTABLE TRUE
+    )
+endif()
+
+# ==============================================================================
+# 方案 A: 独立看门狗守护进程 (RapidNotesWatchdog)
+# ==============================================================================
+add_executable(RapidNotesWatchdog
+    src/watchdog/main.cpp
+)
+
+set_property(TARGET RapidNotesWatchdog PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
+set_target_properties(RapidNotesWatchdog PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${TARGET_APP_OUTPUT_DIR}"
+    RUNTIME_OUTPUT_DIRECTORY_DEBUG "${TARGET_APP_OUTPUT_DIR}"
+    RUNTIME_OUTPUT_DIRECTORY_RELEASE "${TARGET_APP_OUTPUT_DIR}"
+    RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${TARGET_APP_OUTPUT_DIR}"
+    RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${TARGET_APP_OUTPUT_DIR}"
+)
+
+target_link_libraries(RapidNotesWatchdog PRIVATE
+    Qt6::Core
+)
+
+if(WIN32)
+    # 看门狗无窗口运行
+    set_target_properties(RapidNotesWatchdog PROPERTIES
         WIN32_EXECUTABLE TRUE
     )
 endif()

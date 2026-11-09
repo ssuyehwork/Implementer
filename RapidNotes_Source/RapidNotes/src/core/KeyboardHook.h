@@ -21,6 +21,7 @@ signals:
     void digitPressed(int digit);
     void globalLockRequested();
     void showAllDataRequested(); // 2026-05-27 [NEW]
+    void enterPressedInOtherApp(); // 消息捕获回车信号
 
 private:
     bool m_digitInterceptEnabled = false;

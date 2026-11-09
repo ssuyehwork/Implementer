@@ -11,7 +11,7 @@
 #include "../core/DiskTrashService.h"
 #include "../meta/MetadataManager.h"
 #include "../meta/TrashRepository.h"
-#include "../meta/RapidNotesJson.h"
+#include "../meta/QuarkMetaJson.h"
 #include "../meta/DiskTrashRepo.h"
 #include "../meta/AssociationCascadeService.h"
 #include <QtConcurrent>
