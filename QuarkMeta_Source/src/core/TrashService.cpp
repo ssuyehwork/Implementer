@@ -78,7 +78,7 @@ bool TrashService::restoreItems(const QList<int>& trashIds, QWidget* parentWidge
         }
     }
     if (successCount > 0) {
-        ToolTipOverlay::instance()->showText(QCursor::pos(), QString("成功还原 %1 个回收站项目").arg(successCount), 1500, QColor("#2ecc71"));
+        ToolTipOverlay::instance()->showToast(QString("成功还原 %1 个回收站项目").arg(successCount), 1500, QColor("#2ecc71"));
         MetadataManager::instance().notifyUI(MetadataManager::RefreshLevel::FullRebuild);
         emit trashOperationCompleted();
     }
@@ -89,7 +89,7 @@ bool TrashService::restoreAll(QWidget* parentWidget) {
     Q_UNUSED(parentWidget);
     bool ok = DiskTrashService::restoreAllDiskTrash();
     if (ok) {
-        ToolTipOverlay::instance()->showText(QCursor::pos(), "所有回收站项目已成功还原", 1500, QColor("#2ecc71"));
+        ToolTipOverlay::instance()->showToast("所有回收站项目已成功还原", 1500, QColor("#2ecc71"));
         MetadataManager::instance().notifyUI(MetadataManager::RefreshLevel::FullRebuild);
         emit trashOperationCompleted();
     }
@@ -107,7 +107,7 @@ bool TrashService::restoreToDirectory(const QStringList& trashPaths, const QStri
         }
     }
     if (successCount > 0) {
-        ToolTipOverlay::instance()->showText(QCursor::pos(), QString("成功恢复 %1 个项目").arg(successCount), 1500, QColor("#2ecc71"));
+        ToolTipOverlay::instance()->showToast(QString("成功恢复 %1 个项目").arg(successCount), 1500, QColor("#2ecc71"));
         emit trashOperationCompleted();
     }
     return successCount > 0;

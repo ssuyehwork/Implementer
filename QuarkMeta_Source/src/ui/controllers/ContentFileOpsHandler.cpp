@@ -85,12 +85,12 @@ void ContentFileOpsHandler::performBatchRename() {
 bool ContentFileOpsHandler::resolvePasteDestination() {
     if (!m_panel) return false;
     if (m_panel->getCurrentCategoryType() == "trash") {
-        ToolTipOverlay::instance()->showText(QCursor::pos(), "当前视图为回收站，不支持粘贴或拖拽导入新项目", 2000, QColor("#e81123"));
+        ToolTipOverlay::instance()->showToast("当前视图为回收站，不支持粘贴或拖拽导入新项目", 2000, QColor("#e81123"));
         return false;
     }
     QString currentPath = m_panel->activePath();
     if (currentPath.isEmpty() || currentPath == "computer://") {
-        ToolTipOverlay::instance()->showText(QCursor::pos(), "粘贴失败：当前未处于任何有效目录中", 2000, QColor("#e81123"));
+        ToolTipOverlay::instance()->showToast("粘贴失败：当前未处于任何有效目录中", 2000, QColor("#e81123"));
         return false;
     }
     return true;
@@ -264,7 +264,7 @@ void ContentFileOpsHandler::onPathsDropped(const QStringList& paths, const QMode
         }
 
         if (activeSources.isEmpty()) {
-            ToolTipOverlay::instance()->showText(QCursor::pos(), "已跳过所有同名文件", 1500, QColor("#378ADD"));
+            ToolTipOverlay::instance()->showToast("已跳过所有同名文件", 1500, QColor("#378ADD"));
             return;
         }
         ioCtx.sources = activeSources;

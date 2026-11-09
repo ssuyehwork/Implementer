@@ -32,7 +32,7 @@ bool FavoriteService::addFavorite(const QString& path, int parentId) {
 
     bool existsAlready = FavoriteDao::containsPath(cleanPath);
     if (existsAlready) {
-        ToolTipOverlay::instance()->showText(QCursor::pos(), "该文件夹已在收藏夹中，请勿重复添加", 2000, QColor("#e81123"));
+        ToolTipOverlay::instance()->showToast("该文件夹已在收藏夹中，请勿重复添加", 2000, QColor("#e81123"));
         return false;
     }
 

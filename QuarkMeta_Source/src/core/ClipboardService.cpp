@@ -47,7 +47,7 @@ bool ClipboardService::executePasteTags(QAbstractItemView* view) {
     if (!view) return false;
 
     if (m_copiedTags.isEmpty()) {
-        ToolTipOverlay::instance()->showText(QCursor::pos(), "剪贴板无有效标签", 1500, QColor("#e81123"));
+        ToolTipOverlay::instance()->showToast("剪贴板无有效标签", 1500, QColor("#e81123"));
         return false;
     }
 
@@ -72,7 +72,7 @@ bool ClipboardService::executePasteTags(QAbstractItemView* view) {
         cmd.params["tags"] = m_copiedTags;
         CoreEngine::instance().executeCommand(cmd);
 
-        ToolTipOverlay::instance()->showText(QCursor::pos(), QString("已将标签粘贴至 %1 个项目").arg(targetPaths.size()), 1500, QColor("#2ecc71"));
+        ToolTipOverlay::instance()->showToast(QString("已将标签粘贴至 %1 个项目").arg(targetPaths.size()), 1500, QColor("#2ecc71"));
         return true;
     }
     return false;
@@ -188,7 +188,7 @@ void ClipboardService::executePaste(const QString& targetDir, QWidget* parentWid
             }
 
             if (img.save(fullPath, "PNG")) {
-                ToolTipOverlay::instance()->showText(QCursor::pos(), "已将剪贴板图片粘贴为新文件", 1500, QColor("#2ecc71"));
+                ToolTipOverlay::instance()->showToast("已将剪贴板图片粘贴为新文件", 1500, QColor("#2ecc71"));
                 emit pasteCompleted(targetDir);
             }
             return;
@@ -280,7 +280,7 @@ void ClipboardService::executePaste(const QString& targetDir, QWidget* parentWid
         }
 
         if (activeSources.isEmpty()) {
-            ToolTipOverlay::instance()->showText(QCursor::pos(), "已跳过所有同名文件", 1500, QColor("#378ADD"));
+            ToolTipOverlay::instance()->showToast("已跳过所有同名文件", 1500, QColor("#378ADD"));
             return;
         }
         ioCtx.sources = activeSources;
@@ -293,7 +293,7 @@ void ClipboardService::executePaste(const QString& targetDir, QWidget* parentWid
                 if (success) {
                     emit weakThis->pasteCompleted(targetDir);
                 } else {
-                    ToolTipOverlay::instance()->showText(QCursor::pos(), "粘贴失败：物理写入未能完成", 2000, QColor("#e81123"));
+                    ToolTipOverlay::instance()->showToast("粘贴失败：物理写入未能完成", 2000, QColor("#e81123"));
                 }
             }
         });

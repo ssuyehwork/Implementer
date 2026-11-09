@@ -146,7 +146,7 @@ bool PermanentDeleteService::executeTrashItems(const std::vector<std::pair<int, 
 bool PermanentDeleteService::executeEmptyTrash(QWidget* parentWidget, bool isSecureShred) {
     auto allTrash = DiskTrashRepo::getAllTrashItems();
     if (allTrash.empty()) {
-        ToolTipOverlay::instance()->showText(QCursor::pos(), "回收站为空，无需清理", 1500);
+        ToolTipOverlay::instance()->showToast("回收站为空，无需清理", 1500);
         return true;
     }
 

@@ -75,7 +75,7 @@ bool ContentKeyHandler::navigateViewLastItem(QAbstractItemView* view) {
 
 bool ContentKeyHandler::executeRepeatLastOp(ContentPanel* panel, QAbstractItemView* view) {
     if (!LastOperationManager::instance().hasOperation()) {
-        ToolTipOverlay::instance()->showText(QCursor::pos(), "尚未记录任何可重复的操作", 1500, QColor("#e81123"));
+        ToolTipOverlay::instance()->showToast("尚未记录任何可重复的操作", 1500, QColor("#e81123"));
         return false;
     }
 
@@ -145,7 +145,7 @@ bool ContentKeyHandler::executeRepeatLastOp(ContentPanel* panel, QAbstractItemVi
     }
 
     if (count > 0) {
-        ToolTipOverlay::instance()->showText(QCursor::pos(), QString("已对 %1 个项目重复执行上一次操作").arg(count), 1500, QColor("#2ecc71"));
+        ToolTipOverlay::instance()->showToast(QString("已对 %1 个项目重复执行上一次操作").arg(count), 1500, QColor("#2ecc71"));
     }
     return count > 0;
 }
@@ -153,13 +153,13 @@ bool ContentKeyHandler::executeRepeatLastOp(ContentPanel* panel, QAbstractItemVi
 bool ContentKeyHandler::executeMoveToFolder(ContentPanel* panel, const QString& targetDir) {
     if (!panel) return false;
     if (targetDir.isEmpty() || !QDir(targetDir).exists()) {
-        ToolTipOverlay::instance()->showText(QCursor::pos(), "目标文件夹不存在或尚未发生过移入操作", 1500, QColor("#e81123"));
+        ToolTipOverlay::instance()->showToast("目标文件夹不存在或尚未发生过移入操作", 1500, QColor("#e81123"));
         return false;
     }
 
     QStringList selectedPaths = panel->getSelectedPaths();
     if (selectedPaths.isEmpty()) {
-        ToolTipOverlay::instance()->showText(QCursor::pos(), "未选择任何项目", 1200, QColor("#e81123"));
+        ToolTipOverlay::instance()->showToast("未选择任何项目", 1200, QColor("#e81123"));
         return false;
     }
 
@@ -220,7 +220,7 @@ bool ContentKeyHandler::executeMoveToFolder(ContentPanel* panel, const QString& 
         }
 
         if (activeSources.isEmpty()) {
-            ToolTipOverlay::instance()->showText(QCursor::pos(), "已跳过所有同名文件", 1500, QColor("#378ADD"));
+            ToolTipOverlay::instance()->showToast("已跳过所有同名文件", 1500, QColor("#378ADD"));
             return true;
         }
         ioCtx.sources = activeSources;
@@ -233,9 +233,9 @@ bool ContentKeyHandler::executeMoveToFolder(ContentPanel* panel, const QString& 
                 if (success) {
                     weakPanel->refreshAll();
                     QString folderName = QFileInfo(targetDir).fileName();
-                    ToolTipOverlay::instance()->showText(QCursor::pos(), QString("已移入到: %1").arg(folderName), 1500, QColor("#2ecc71"));
+                    ToolTipOverlay::instance()->showToast(QString("已移入到: %1").arg(folderName), 1500, QColor("#2ecc71"));
                 } else {
-                    ToolTipOverlay::instance()->showText(QCursor::pos(), "移动失败：物理写入未能完成", 2000, QColor("#e81123"));
+                    ToolTipOverlay::instance()->showToast("移动失败：物理写入未能完成", 2000, QColor("#e81123"));
                 }
             }
         });
@@ -561,7 +561,7 @@ bool ContentKeyHandler::handleKeyPress(QObject* obj, QEvent* event) {
                 tags.removeAll("");
                 if (!tags.isEmpty()) {
                     ClipboardService::instance().setCopiedTags(tags);
-                    ToolTipOverlay::instance()->showText(QCursor::pos(), QString("已复制 %1 个标签").arg(tags.size()), 1500, QColor("#2ecc71"));
+                    ToolTipOverlay::instance()->showToast(QString("已复制 %1 个标签").arg(tags.size()), 1500, QColor("#2ecc71"));
                     return true;
                 }
             }

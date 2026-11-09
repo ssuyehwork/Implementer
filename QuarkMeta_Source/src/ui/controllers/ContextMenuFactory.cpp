@@ -33,23 +33,23 @@ bool ContextMenuFactory::togglePinState(const QStringList& paths, bool pin) {
 
 bool ContextMenuFactory::extractContentToClipboard(const QString& path) {
     if (path.isEmpty() || QFileInfo(path).isDir()) {
-        ToolTipOverlay::instance()->showText(QCursor::pos(), "提取失败：只能提取文件内容", 1500, QColor("#e81123"));
+        ToolTipOverlay::instance()->showToast("提取失败：只能提取文件内容", 1500, QColor("#e81123"));
         return false;
     }
 
     QString ext = QFileInfo(path).suffix().toLower();
     if (!UiHelper::isTextFile(ext)) {
-        ToolTipOverlay::instance()->showText(QCursor::pos(), "不支持提取内容：文件格式超出纯文本范围", 1500, QColor("#e81123"));
+        ToolTipOverlay::instance()->showToast("不支持提取内容：文件格式超出纯文本范围", 1500, QColor("#e81123"));
         return false;
     }
 
     QString content;
     if (UiHelper::extractTextContent(path, content)) {
         QApplication::clipboard()->setText(content);
-        ToolTipOverlay::instance()->showText(QCursor::pos(), QString("已成功提取内容并存入剪贴板 (共 %1 字符)").arg(content.length()), 1500, QColor("#2ecc71"));
+        ToolTipOverlay::instance()->showToast(QString("已成功提取内容并存入剪贴板 (共 %1 字符)").arg(content.length()), 1500, QColor("#2ecc71"));
         return true;
     } else {
-        ToolTipOverlay::instance()->showText(QCursor::pos(), "提取失败：文件超过限制或无法作为纯文本解析", 1500, QColor("#e81123"));
+        ToolTipOverlay::instance()->showToast("提取失败：文件超过限制或无法作为纯文本解析", 1500, QColor("#e81123"));
         return false;
     }
 }

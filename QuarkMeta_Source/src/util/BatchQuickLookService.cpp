@@ -107,7 +107,7 @@ void BatchQuickLookService::extractBatchAsync(const QStringList& rootPaths) {
 
         if (targetFiles.isEmpty()) {
             QMetaObject::invokeMethod(QCoreApplication::instance(), []() {
-                ToolTipOverlay::instance()->showText(QCursor::pos(), "所有所选项目的高清大图预览已是最新，无需重新生成", 2000, QColor("#2ecc71"));
+                ToolTipOverlay::instance()->showToast("所有所选项目的高清大图预览已是最新，无需重新生成", 2000, QColor("#2ecc71"));
             });
             return;
         }
@@ -138,8 +138,7 @@ void BatchQuickLookService::extractBatchAsync(const QStringList& rootPaths) {
 
         if (!token->isCanceled()) {
             QMetaObject::invokeMethod(QCoreApplication::instance(), [total]() {
-                ToolTipOverlay::instance()->showText(
-                    QCursor::pos(),
+                ToolTipOverlay::instance()->showToast(
                     QString("大图预览批量生成完成，共计 %1 项").arg(total),
                     2000,
                     QColor("#2ecc71")
