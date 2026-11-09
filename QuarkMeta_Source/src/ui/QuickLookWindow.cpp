@@ -1,6 +1,7 @@
 #include "QuickLookWindow.h"
 #include "UiHelper.h"
 #include "ColorPaletteEngine.h"
+#include "../util/DiskMediaExtractor.h"
 #include <QTextBlock>
 #include "../meta/HistoryService.h"
 #include "ShellIconManager.h"
@@ -327,6 +328,22 @@ QImage QuickLookWindow::loadOrExtractQuickLookEps(const QString& filePath, int t
 }
 
 QImage QuickLookWindow::loadOrExtractQuickLookImage(const QString& filePath, int targetSize, std::shared_ptr<CancellationToken> token) {
+    QFileInfo srcInfo(filePath);
+
+    // 🚀【双轨缓存分流策略】：检查用户配置的缩略图源
+    QString thumbSource = AppConfig::instance().getValue("QuickLook/ThumbnailSource", "quicklook_previews").toString();
+    if (thumbSource == "disk_thumbs") {
+        QString diskCachePath = DiskMediaExtractor::getDiskThumbCachePath(filePath);
+        QFileInfo diskInfo(diskCachePath);
+        if (diskInfo.exists() && diskInfo.size() > 0 && diskInfo.lastModified() >= srcInfo.lastModified()) {
+            QImage diskImg(diskCachePath);
+            if (!diskImg.isNull()) {
+                return diskImg; // 极速秒开返回现成磁盘缩略图
+            }
+        }
+        // 若 disk_thumbs 不存在，自动平滑向下穿透到高清实时解码管线，杜绝黑屏
+    }
+
     // 🚀【全图形图像 QuickLook 统一缓存架构】：使用 SHA256 与两级分桶
     QByteArray normalized = QDir::toNativeSeparators(filePath).toLower().toUtf8();
     QString hashStr = QString::fromUtf8(QCryptographicHash::hash(normalized, QCryptographicHash::Sha256).toHex());

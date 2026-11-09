@@ -28,6 +28,9 @@ private:
     QPushButton* m_btnBrowse{nullptr};
     QLabel* m_sizeLabel{nullptr};
     QCheckBox* m_chkMigrateData{nullptr};
+    QCheckBox* m_chkDiskThumbs{nullptr};
+    QCheckBox* m_chkQuickLookPreviews{nullptr};
+    QLabel* m_sourceDescLabel{nullptr};
     QPushButton* m_btnRestore{nullptr};
     QPushButton* m_btnCancel{nullptr};
     QPushButton* m_btnSave{nullptr};

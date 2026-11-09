@@ -1276,3 +1276,25 @@ QuarkMeta 采用“侧车文件持久化 + 中心数据库索引”的读写分�
 2. **行为分发**：
    - 若为可预览文件（`UiHelper::canPreviewFile(path)` 为 true）：立即弹出 `QuickLookWindow::instance().preview(path)` 高保真预览窗口，同时异步联动 `NavigationService::instance().locateItem(path)` 使工作区内容面板同步定位到该文件；
    - 若为文件夹：直接调用 `NavigationService::instance().navigateTo(path, true, false)` 导航进入该文件夹。
+
+---
+
+## 47. 缓存根目录整体搬迁与 QuickLook 预览图缓存源双轨选择规范 (Cache Directory Migration & QuickLook Thumbnail Source SSOT)
+
+> 本章节记录缓存存储根目录真搬迁（清理旧路径数据）、整棵 `cache` 树状目录整体迁移以及 QuickLook 双轨缓存源互斥选择与平滑降级标准。
+
+### 47.1 缓存目录真搬迁规范（数据清理与整棵树搬家）
+1. **彻底清理旧路径数据（消除伪迁移空间残留）**：
+   - 用户选择迁移时，在所有文件完整复制并校验到新目标路径后，**必须将旧 `cache` 目录中的文件逐项删除清理**；并在全部文件删除后，递归调用 `QDir(oldDir).removeRecursively()` 移除旧的空目录树，彻底释放原磁盘空间。
+2. **整棵 `cache` 目录整体搬迁**：
+   - 全局缓存根目录为 `AppConfig::instance().getGlobalCacheDir()`（对应 `.../cache`）；
+   - 内部包含 `disk_thumbs/`（日常缩略图）与 `quicklook_previews/`（高清预览图）；搬迁以整棵 `cache` 目录为原子单元整体迁移，杜绝孤立零碎搬运；
+   - 在选择目录时，自动标准化规范路径并映射为真实的 `.../cache` 路径展示。
+
+### 47.2 QuickLook 预览图缓存源双轨单选与平滑降级
+1. **严格互斥二选一（刚性单选源）**：
+   - **选项 1（disk_thumbs）**：优先使用现成缩略图缓存——日常浏览已生成，0ms 极速秒开无需二次解码；
+   - **选项 2（quicklook_previews）**：优先使用高质量大图预览缓存——最高 2048px 超高清画质，细节极其锐利；
+   - 两者互斥单选，必选其一，勾选状态持久化至 `AppConfig` 的 `QuickLook/ThumbnailSource` 键中；界面配备详细思量说明注释。
+2. **平滑降级防黑屏兜底**：
+   - 当配置为 `disk_thumbs` 时，若特定文件尚未生成缩略图或已过期，自动向下穿透至实时解码高清管线，绝对杜绝黑屏现象。
