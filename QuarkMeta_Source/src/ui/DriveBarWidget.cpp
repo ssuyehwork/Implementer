@@ -72,13 +72,13 @@ void DriveBarWidget::initUi() {
         dlg.exec();
     });
 
-    m_btnSaveThumbnail = createIconButton("save-Thumbnail", QColor("#3498db"), "缩略图与缓存位置设置");
+    m_btnSaveThumbnail = createIconButton("save-thumbnails-2.svg", QColor("#3498db"), "缩略图与缓存位置设置");
     connect(m_btnSaveThumbnail, &QPushButton::clicked, this, [this]() {
         CacheLocationDialog dlg(this);
         dlg.exec();
     });
 
-    m_btnFolderWatch = createIconButton("Folder-Seach-2", QColor("#9b59b6"), "目录监听设置");
+    m_btnFolderWatch = createIconButton("Monitoring-1.svg", QColor("#9b59b6"), "目录监听设置");
     connect(m_btnFolderWatch, &QPushButton::clicked, this, [this]() {
         FolderWatchDialog dlg(this);
         dlg.exec();
@@ -155,7 +155,7 @@ void DriveBarWidget::setupExtensionMenu() {
             refreshPinnedButtons();
         });
 
-        QAction* actSaveThumb = extMenu->addAction(UiHelper::getIcon("save-Thumbnail", QColor("#3498db"), 18), "缩略图与缓存位置设置");
+        QAction* actSaveThumb = extMenu->addAction(UiHelper::getIcon("save-thumbnails-2.svg", QColor("#3498db"), 18), "缩略图与缓存位置设置");
         actSaveThumb->setCheckable(true);
         actSaveThumb->setChecked(pinnedList.contains("save_thumbnail"));
 
@@ -172,7 +172,7 @@ void DriveBarWidget::setupExtensionMenu() {
             refreshPinnedButtons();
         });
 
-        QAction* actWatch = extMenu->addAction(UiHelper::getIcon("Folder-Seach-2", QColor("#9b59b6"), 18), "目录监听设置");
+        QAction* actWatch = extMenu->addAction(UiHelper::getIcon("Monitoring-1.svg", QColor("#9b59b6"), 18), "目录监听设置");
         actWatch->setCheckable(true);
         actWatch->setChecked(pinnedList.contains("folder_watch"));
 
