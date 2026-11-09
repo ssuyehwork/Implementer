@@ -1245,3 +1245,34 @@ QuarkMeta 采用“侧车文件持久化 + 中心数据库索引”的读写分�
    - **点击 ② 区域**：作为安全留白消费事件，防止误触。
 4. **技术保障**：
    - `m_treeView` 及其 `viewport()` 全程启用 `setMouseTracking(true)` 确保实时捕获鼠标坐标并按区域独立刷新。
+
+---
+
+## 46. 侧边栏“历史”与“收藏夹”微型卡片缩略图渲染对标与即刻预览规范 (Sidebar History & Favorite Micro-Card Alignment & Instant Preview SSOT)
+
+> 本章节记录侧边栏“收藏夹”（`FavoritePanel`）与“历史”（`HistoryPanel`）微型缩略图卡片渲染、委托解耦以及模式 A 即刻全功能预览与目录定位的规范。
+
+### 46.1 缩略图微卡片几何与平滑圆角渲染标准
+1. **真实几何目标矩形裁剪（杜绝三角直角缺陷）**：
+   - 提取缩略图渲染微卡片时，统一使用 `Qt::KeepAspectRatio` 平滑等比缩放计算真实的居中绘制矩形 `targetRect`；
+   - 圆角路径 `QPainterPath::addRoundedRect` 必须施加在真实的 `targetRect` 上（标准 4px 平滑圆角），彻底杜绝由于使用外层 `iconRect` 或 `Qt::KeepAspectRatioByExpanding` 冲刷边框导致的四角失衡（左上角圆角、其余三角为直角）视觉缺陷；
+   - 底板保持透明，全流程开启 `QPainter::Antialiasing` 与 `QPainter::SmoothPixmapTransform`。
+2. **委托类规范独立解耦**：
+   - `FavoriteItemDelegate` 与 `HistoryItemDelegate` 均作为独立的自定义微卡片委托独立位于 `src/ui/delegates/` 目录下，并在 `CMakeLists.txt` 中显式注册，严禁向 Panel 头文件内部内联塞入委托类。
+   - 统一行高为 28px，标准图标尺寸 18px，左边距 10px，间距 8px。
+
+### 46.2 历史缩略图提取流水线与生命周期安全性
+1. **后缀判断规范**：
+   - 调用 `ColorPaletteEngine::isGraphicsFile(ext)` 时必须且只能传入纯后缀名 `QFileInfo(path).suffix().toLower()`，禁止传入完整路径；
+   - 支持主流设计图档（`psd`、`ai`、`eps`、`svg`、`pdf` 等）提取缩略图。
+2. **多线程并发安全与生命周期保障**：
+   - 严禁在跨线程 lambda 中捕获或直接解引用 `QTreeWidgetItem*` 原生裸指针；
+   - 采用安全解耦回填流水线：子线程仅传递文件物理路径 `QString` 与解码生成的 `QPixmap`；
+   - 在 UI 主线程通过 `HistoryPanel::updateItemThumbnail(path, pix)` 遍历匹配节点并更新，确保历史记录清空或删除条目时绝不发生野指针访问（Use-After-Free）。
+
+### 46.3 模式 A 即刻全功能预览与无缝目录定位
+1. **触发契约**：
+   - 用户在历史选项卡选中项目后，按下**空格键（Space）**、**回车键（Return/Enter）**或**鼠标双击**；
+2. **行为分发**：
+   - 若为可预览文件（`UiHelper::canPreviewFile(path)` 为 true）：立即弹出 `QuickLookWindow::instance().preview(path)` 高保真预览窗口，同时异步联动 `NavigationService::instance().locateItem(path)` 使工作区内容面板同步定位到该文件；
+   - 若为文件夹：直接调用 `NavigationService::instance().navigateTo(path, true, false)` 导航进入该文件夹。

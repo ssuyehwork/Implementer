@@ -51,7 +51,7 @@ void FavoriteItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& 
     QRect iconRect(opt.rect.left() + leftMargin, opt.rect.top() + (opt.rect.height() - iconSize) / 2, iconSize, iconSize);
     QRect textRect(iconRect.right() + spacing, opt.rect.top(), opt.rect.width() - leftMargin - iconSize - spacing, opt.rect.height());
 
-    // 微卡片圆角绘制
+    // 微卡片圆角绘制（严格对标列表视图 TreeItemDelegate 标准：Qt::KeepAspectRatio + targetRect 真实四角对称圆角裁剪）
     QVariant decoData = index.data(Qt::DecorationRole);
     bool isFolder = index.data(Qt::UserRole + 4).toBool();
     bool hasCustomThumb = index.data(Qt::UserRole + 5).toBool();
@@ -61,15 +61,19 @@ void FavoriteItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& 
         QPixmap pix = icon.pixmap(QSize(64, 64));
 
         if (!pix.isNull()) {
-            QPainterPath clipPath;
-            clipPath.addRoundedRect(iconRect, 3, 3);
             painter->save();
-            painter->setClipPath(clipPath);
-
-            QPixmap scaled = pix.scaled(iconRect.size(), Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
+            // 1. 等比缩放计算目标几何矩形 targetRect
+            QPixmap scaled = pix.scaled(iconRect.size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
             int x = iconRect.center().x() - scaled.width() / 2;
             int y = iconRect.center().y() - scaled.height() / 2;
-            painter->drawPixmap(x, y, scaled);
+            QRect targetRect(x, y, scaled.width(), scaled.height());
+
+            // 2. 将圆角路径精准施加在 targetRect 上，彻底杜绝外溢冲刷与三角直角现象
+            QPainterPath clipPath;
+            clipPath.addRoundedRect(targetRect, 4, 4);
+            painter->setClipPath(clipPath);
+
+            painter->drawPixmap(targetRect, scaled);
             painter->restore();
         } else {
             icon.paint(painter, iconRect, Qt::AlignCenter, QIcon::Normal, QIcon::Off);

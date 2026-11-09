@@ -326,6 +326,8 @@ set(SOURCES
     src/ui/NavPanel.h
     src/ui/delegates/FavoriteItemDelegate.h
     src/ui/delegates/FavoriteItemDelegate.cpp
+    src/ui/delegates/HistoryItemDelegate.h
+    src/ui/delegates/HistoryItemDelegate.cpp
     src/ui/controllers/FavoriteTreeDropHandler.h
     src/ui/controllers/FavoriteTreeDropHandler.cpp
     src/ui/FavoritePanel.cpp

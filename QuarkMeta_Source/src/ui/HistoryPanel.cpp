@@ -1,6 +1,9 @@
 #include "HistoryPanel.h"
 #include "UiHelper.h"
+#include "ShellIconManager.h"
+#include "QuickLookWindow.h"
 #include "ToolTipOverlay.h"
+#include "delegates/HistoryItemDelegate.h"
 #include "controllers/ContextMenuFactory.h"
 #include "../core/NavigationService.h"
 #include "../core/ClipboardService.h"
@@ -8,18 +11,22 @@
 #include "../meta/HistoryService.h"
 #include "../meta/LibraryService.h"
 #include "../util/ThumbnailPipelineService.h"
+#include "../util/DiskMediaExtractor.h"
 #include "../util/ColorPaletteEngine.h"
 #include "../util/ShellHelper.h"
 #include "dialogs/FramelessConfirmDialog.h"
 #include <QDesktopServices>
 #include <QFileInfo>
 #include <QDir>
-#include <QFileIconProvider>
 #include <QDrag>
 #include <QMimeData>
 #include <QUrl>
 #include <QMouseEvent>
+#include <QKeyEvent>
 #include <QHeaderView>
+#include <QPointer>
+#include <QCoreApplication>
+#include <QtConcurrent>
 
 namespace QuarkMeta {
 
@@ -40,17 +47,22 @@ void HistoryPanel::initUi() {
     m_treeWidget->setObjectName("HistoryTreeWidget");
     m_treeWidget->setHeaderHidden(true);
     m_treeWidget->setIndentation(0);
-    m_treeWidget->setIconSize(QSize(16, 16));
+    m_treeWidget->setIconSize(QSize(18, 18));
     m_treeWidget->setContextMenuPolicy(Qt::CustomContextMenu);
     m_treeWidget->setSelectionMode(QAbstractItemView::ExtendedSelection);
     m_treeWidget->setDragEnabled(true);
     m_treeWidget->setMouseTracking(true);
 
+    m_delegate = new HistoryItemDelegate(this);
+    m_treeWidget->setItemDelegate(m_delegate);
+
     m_mainLayout->addWidget(m_treeWidget);
 
     connect(m_treeWidget, &QTreeWidget::itemClicked, this, &HistoryPanel::onItemClicked);
+    connect(m_treeWidget, &QTreeWidget::itemDoubleClicked, this, &HistoryPanel::onItemDoubleClicked);
     connect(m_treeWidget, &QTreeWidget::customContextMenuRequested, this, &HistoryPanel::onContextMenuRequested);
 
+    m_treeWidget->installEventFilter(this);
     if (m_treeWidget->viewport()) {
         m_treeWidget->viewport()->installEventFilter(this);
     }
@@ -75,36 +87,95 @@ QTreeWidgetItem* HistoryPanel::createHistoryItem(const QString& path) {
     QTreeWidgetItem* item = new QTreeWidgetItem();
     item->setText(0, fi.fileName());
     item->setData(0, Qt::UserRole, path);
+    item->setData(0, Qt::UserRole + 1, path);
+    item->setData(0, Qt::UserRole + 5, false);
 
-    // 普通文件优先展示系统/通用图标
-    QFileIconProvider provider;
-    QIcon sysIcon = provider.icon(fi);
+    // 普通文件优先展示 Shell 系统/通用图标
+    QIcon sysIcon = ShellIconManager::getFileIcon(path, 18);
     if (!sysIcon.isNull()) {
         item->setIcon(0, sysIcon);
     } else {
-        item->setIcon(0, UiHelper::getIcon("file", "#888888", 16));
+        item->setIcon(0, UiHelper::getIcon("file", "#888888", 18));
     }
 
-    // 图形图片类文件异步提取缩略图回填
-    if (ColorPaletteEngine::isGraphicsFile(path)) {
-        updateItemThumbnail(item, path);
+    // 图形图片类文件异步提取缩略图回填（传入纯后缀名）
+    QString ext = fi.suffix().toLower();
+    if (ColorPaletteEngine::isGraphicsFile(ext) || ext == "pdf") {
+        requestThumbnailExtraction(path);
     }
 
     return item;
 }
 
-void HistoryPanel::updateItemThumbnail(QTreeWidgetItem* item, const QString& path) {
-    ThumbnailPipelineService::instance().loadBatchAsync({path}, 32, [this, item](const QString&, const QPixmap& pix) {
-        if (!pix.isNull() && item && item->treeWidget()) {
-            item->setIcon(0, QIcon(pix));
+void HistoryPanel::requestThumbnailExtraction(const QString& path) {
+    QPointer<HistoryPanel> weakThis(this);
+    (void)QtConcurrent::run(ThumbnailPipelineService::instance().decodePool(), [weakThis, path]() {
+        if (!weakThis) return;
+        QImage img = DiskMediaExtractor::getCapsuleThumbnail(path, DiskMediaExtractor::kThumbSize);
+        if (!img.isNull()) {
+            if (img.width() > 128 || img.height() > 128) {
+                img = img.scaled(128, 128, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+            }
+            QPixmap pix = QPixmap::fromImage(img);
+            QMetaObject::invokeMethod(QCoreApplication::instance(), [weakThis, path, pix]() {
+                if (weakThis) {
+                    weakThis->updateItemThumbnail(path, pix);
+                }
+            }, Qt::QueuedConnection);
         }
     });
+}
+
+void HistoryPanel::updateItemThumbnail(const QString& path, const QPixmap& pix) {
+    if (pix.isNull() || !m_treeWidget) return;
+
+    QString cleanTarget = QDir::toNativeSeparators(QDir::cleanPath(path));
+    int count = m_treeWidget->topLevelItemCount();
+    for (int i = 0; i < count; ++i) {
+        QTreeWidgetItem* itm = m_treeWidget->topLevelItem(i);
+        if (!itm) continue;
+
+        QString itemPath = QDir::toNativeSeparators(QDir::cleanPath(itm->data(0, Qt::UserRole).toString()));
+        if (QString::compare(itemPath, cleanTarget, Qt::CaseInsensitive) == 0) {
+            itm->setIcon(0, QIcon(pix));
+            itm->setData(0, Qt::UserRole + 5, true);
+        }
+    }
+
+    if (m_treeWidget->viewport()) {
+        m_treeWidget->viewport()->update();
+    }
 }
 
 void HistoryPanel::onItemClicked(QTreeWidgetItem* item, int column) {
     Q_UNUSED(item);
     Q_UNUSED(column);
     // 单击仅由 QTreeWidget 处理选中高亮，不发射定位信号以彻底杜绝额外目录载入与缩略图解析开销
+}
+
+void HistoryPanel::onItemDoubleClicked(QTreeWidgetItem* item, int column) {
+    Q_UNUSED(column);
+    if (!item) return;
+    activateCurrentItem();
+}
+
+void HistoryPanel::activateCurrentItem() {
+    QTreeWidgetItem* curItem = m_treeWidget ? m_treeWidget->currentItem() : nullptr;
+    if (!curItem) return;
+
+    QString path = curItem->data(0, Qt::UserRole).toString();
+    if (path.isEmpty() || !QFile::exists(path)) return;
+
+    QFileInfo fi(path);
+    if (fi.isDir()) {
+        NavigationService::instance().navigateTo(path, true, false);
+    } else {
+        // 模式 A 契约：即刻零延迟弹出 QuickLook 预览，同时异步联动内容面板精准定位
+        if (UiHelper::canPreviewFile(path)) {
+            QuickLookWindow::instance().preview(path);
+        }
+        NavigationService::instance().locateItem(path);
+    }
 }
 
 void HistoryPanel::onContextMenuRequested(const QPoint& pos) {
@@ -285,6 +356,10 @@ void HistoryPanel::onHistoryCleared() {
 }
 
 void HistoryPanel::filterTreeNodes(const QString& keyword) {
+    if (m_delegate) {
+        m_delegate->setFilterKeyword(keyword.trimmed());
+    }
+
     QString kw = keyword.trimmed().toLower();
     for (int i = 0; i < m_treeWidget->topLevelItemCount(); ++i) {
         QTreeWidgetItem* item = m_treeWidget->topLevelItem(i);
@@ -295,9 +370,25 @@ void HistoryPanel::filterTreeNodes(const QString& keyword) {
             item->setHidden(!match);
         }
     }
+
+    if (m_treeWidget->viewport()) {
+        m_treeWidget->viewport()->update();
+    }
 }
 
 bool HistoryPanel::eventFilter(QObject* watched, QEvent* event) {
+    if (watched == m_treeWidget) {
+        if (event->type() == QEvent::KeyPress) {
+            QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
+            // 模式 A 契约：未带 Ctrl 的空格键或回车键直接触发激活
+            if ((keyEvent->key() == Qt::Key_Space && !(keyEvent->modifiers() & Qt::ControlModifier)) ||
+                keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter) {
+                activateCurrentItem();
+                return true;
+            }
+        }
+    }
+
     if (watched == m_treeWidget->viewport()) {
         if (event->type() == QEvent::MouseMove) {
             QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
