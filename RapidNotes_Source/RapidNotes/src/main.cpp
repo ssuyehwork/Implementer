@@ -37,6 +37,8 @@
 #include "ui/QuickWindow.h"
 #include "ui/FloatingBall.h"
 #include "ui/SystemTray.h"
+#include "ui/ToolTipOverlay.h"
+#include "ui/dialogs/FramelessMessageBox.h"
 
 #include <QAbstractItemView>
 #include <QHelpEvent>

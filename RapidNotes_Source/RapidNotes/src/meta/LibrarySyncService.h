@@ -1,6 +1,6 @@
 #pragma once
 
-#include "RapidNotesJsonStore.h"
+#include "QuarkMetaJsonStore.h"
 #include <QObject>
 #include <QStringList>
 #include <QThreadPool>

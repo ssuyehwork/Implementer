@@ -1,5 +1,8 @@
 #include "FileStorageHelper.h"
 #include "DatabaseManager.h"
+#include "../ui/ToolTipOverlay.h"
+#include "../ui/BatchProgressDialog.h"
+#include "../ui/FramelessDialog.h"
 #include "FileCryptoHelper.h"
 #include "TagCodec.h"
 #include "../ui/FramelessDialog.h"

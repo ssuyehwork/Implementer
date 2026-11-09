@@ -6,7 +6,8 @@
 #include <QObject>
 #include <QVariant>
 
-class FramelessProgressDialog;
+namespace RapidNotes { class BatchProgressDialog; }
+using FramelessProgressDialog = RapidNotes::BatchProgressDialog;
 class QWidget;
 
 class FileStorageHelper {
