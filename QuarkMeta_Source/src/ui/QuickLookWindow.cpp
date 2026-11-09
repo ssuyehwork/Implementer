@@ -354,7 +354,6 @@ QImage QuickLookWindow::loadOrExtractQuickLookImage(const QString& filePath, int
     QString cacheDir = QDir(baseCacheDir).filePath(QString("%1/%2").arg(dirL1, dirL2));
     QDir().mkpath(cacheDir);
 
-    QFileInfo srcInfo(filePath);
     QString cachePath = QDir(cacheDir).filePath(QString("%1.png").arg(hashStr));
     QFileInfo cacheInfo(cachePath);
 
