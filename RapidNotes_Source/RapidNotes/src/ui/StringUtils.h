@@ -338,13 +338,22 @@ public:
 
             RapidNotes::ItemType::Type itemTypeEnum = RapidNotes::ItemType::fromString(type);
 
-            // 1. 图片类型：直接复制二进制图
+            // 1. 图片类型：直接复制二进制图或文件路径
             if (itemTypeEnum == RapidNotes::ItemType::Type::Image) {
-                QImage img;
-                img.loadFromData(blob);
-                if (!img.isNull()) {
+                if (!blob.isEmpty()) {
+                    QImage img;
+                    img.loadFromData(blob);
+                    if (!img.isNull()) {
+                        ClipboardMonitor::instance().skipNext();
+                        QApplication::clipboard()->setImage(img);
+                        return;
+                    }
+                } else if (!content.isEmpty() && QFile::exists(content)) {
                     ClipboardMonitor::instance().skipNext();
-                    QApplication::clipboard()->setImage(img);
+                    QMimeData* mimeData = new QMimeData();
+                    mimeData->setUrls({QUrl::fromLocalFile(content)});
+                    mimeData->setImageData(QImage(content));
+                    QApplication::clipboard()->setMimeData(mimeData);
                     return;
                 }
             }
@@ -493,11 +502,23 @@ public:
                            "  <h1 style='color: white; margin-top: 20px; font-family: Consolas; font-size: 2.5em;'>%3</h1>"
                            "</div>")
                    .arg(titleHtml, hrHtml, content).arg(colorRectHeight);
-        } else if (itemTypeEnum == RapidNotes::ItemType::Type::Image && !data.isEmpty()) {
+        } else if (itemTypeEnum == RapidNotes::ItemType::Type::Image) {
             // [OPTIMIZED] 动态计算图片预览宽度
             int imgWidth = (int)(450 * zoomFactor);
-            html = QString("%1%2<div style='text-align: center;'><img src='data:image/png;base64,%3' width='%4'></div>")
-                   .arg(titleHtml, hrHtml, QString(data.toBase64())).arg(imgWidth);
+            QByteArray imgData = data;
+            if (imgData.isEmpty() && !content.isEmpty() && QFile::exists(content)) {
+                QFile f(content);
+                if (f.open(QIODevice::ReadOnly)) {
+                    imgData = f.readAll();
+                }
+            }
+            if (!imgData.isEmpty()) {
+                html = QString("%1%2<div style='text-align: center;'><img src='data:image/png;base64,%3' width='%4'></div>")
+                       .arg(titleHtml, hrHtml, QString(imgData.toBase64())).arg(imgWidth);
+            } else {
+                html = QString("%1%2<div style='text-align: center; color: #888;'>[无法加载图片: %3]</div>")
+                       .arg(titleHtml, hrHtml, content.toHtmlEscaped());
+            }
         } else {
             QString body;
             const int MAX_PREVIEW_LENGTH = 150000; // 预览最大限制 15 万字符，超过此长度将导致 Qt 渲染卡顿

@@ -339,10 +339,17 @@ void IdeaQuickPanel::activateCurrentItem() {
 
     // ── 写入剪贴板 ──
     if (itemType == "image") {
-        QImage img;
-        img.loadFromData(blob);
         ClipboardMonitor::instance().skipNext();
-        QApplication::clipboard()->setImage(img);
+        if (!blob.isEmpty()) {
+            QImage img;
+            img.loadFromData(blob);
+            QApplication::clipboard()->setImage(img);
+        } else if (!content.isEmpty() && QFile::exists(content)) {
+            QMimeData* mimeData = new QMimeData();
+            mimeData->setUrls({QUrl::fromLocalFile(content)});
+            mimeData->setImageData(QImage(content));
+            QApplication::clipboard()->setMimeData(mimeData);
+        }
     } else {
         StringUtils::copyNoteToClipboard(content);
     }

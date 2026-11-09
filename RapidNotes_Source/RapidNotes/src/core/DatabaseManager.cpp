@@ -783,6 +783,15 @@ bool DatabaseManager::createTables() {
             query.exec("INSERT OR REPLACE INTO system_config (key, value) VALUES ('migration_20260509_tag_space_cleanup', '1')");
             qDebug() << "[DB] 标签格式校准完成。";
         }
+
+        // 存量数据库一次性清理（清空历史遗留的 BLOB）
+        QSqlQuery checkBlobMig(m_db);
+        checkBlobMig.exec("SELECT 1 FROM system_config WHERE key = 'migration_20260515_purge_all_blobs'");
+        if (!checkBlobMig.next()) {
+            qDebug() << "[DB] 正在释放历史 BLOB 占用的体积...";
+            m_db.exec("UPDATE notes SET data_blob = NULL WHERE data_blob IS NOT NULL");
+            m_db.exec("INSERT OR REPLACE INTO system_config (key, value) VALUES ('migration_20260515_purge_all_blobs', '1')");
+        }
     }
 
     return true;
@@ -826,8 +835,8 @@ int DatabaseManager::addNote(const QString& title, const QString& content, const
     QVariantMap newNoteMap;
     bool success = false;
     QString currentTime = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss");
-    QByteArray hashData = dataBlob.isEmpty() ? content.toUtf8() : dataBlob;
-    QString contentHash = QCryptographicHash::hash(hashData, QCryptographicHash::Sha256).toHex();
+    // 不再将 dataBlob 作为哈希数据源，统一只对 content 算哈希
+    QString contentHash = QCryptographicHash::hash(content.toUtf8(), QCryptographicHash::Sha256).toHex();
     {   
         QMutexLocker locker(&m_mutex);
         if (!m_db.isOpen()) { qDebug() << "[DB] 错误: 数据库未打开"; return 0; }
@@ -942,7 +951,7 @@ int DatabaseManager::addNote(const QString& title, const QString& content, const
         query.bindValue(":color", finalColor);
         query.bindValue(":category_id", finalCategoryId == -1 ? QVariant(QMetaType::fromType<int>()) : finalCategoryId);
         query.bindValue(":item_type", itemType);
-        query.bindValue(":data_blob", dataBlob);
+        query.bindValue(":data_blob", QVariant());
         query.bindValue(":hash", contentHash);
         query.bindValue(":created_at", currentTime);
         query.bindValue(":updated_at", currentTime);
@@ -999,9 +1008,8 @@ bool DatabaseManager::updateNote(int id, const QString& title, const QString& co
     bool success = false;
     QString currentTime = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss");
     
-    // 重新计算内容哈希
-    QByteArray hashData = dataBlob.isEmpty() ? content.toUtf8() : dataBlob;
-    QString contentHash = QCryptographicHash::hash(hashData, QCryptographicHash::Sha256).toHex();
+    // 重新计算内容哈希：统一只对 content 算哈希
+    QString contentHash = QCryptographicHash::hash(content.toUtf8(), QCryptographicHash::Sha256).toHex();
 
     {
         QMutexLocker locker(&m_mutex);
@@ -1022,7 +1030,7 @@ bool DatabaseManager::updateNote(int id, const QString& title, const QString& co
         query.bindValue(":now", currentTime);
         query.bindValue(":hash", contentHash);
         query.bindValue(":type", itemType);
-        query.bindValue(":blob", dataBlob);
+        query.bindValue(":blob", QVariant());
         query.bindValue(":app", sourceApp);
         query.bindValue(":stitle", sourceTitle);
         query.bindValue(":remark", remark);
