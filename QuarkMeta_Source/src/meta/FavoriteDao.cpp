@@ -5,6 +5,7 @@
 #include <QFileInfo>
 #include <QDateTime>
 #include <QRandomGenerator>
+#include <functional>
 
 namespace QuarkMeta {
 

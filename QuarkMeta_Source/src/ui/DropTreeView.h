@@ -17,6 +17,8 @@
 
 namespace QuarkMeta {
 
+class DragDropEventFilter;
+
 enum class InternalDropZone { Above, OnItem, Below, Blank };
 
 /**
