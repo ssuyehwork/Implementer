@@ -50,25 +50,6 @@ void ContentHeaderWidget::initUi() {
 
     m_layout->addWidget(m_btnSplitView, 0, Qt::AlignVCenter);
 
-    auto setupToggleBtn = [this](QPushButton*& btn, const QString& iconKey, const QColor& activeColor, bool defaultChecked, const QString& tooltip) {
-        btn = new QPushButton(this);
-        btn->setCheckable(true);
-        btn->setFixedSize(24, 24);
-        btn->setChecked(defaultChecked);
-        btn->setIcon(UiHelper::getIcon(iconKey, defaultChecked ? activeColor : QColor("#888888"), 16));
-        btn->setProperty("tooltipText", tooltip);
-        btn->setObjectName("ViewModeToolBtn");
-        btn->installEventFilter(this);
-        m_layout->addWidget(btn, 0, Qt::AlignVCenter);
-    };
-
-    setupToggleBtn(m_btnToggleHidden, "eye", QColor("#3498db"), m_filterState.showHidden, "显示/隐藏隐藏项目");
-    connect(m_btnToggleHidden, &QPushButton::clicked, this, [this]() {
-        m_filterState.showHidden = m_btnToggleHidden->isChecked();
-        m_btnToggleHidden->setIcon(UiHelper::getIcon("eye", m_filterState.showHidden ? QColor("#3498db") : QColor("#888888"), 16));
-        emit filterStateChanged(m_filterState);
-    });
-
     m_btnLayers = new QPushButton(this);
     m_btnLayers->setCheckable(true);
     m_btnLayers->setFixedSize(24, 24);
@@ -100,10 +81,6 @@ void ContentHeaderWidget::setHeaderIcon(const QString& iconKey) {
 
 void ContentHeaderWidget::setFilterState(const FilterState& state) {
     m_filterState = state;
-    if (m_btnToggleHidden) {
-        m_btnToggleHidden->setChecked(state.showHidden);
-        m_btnToggleHidden->setIcon(UiHelper::getIcon("eye", state.showHidden ? QColor("#3498db") : QColor("#888888"), 16));
-    }
 }
 
 void ContentHeaderWidget::setRecursive(bool recursive) {

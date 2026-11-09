@@ -34,7 +34,6 @@ protected:
     void mouseReleaseEvent(QMouseEvent* event) override;
 
 signals:
-    void filterStateChanged(const FilterState& state);
     void recursiveToggled(bool recursive);
     void splitViewRequested();
 
@@ -47,7 +46,6 @@ private:
     QLabel* m_titleLabel = nullptr;
 
     QPushButton* m_btnSplitView = nullptr;
-    QPushButton* m_btnToggleHidden = nullptr;
     QPushButton* m_btnLayers = nullptr;
 
     FilterState m_filterState;

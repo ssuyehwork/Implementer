@@ -114,7 +114,6 @@ ContentPanel::ContentPanel(QWidget* parent) : QFrame(parent) {
     });
 
     m_zoomLevel = AppConfig::instance().getValue("UI/GridZoomLevel", 96).toInt();
-    m_currentFilter.showHidden = AppConfig::instance().getValue("ContentPanel/ShowHidden", false).toBool();
 
     connect(&TrashService::instance(), &TrashService::trashOperationCompleted, this, &ContentPanel::refreshAll);
     connect(&PermanentDeleteService::instance(), &PermanentDeleteService::permanentDeleteCompleted, this, &ContentPanel::refreshAll);
@@ -188,12 +187,6 @@ void ContentPanel::initUi() {
             lastPath = m_currentPath;
         }
         splitPane(Qt::Horizontal, lastPath);
-    });
-
-    connect(m_headerWidget, &ContentHeaderWidget::filterStateChanged, this, [this](const FilterState& state) {
-        m_currentFilter = state;
-        AppConfig::instance().setValue("ContentPanel/ShowHidden", state.showHidden);
-        applyFilters();
     });
 
     connect(m_headerWidget, &ContentHeaderWidget::recursiveToggled, this, [this](bool recursive) {
