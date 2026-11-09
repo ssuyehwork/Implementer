@@ -103,11 +103,11 @@ void AddressHistoryPanel::rebuild() {
                 QStringList parts = path.split(" → ", Qt::SkipEmptyParts);
                 for (int i = 0; i < parts.size(); ++i) {
                     if (i > 0) {
-                        QLabel* sep = new QLabel(container);
-                        sep->setPixmap(UiHelper::getIcon("chevron_right", QColor("#AAAAAA"), 12).pixmap(12, 12));
-                        sep->setFixedSize(12, 12);
-                        sep->setObjectName("BreadcrumbSep");
-                        pathLayout->addWidget(sep);
+                        QLabel* crumbSep = new QLabel(container);
+                        crumbSep->setPixmap(UiHelper::getIcon("chevron_right", QColor("#AAAAAA"), 12).pixmap(12, 12));
+                        crumbSep->setFixedSize(12, 12);
+                        crumbSep->setObjectName("BreadcrumbSep");
+                        pathLayout->addWidget(crumbSep);
                     }
                     QLabel* partLabel = new QLabel(parts[i], container);
                     partLabel->setObjectName("HistoryItemLabel");
