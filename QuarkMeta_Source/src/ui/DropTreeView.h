@@ -134,9 +134,14 @@ public:
     void setInternalDragValidator(std::function<bool(const QModelIndex&)> canDragNode);
     void setInternalDropValidator(std::function<bool(const QList<QPersistentModelIndex>& sources, const QModelIndex& target, InternalDropZone zone)> canDrop);
 
+    // 外部拖入定位配置 API
+    void setExternalDropPositioning(bool enabled);
+    void setDropZoneResolver(std::function<InternalDropZone(const QModelIndex& target, InternalDropZone rawZone, bool inUpperHalf)> resolver);
+
 signals:
     void notesDropped(const QList<int>& noteIds, const QModelIndex& targetIndex);
     void pathsDropped(const QStringList& paths, const QModelIndex& targetIndex, Qt::DropAction action);
+    void pathsDroppedAt(const QStringList& paths, const QModelIndex& targetIndex, InternalDropZone zone, Qt::DropAction action);
     void internalMoveRequested(const QList<QPersistentModelIndex>& sources, const QModelIndex& target, InternalDropZone zone);
 
 protected:
@@ -154,9 +159,13 @@ protected:
 
 private:
     InternalDropZone calculateDropZone(const QPoint& pos, QModelIndex& outTargetIndex) const;
+    bool updateDropFeedback(const QPoint& pos, const std::function<bool(const QModelIndex&, InternalDropZone)>& validator, QModelIndex& outTargetIdx, InternalDropZone& outZone);
     void clearInternalDropIndicator();
     void updateEdgeScroll(const QPoint& pos);
     void stopEdgeScroll();
+
+    bool isExternalUrlDrag(const QMimeData* mime) const;
+    QStringList extractLocalPaths(const QMimeData* mime) const;
 
     QTimer* m_autoExpandTimer = nullptr;
     QModelIndex m_hoverIndex;
@@ -164,10 +173,17 @@ private:
     int m_bottomMargin = 0;
     bool m_isApplyingPolicies = false;
 
+    // 过滤控制
+    DragDropEventFilter* m_eventFilter = nullptr;
+
     // 树内拖拽排序状态成员
     bool m_internalReorderEnabled = false;
     std::function<bool(const QModelIndex&)> m_internalDragValidator;
     std::function<bool(const QList<QPersistentModelIndex>&, const QModelIndex&, InternalDropZone)> m_internalDropValidator;
+
+    // 外部拖入定位状态成员
+    bool m_externalDropPositioning = false;
+    std::function<InternalDropZone(const QModelIndex& target, InternalDropZone rawZone, bool inUpperHalf)> m_dropZoneResolver;
 
     QList<QPersistentModelIndex> m_internalDragSources;
     QModelIndex m_indicatorIndex;

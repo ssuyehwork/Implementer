@@ -46,6 +46,11 @@ public:
     void addFavorites(const QStringList& paths, int parentId = 0);
 
     /**
+     * @brief 在指定位置批量添加至收藏夹并触发全局统一交互反馈 (SSOT)
+     */
+    void addFavoritesAt(const QStringList& paths, int parentId = 0, int beforeSiblingId = 0);
+
+    /**
      * @brief 统一批量从收藏夹移除并触发全局统一交互反馈 (SSOT)
      */
     void removeFavorites(const QStringList& paths);

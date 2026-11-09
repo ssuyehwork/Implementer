@@ -98,10 +98,14 @@ bool FavoriteService::removeFavorite(const QString& path) {
 
 
 void FavoriteService::addFavorites(const QStringList& paths, int parentId) {
+    addFavoritesAt(paths, parentId, 0);
+}
+
+void FavoriteService::addFavoritesAt(const QStringList& paths, int parentId, int beforeSiblingId) {
     if (paths.isEmpty()) return;
 
-    int addedCount = 0;
     int duplicateCount = 0;
+    QList<FavoriteDao::NewFavoriteItem> itemsToAdd;
 
     for (const QString& path : paths) {
         if (isFavorite(path)) {
@@ -122,9 +126,19 @@ void FavoriteService::addFavorites(const QStringList& paths, int parentId) {
                 }
             }
 
-            if (FavoriteDao::addFavorite(cleanPath, parentId, "folder_filled", finalColorHex)) {
-                addedCount++;
-            }
+            FavoriteDao::NewFavoriteItem item;
+            item.path = cleanPath;
+            item.name = fi.fileName().isEmpty() ? cleanPath : fi.fileName();
+            item.iconKey = "folder_filled";
+            item.colorHex = finalColorHex;
+            itemsToAdd.append(item);
+        }
+    }
+
+    int addedCount = 0;
+    if (!itemsToAdd.isEmpty()) {
+        if (FavoriteDao::addFavoritesAt(itemsToAdd, parentId, beforeSiblingId)) {
+            addedCount = itemsToAdd.size();
         }
     }
 

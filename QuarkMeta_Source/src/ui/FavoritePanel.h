@@ -44,7 +44,7 @@ signals:
 private slots:
     void onFavoriteClicked(const QModelIndex& index);
     void onFavoriteContextMenu(const QPoint& pos);
-    void onPathsDroppedToFavorite(const QStringList& paths, const QModelIndex& target);
+    void onPathsDroppedAt(const QStringList& paths, const QModelIndex& target, InternalDropZone zone);
     void onInternalMoveRequested(const QList<QPersistentModelIndex>& sources, const QModelIndex& target, InternalDropZone zone);
     void markOrderDirty();
     void flushOrder();

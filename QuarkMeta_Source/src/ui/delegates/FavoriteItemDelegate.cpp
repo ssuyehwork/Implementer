@@ -1,5 +1,7 @@
 #include "FavoriteItemDelegate.h"
 #include "../UiHelper.h"
+#include "../ViewDragDropHelper.h"
+#include "../../core/ModelContract.h"
 #include <QPainterPath>
 #include <QFontMetrics>
 #include <QIcon>
@@ -25,8 +27,15 @@ void FavoriteItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& 
     painter->setRenderHint(QPainter::Antialiasing);
     painter->setRenderHint(QPainter::SmoothPixmapTransform);
     
-    // 背景高亮
-    if (opt.state & QStyle::State_Selected) {
+    // 背景高亮：优先级 拖放目标 > 选中 > 悬停 > 透明
+    bool isDropTarget = index.data(IsDropTargetRole).toBool() ||
+                        ViewDragDropHelper::isDropTarget(option.widget, index);
+
+    if (isDropTarget) {
+        QColor dropBg("#3498db");
+        dropBg.setAlphaF(0.35f);
+        painter->fillRect(opt.rect, dropBg);
+    } else if (opt.state & QStyle::State_Selected) {
         QColor selBg("#378ADD");
         selBg.setAlphaF(0.15f);
         painter->fillRect(opt.rect, selBg);

@@ -37,8 +37,16 @@ class FavoriteDao {
 public:
     static bool initTable();
     static QList<FavoriteRecord> getAllFavorites();
+    struct NewFavoriteItem {
+        QString path;
+        QString name;
+        QString iconKey = "folder_filled";
+        QString colorHex = "#888888";
+    };
+
     static int addVirtualCategory(const QString& name, int parentId = 0, const QString& iconKey = "folder_filled", const QString& colorHex = "#888888");
     static bool addFavorite(const QString& path, int parentId = 0, const QString& iconKey = "folder_filled", const QString& colorHex = "#888888");
+    static bool addFavoritesAt(const QList<NewFavoriteItem>& items, int parentId, int beforeSiblingId);
     static bool removeFavoriteById(int id);
     static bool removeFavorite(const QString& path);
     static bool updateFavorite(const QString& path, const QString& iconKey, const QString& colorHex);

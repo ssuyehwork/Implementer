@@ -15,8 +15,8 @@ DragDropEventFilter::DragDropEventFilter(QAbstractItemView* targetView, QObject*
     : QObject(parent ? parent : targetView), m_targetView(targetView) {
 }
 
-void DragDropEventFilter::install(QAbstractItemView* view) {
-    if (!view) return;
+DragDropEventFilter* DragDropEventFilter::install(QAbstractItemView* view) {
+    if (!view) return nullptr;
     view->setAcceptDrops(true);
     auto* filter = new DragDropEventFilter(view, view);
     view->installEventFilter(filter);
@@ -27,6 +27,7 @@ void DragDropEventFilter::install(QAbstractItemView* view) {
     // 🚀【核心修复】：将事件过滤器的 pathsDropped 动态信号直接桥接至宿主视图的 pathsDropped 信号
     QObject::connect(filter, SIGNAL(pathsDropped(QStringList,QModelIndex,Qt::DropAction)),
                      view, SIGNAL(pathsDropped(QStringList,QModelIndex,Qt::DropAction)));
+    return filter;
 }
 
 void DragDropEventFilter::clearDropHighlight() {
@@ -39,6 +40,17 @@ void DragDropEventFilter::clearDropHighlight() {
 
 bool DragDropEventFilter::eventFilter(QObject* watched, QEvent* event) {
     if (!m_targetView) return QObject::eventFilter(watched, event);
+
+    if (m_passThroughUrlDrags) {
+        if (event->type() == QEvent::DragLeave) {
+            clearDropHighlight();
+            ViewDragDropHelper::clearHover(m_targetView);
+            return false;
+        }
+        if (event->type() == QEvent::DragEnter || event->type() == QEvent::DragMove || event->type() == QEvent::Drop) {
+            return false;
+        }
+    }
 
     if (event->type() == QEvent::DragEnter) {
         auto* dragEvent = static_cast<QDragEnterEvent*>(event);

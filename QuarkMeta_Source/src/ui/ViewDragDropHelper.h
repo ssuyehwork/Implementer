@@ -19,7 +19,9 @@ public:
     explicit DragDropEventFilter(QAbstractItemView* targetView, QObject* parent = nullptr);
     ~DragDropEventFilter() override = default;
 
-    static void install(QAbstractItemView* view);
+    static DragDropEventFilter* install(QAbstractItemView* view);
+    void setPassThroughUrlDrags(bool passThrough) { m_passThroughUrlDrags = passThrough; }
+    bool passThroughUrlDrags() const { return m_passThroughUrlDrags; }
 
 signals:
     void pathsDropped(const QStringList& paths, const QModelIndex& targetIndex, Qt::DropAction action);
@@ -32,6 +34,7 @@ private:
 
     QAbstractItemView* m_targetView = nullptr;
     QPersistentModelIndex m_currentHoverDropIdx;
+    bool m_passThroughUrlDrags = false;
 };
 
 class ViewDragDropHelper {

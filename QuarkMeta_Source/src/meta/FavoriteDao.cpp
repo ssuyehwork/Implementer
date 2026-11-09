@@ -149,6 +149,150 @@ bool FavoriteDao::addFavorite(const QString& path, int parentId, const QString& 
     return success;
 }
 
+bool FavoriteDao::addFavoritesAt(const QList<NewFavoriteItem>& items, int parentId, int beforeSiblingId) {
+    sqlite3* db = DatabaseManager::instance().getGlobalDb();
+    if (!db || items.isEmpty()) return false;
+
+    std::lock_guard<std::mutex> lock(DatabaseManager::instance().getGlobalMutex());
+
+    // a. BEGIN
+    if (sqlite3_exec(db, "BEGIN TRANSACTION;", nullptr, nullptr, nullptr) != SQLITE_OK) {
+        return false;
+    }
+
+    // b. 读取全部行（id、parent_id、sort_order，按 sort_order 升序、id 升序），按父节点分组
+    const char* selectSql = "SELECT id, parent_id, sort_order FROM favorites ORDER BY sort_order ASC, id ASC;";
+    sqlite3_stmt* selectStmt = nullptr;
+    if (sqlite3_prepare_v2(db, selectSql, -1, &selectStmt, nullptr) != SQLITE_OK) {
+        sqlite3_exec(db, "ROLLBACK;", nullptr, nullptr, nullptr);
+        return false;
+    }
+
+    QMap<int, QList<int>> parentToChildren;
+    QMap<int, int> currentSortOrder;
+    QMap<int, int> currentParentId;
+
+    while (sqlite3_step(selectStmt) == SQLITE_ROW) {
+        int rId = sqlite3_column_int(selectStmt, 0);
+        int rParentId = sqlite3_column_int(selectStmt, 1);
+        int rSortOrder = sqlite3_column_int(selectStmt, 2);
+
+        parentToChildren[rParentId].append(rId);
+        currentSortOrder[rId] = rSortOrder;
+        currentParentId[rId] = rParentId;
+    }
+    sqlite3_finalize(selectStmt);
+
+    // c. 逐个插入新行（名称规则、字段与原 addFavorite 一致；排序号先写 0），取得新编号
+    const char* insertSql = "INSERT INTO favorites (parent_id, node_type, path, name, icon_key, color_hex, sort_order, created_at) "
+                            "VALUES (?, 1, ?, ?, ?, ?, 0, ?);";
+    sqlite3_stmt* insertStmt = nullptr;
+    if (sqlite3_prepare_v2(db, insertSql, -1, &insertStmt, nullptr) != SQLITE_OK) {
+        sqlite3_exec(db, "ROLLBACK;", nullptr, nullptr, nullptr);
+        return false;
+    }
+
+    QList<int> newlyInsertedIds;
+    qint64 nowSecs = QDateTime::currentSecsSinceEpoch();
+
+    for (const auto& item : items) {
+        QString cleanPath = QDir::toNativeSeparators(QDir::cleanPath(item.path));
+        QFileInfo fi(cleanPath);
+        QString name = item.name.isEmpty() ? (fi.fileName().isEmpty() ? cleanPath : fi.fileName()) : item.name;
+
+        std::string pathStd = cleanPath.toStdString();
+        std::string nameStd = name.toStdString();
+        std::string iconStd = item.iconKey.toStdString();
+        std::string colorStd = item.colorHex.toStdString();
+
+        sqlite3_bind_int(insertStmt, 1, parentId);
+        sqlite3_bind_text(insertStmt, 2, pathStd.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(insertStmt, 3, nameStd.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(insertStmt, 4, iconStd.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(insertStmt, 5, colorStd.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_int64(insertStmt, 6, nowSecs);
+
+        if (sqlite3_step(insertStmt) == SQLITE_DONE) {
+            int newId = static_cast<int>(sqlite3_last_insert_rowid(db));
+            if (newId > 0) {
+                newlyInsertedIds.append(newId);
+                currentParentId[newId] = parentId;
+                currentSortOrder[newId] = 0;
+            }
+        }
+        sqlite3_reset(insertStmt);
+    }
+    sqlite3_finalize(insertStmt);
+
+    if (newlyInsertedIds.isEmpty()) {
+        sqlite3_exec(db, "ROLLBACK;", nullptr, nullptr, nullptr);
+        return false;
+    }
+
+    // d. 在 parentId 的子节点列表中，把新编号按给定顺序连续插入到 beforeSiblingId 之前；beforeSiblingId 为 0 或不在该父级下，则追加到末尾
+    QList<int>& targetChildren = parentToChildren[parentId];
+    int insertIndex = -1;
+    if (beforeSiblingId > 0) {
+        insertIndex = targetChildren.indexOf(beforeSiblingId);
+    }
+
+    if (insertIndex >= 0) {
+        for (int i = 0; i < newlyInsertedIds.size(); ++i) {
+            targetChildren.insert(insertIndex + i, newlyInsertedIds[i]);
+        }
+    } else {
+        targetChildren.append(newlyInsertedIds);
+    }
+
+    // e. 从父节点 0 起做深度优先遍历，按遍历顺序重新赋值排序号（从 1 开始）；遍历不到的行不动
+    int orderCounter = 1;
+    QMap<int, int> newSortOrders;
+    std::function<void(int)> dfs = [&](int currentPid) {
+        const QList<int> children = parentToChildren.value(currentPid);
+        for (int childId : children) {
+            newSortOrders[childId] = orderCounter++;
+            dfs(childId);
+        }
+    };
+    dfs(0);
+
+    // f. 只对 (parent_id, sort_order) 与原值不同的行，以及新行，执行一次预编译语句的更新，不得对未变化的行写库
+    const char* updateSql = "UPDATE favorites SET parent_id = ?, sort_order = ? WHERE id = ?;";
+    sqlite3_stmt* updateStmt = nullptr;
+    if (sqlite3_prepare_v2(db, updateSql, -1, &updateStmt, nullptr) != SQLITE_OK) {
+        sqlite3_exec(db, "ROLLBACK;", nullptr, nullptr, nullptr);
+        return false;
+    }
+
+    for (auto it = newSortOrders.constBegin(); it != newSortOrders.constEnd(); ++it) {
+        int id = it.key();
+        int assignedOrder = it.value();
+        bool isNew = newlyInsertedIds.contains(id);
+
+        int origOrder = currentSortOrder.value(id, 0);
+        int origParent = currentParentId.value(id, 0);
+        int targetParent = (isNew ? parentId : origParent);
+
+        if (isNew || origOrder != assignedOrder || origParent != targetParent) {
+            sqlite3_bind_int(updateStmt, 1, targetParent);
+            sqlite3_bind_int(updateStmt, 2, assignedOrder);
+            sqlite3_bind_int(updateStmt, 3, id);
+            sqlite3_step(updateStmt);
+            sqlite3_reset(updateStmt);
+        }
+    }
+    sqlite3_finalize(updateStmt);
+
+    // g. COMMIT，之后只做一次 wal_checkpoint
+    if (sqlite3_exec(db, "COMMIT;", nullptr, nullptr, nullptr) != SQLITE_OK) {
+        sqlite3_exec(db, "ROLLBACK;", nullptr, nullptr, nullptr);
+        return false;
+    }
+
+    sqlite3_wal_checkpoint_v2(db, nullptr, SQLITE_CHECKPOINT_PASSIVE, nullptr, nullptr);
+    return true;
+}
+
 bool FavoriteDao::updateAutoRecursive(int id, bool autoRecursive) {
     sqlite3* db = DatabaseManager::instance().getGlobalDb();
     if (!db || id <= 0) return false;

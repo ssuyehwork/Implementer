@@ -41,7 +41,7 @@ DropTreeView::DropTreeView(QWidget* parent) : QTreeView(parent) {
     setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
     setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    DragDropEventFilter::install(this);
+    m_eventFilter = DragDropEventFilter::install(this);
 
     // 🚀【强力锁定 QPalette】：强制设定暗色 Base 与 AlternateBase，防止原生 Windows 调色板在交替行露白
     QPalette pal = palette();
@@ -72,6 +72,17 @@ void DropTreeView::setInternalDragValidator(std::function<bool(const QModelIndex
 
 void DropTreeView::setInternalDropValidator(std::function<bool(const QList<QPersistentModelIndex>&, const QModelIndex&, InternalDropZone)> canDrop) {
     m_internalDropValidator = canDrop;
+}
+
+void DropTreeView::setExternalDropPositioning(bool enabled) {
+    m_externalDropPositioning = enabled;
+    if (m_eventFilter) {
+        m_eventFilter->setPassThroughUrlDrags(enabled);
+    }
+}
+
+void DropTreeView::setDropZoneResolver(std::function<InternalDropZone(const QModelIndex& target, InternalDropZone rawZone, bool inUpperHalf)> resolver) {
+    m_dropZoneResolver = resolver;
 }
 
 void DropTreeView::setModel(QAbstractItemModel* model) {
@@ -232,12 +243,45 @@ InternalDropZone DropTreeView::calculateDropZone(const QPoint& pos, QModelIndex&
     int top25 = rect.top() + rect.height() * 0.25;
     int bottom25 = rect.bottom() - rect.height() * 0.25;
 
+    InternalDropZone rawZone = InternalDropZone::OnItem;
     if (pos.y() < top25) {
-        return InternalDropZone::Above;
+        rawZone = InternalDropZone::Above;
     } else if (pos.y() > bottom25) {
-        return InternalDropZone::Below;
+        rawZone = InternalDropZone::Below;
     } else {
-        return InternalDropZone::OnItem;
+        rawZone = InternalDropZone::OnItem;
+    }
+
+    if (m_dropZoneResolver) {
+        bool inUpperHalf = (pos.y() < rect.center().y());
+        return m_dropZoneResolver(outTargetIndex, rawZone, inUpperHalf);
+    }
+
+    return rawZone;
+}
+
+bool DropTreeView::updateDropFeedback(const QPoint& pos, const std::function<bool(const QModelIndex&, InternalDropZone)>& validator, QModelIndex& outTargetIdx, InternalDropZone& outZone) {
+    updateEdgeScroll(pos);
+
+    outZone = calculateDropZone(pos, outTargetIdx);
+    bool valid = validator ? validator(outTargetIdx, outZone) : true;
+
+    if (valid) {
+        m_showIndicator = true;
+        m_indicatorIndex = outTargetIdx;
+        m_indicatorZone = outZone;
+
+        if (outZone == InternalDropZone::OnItem && outTargetIdx.isValid()) {
+            ViewDragDropHelper::setHoverTarget(this, outTargetIdx);
+        } else {
+            ViewDragDropHelper::clearHover(this);
+        }
+
+        if (viewport()) viewport()->update();
+        return true;
+    } else {
+        clearInternalDropIndicator();
+        return false;
     }
 }
 
@@ -272,11 +316,39 @@ void DropTreeView::stopEdgeScroll() {
     }
 }
 
+bool DropTreeView::isExternalUrlDrag(const QMimeData* mime) const {
+    if (!mime) return false;
+    if (mime->hasFormat("application/x-quarkmeta-tree-nodes")) return false;
+    if (!mime->hasUrls()) return false;
+    for (const QUrl& url : mime->urls()) {
+        if (!url.toLocalFile().isEmpty()) return true;
+    }
+    return false;
+}
+
+QStringList DropTreeView::extractLocalPaths(const QMimeData* mime) const {
+    QStringList paths;
+    if (!mime || !mime->hasUrls()) return paths;
+    for (const QUrl& url : mime->urls()) {
+        QString local = QDir::toNativeSeparators(url.toLocalFile());
+        if (!local.isEmpty()) {
+            paths.append(local);
+        }
+    }
+    return paths;
+}
+
 void DropTreeView::dragEnterEvent(QDragEnterEvent* event) {
     if (m_internalReorderEnabled && event->mimeData() && event->mimeData()->hasFormat("application/x-quarkmeta-tree-nodes")) {
         event->acceptProposedAction();
         return;
     }
+
+    if (m_externalDropPositioning && isExternalUrlDrag(event->mimeData())) {
+        event->acceptProposedAction();
+        return;
+    }
+
     QTreeView::dragEnterEvent(event);
 }
 
@@ -292,31 +364,27 @@ void DropTreeView::dragMoveEvent(QDragMoveEvent* event) {
             }
         }
 
-        updateEdgeScroll(event->position().toPoint());
-
         QModelIndex targetIdx;
-        InternalDropZone zone = calculateDropZone(event->position().toPoint(), targetIdx);
+        InternalDropZone zone = InternalDropZone::Blank;
+        auto validator = [this](const QModelIndex& tIdx, InternalDropZone z) {
+            return m_internalDropValidator ? m_internalDropValidator(m_internalDragSources, tIdx, z) : true;
+        };
 
-        bool valid = true;
-        if (m_internalDropValidator) {
-            valid = m_internalDropValidator(m_internalDragSources, targetIdx, zone);
-        }
-
-        if (valid) {
-            m_showIndicator = true;
-            m_indicatorIndex = targetIdx;
-            m_indicatorZone = zone;
-
-            if (zone == InternalDropZone::OnItem && targetIdx.isValid()) {
-                ViewDragDropHelper::setHoverTarget(this, targetIdx);
-            } else {
-                ViewDragDropHelper::clearHover(this);
-            }
-
-            if (viewport()) viewport()->update();
+        if (updateDropFeedback(event->position().toPoint(), validator, targetIdx, zone)) {
             event->acceptProposedAction();
         } else {
-            clearInternalDropIndicator();
+            event->ignore();
+        }
+        return;
+    }
+
+    if (m_externalDropPositioning && isExternalUrlDrag(event->mimeData())) {
+        QModelIndex targetIdx;
+        InternalDropZone zone = InternalDropZone::Blank;
+        // 外部拖入不需要放置校验，恒为有效
+        if (updateDropFeedback(event->position().toPoint(), nullptr, targetIdx, zone)) {
+            event->acceptProposedAction();
+        } else {
             event->ignore();
         }
         return;
@@ -326,7 +394,7 @@ void DropTreeView::dragMoveEvent(QDragMoveEvent* event) {
 }
 
 void DropTreeView::dragLeaveEvent(QDragLeaveEvent* event) {
-    if (m_internalReorderEnabled) {
+    if (m_internalReorderEnabled || m_externalDropPositioning) {
         clearInternalDropIndicator();
         stopEdgeScroll();
     }
@@ -347,6 +415,24 @@ void DropTreeView::dropEvent(QDropEvent* event) {
 
         if (valid) {
             emit internalMoveRequested(m_internalDragSources, targetIdx, zone);
+            event->acceptProposedAction();
+        } else {
+            event->ignore();
+        }
+
+        clearInternalDropIndicator();
+        return;
+    }
+
+    if (m_externalDropPositioning && isExternalUrlDrag(event->mimeData())) {
+        stopEdgeScroll();
+
+        QModelIndex targetIdx;
+        InternalDropZone zone = calculateDropZone(event->position().toPoint(), targetIdx);
+        QStringList paths = extractLocalPaths(event->mimeData());
+
+        if (!paths.isEmpty()) {
+            emit pathsDroppedAt(paths, targetIdx, zone, event->dropAction());
             event->acceptProposedAction();
         } else {
             event->ignore();
@@ -415,7 +501,7 @@ void DropTreeView::keyboardSearch(const QString& search) {
 void DropTreeView::paintEvent(QPaintEvent* event) {
     QTreeView::paintEvent(event);
 
-    if (m_internalReorderEnabled && m_showIndicator && m_indicatorZone != InternalDropZone::OnItem) {
+    if (m_showIndicator && m_indicatorZone != InternalDropZone::OnItem) {
         QPainter painter(viewport());
         painter.save();
         painter.setRenderHint(QPainter::Antialiasing, false);

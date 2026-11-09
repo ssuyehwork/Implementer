@@ -128,10 +128,24 @@ void FavoritePanel::initUi() {
         return FavoriteTreeDropHandler::validateDrop(sources, target, zone, m_favoriteModel);
     });
 
+    // 启用外部拖入精确指示定位与区域判定
+    m_favoriteView->setExternalDropPositioning(true);
+    m_favoriteView->setDropZoneResolver([](const QModelIndex& target, InternalDropZone rawZone, bool inUpperHalf) -> InternalDropZone {
+        if (!target.isValid()) return rawZone;
+        bool isVirtualCategory = target.data(Qt::UserRole + 7).toBool();
+        if (!isVirtualCategory) {
+            // 真实收藏项不可作为放进容器：落在中间 50% 时按鼠标上半/下半转为 Above 或 Below
+            if (rawZone == InternalDropZone::OnItem) {
+                return inUpperHalf ? InternalDropZone::Above : InternalDropZone::Below;
+            }
+        }
+        return rawZone;
+    });
+
     connect(m_favoriteView, &DropTreeView::internalMoveRequested, this, &FavoritePanel::onInternalMoveRequested);
     connect(m_favoriteView, &QTreeView::clicked, this, &FavoritePanel::onFavoriteClicked);
     connect(m_favoriteView, &QWidget::customContextMenuRequested, this, &FavoritePanel::onFavoriteContextMenu);
-    connect(m_favoriteView, &DropTreeView::pathsDropped, this, &FavoritePanel::onPathsDroppedToFavorite);
+    connect(m_favoriteView, &DropTreeView::pathsDroppedAt, this, &FavoritePanel::onPathsDroppedAt);
 
     connect(m_favoriteModel, &QStandardItemModel::rowsMoved, this, &FavoritePanel::markOrderDirty, Qt::DirectConnection);
     connect(m_favoriteModel, &QStandardItemModel::rowsInserted, this, &FavoritePanel::markOrderDirty, Qt::DirectConnection);
@@ -463,18 +477,55 @@ void FavoritePanel::onFavoriteContextMenu(const QPoint& pos) {
     }
 }
 
-void FavoritePanel::onPathsDroppedToFavorite(const QStringList& paths, const QModelIndex& target) {
+void FavoritePanel::onPathsDroppedAt(const QStringList& paths, const QModelIndex& target, InternalDropZone zone) {
+    if (paths.isEmpty()) return;
+
     int parentId = 0;
-    if (target.isValid()) {
-        bool isVirtualTarget = target.data(Qt::UserRole + 7).toBool();
-        if (isVirtualTarget) {
+    int beforeSiblingId = 0;
+
+    if (zone == InternalDropZone::Blank) {
+        // Blank：父节点 0，之前的兄弟 0（追加到根级末尾）
+        parentId = 0;
+        beforeSiblingId = 0;
+    } else if (zone == InternalDropZone::OnItem) {
+        // OnItem（此时目标必定是虚拟文件夹）：父节点为目标节点编号，之前的兄弟 0（追加到该文件夹末尾）
+        if (target.isValid()) {
             parentId = target.data(Qt::UserRole + 6).toInt();
-        } else {
-            parentId = target.data(Qt::UserRole + 8).toInt();
+        }
+        beforeSiblingId = 0;
+    } else if (zone == InternalDropZone::Above) {
+        // Above：父节点为目标的模型父节点编号（根级为 0），之前的兄弟为目标自身的节点编号
+        if (target.isValid()) {
+            QModelIndex pIdx = target.parent();
+            if (pIdx.isValid()) {
+                parentId = pIdx.data(Qt::UserRole + 6).toInt();
+            } else {
+                parentId = 0;
+            }
+            beforeSiblingId = target.data(Qt::UserRole + 6).toInt();
+        }
+    } else if (zone == InternalDropZone::Below) {
+        // Below：父节点同上，之前的兄弟为目标在模型中同一父级下、紧邻其后的那一行的节点编号，没有则为 0
+        if (target.isValid()) {
+            QModelIndex pIdx = target.parent();
+            if (pIdx.isValid()) {
+                parentId = pIdx.data(Qt::UserRole + 6).toInt();
+            } else {
+                parentId = 0;
+            }
+
+            int nextRow = target.row() + 1;
+            int totalRows = m_favoriteModel ? (pIdx.isValid() ? m_favoriteModel->rowCount(pIdx) : m_favoriteModel->rowCount()) : 0;
+            if (nextRow < totalRows && m_favoriteModel) {
+                QModelIndex nextSiblingIdx = m_favoriteModel->index(nextRow, 0, pIdx);
+                if (nextSiblingIdx.isValid()) {
+                    beforeSiblingId = nextSiblingIdx.data(Qt::UserRole + 6).toInt();
+                }
+            }
         }
     }
 
-    FavoriteService::instance().addFavorites(paths, parentId);
+    FavoriteService::instance().addFavoritesAt(paths, parentId, beforeSiblingId);
 }
 
 void FavoritePanel::refreshItemIcons() {
