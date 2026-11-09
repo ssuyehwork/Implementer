@@ -75,7 +75,10 @@ void AddressHistoryPanel::rebuild() {
         sep->setObjectName("HistorySep");
         m_layout->addWidget(sep);
 
+        int displayCount = 0;
         for (const QString& path : m_history) {
+            if (++displayCount > 15) break;
+
             QWidget* row = new QWidget(this);
             row->setObjectName("HistoryRow");
             row->setCursor(Qt::PointingHandCursor);

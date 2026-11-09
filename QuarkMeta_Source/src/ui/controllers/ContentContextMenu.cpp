@@ -362,6 +362,9 @@ void ContentContextMenu::showMenu(QAbstractItemView* view, const QPoint& pos) {
                 std::wstring volSerial = MetadataManager::getVolumeSerialNumber(path.toStdWString());
                 QStringList recentFolders = NavigationHistoryService::getRecentVisitedFolders(volSerial);
                 recentFolders.removeAll(currentPath);
+                while (recentFolders.size() > 15) {
+                    recentFolders.removeLast();
+                }
 
                 QMenu* moveMenu = menu.addMenu(UiHelper::getIcon("Export-1.svg", QColor("#EEEEEE"), 18), "移动到");
                 UiHelper::applyMenuStyle(moveMenu);

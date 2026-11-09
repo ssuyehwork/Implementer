@@ -71,7 +71,7 @@ void NavigationHistoryService::recordRecentVisitedFolder(const std::wstring& pat
     QString qPath = QString::fromStdWString(MetadataManager::normalizePath(path));
     list.removeAll(qPath);
     list.prepend(qPath);
-    while (list.size() > 29) list.removeLast();
+    while (list.size() > 14) list.removeLast();
 
     AppConfig::instance().setValue(key, list);
 }
