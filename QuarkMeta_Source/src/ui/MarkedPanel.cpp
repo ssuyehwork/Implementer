@@ -344,7 +344,7 @@ void MarkedPanel::onContextMenuRequested(const QPoint& pos) {
             keepOnlyAct->setEnabled(false);
         }
 
-        QAction* removeAct = menu.addAction(UiHelper::getIcon("close", QColor("#EEEEEE"), 16), "从标记历史中移除");
+        QAction* removeAct = menu.addAction(UiHelper::getIcon("clear-2.svg", QColor("#EEEEEE"), 16), "从标记历史中移除");
         connect(removeAct, &QAction::triggered, this, [selectedPaths]() {
             for (const QString& p : selectedPaths) {
                 MarkedFolderService::instance().removeFolderRecord(p);
@@ -370,7 +370,7 @@ void MarkedPanel::onContextMenuRequested(const QPoint& pos) {
         MarkedFolderService::instance().clearAll();
     });
 
-    QAction* clearHistoryAct = menu.addAction(UiHelper::getIcon("close", QColor("#EEEEEE"), 16), "清空标记历史");
+    QAction* clearHistoryAct = menu.addAction(UiHelper::getIcon("clear-2.svg", QColor("#EEEEEE"), 16), "清空标记历史");
     connect(clearHistoryAct, &QAction::triggered, this, []() {
         MarkedFolderService::instance().clearAllFolderRecords();
     });

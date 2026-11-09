@@ -41,7 +41,7 @@ void SmartFolderRuleRow::initUi() {
 
     m_btnDelete = new QPushButton(this);
     m_btnDelete->setFixedSize(24, 24);
-    m_btnDelete->setIcon(UiHelper::getIcon("close", QColor("#CCCCCC"), 14));
+    m_btnDelete->setIcon(UiHelper::getIcon("clear-2.svg", QColor("#CCCCCC"), 14));
     m_btnDelete->setObjectName("SmartFolderRowDeleteBtn");
 
     m_layout->addWidget(m_typeCombo);

@@ -21,7 +21,7 @@ TagPill::TagPill(const QString& text, QWidget* parent) : QWidget(parent), m_text
     m_closeBtn = new QPushButton(this); 
     m_closeBtn->setFixedSize(16, 16); 
     m_closeBtn->setCursor(Qt::PointingHandCursor); 
-    m_closeBtn->setIcon(UiHelper::getIcon("close", QColor("#FFFFFF"), 14)); 
+    m_closeBtn->setIcon(UiHelper::getIcon("clear-2.svg", QColor("#FFFFFF"), 14));
     m_closeBtn->setIconSize(QSize(12, 12)); 
     m_closeBtn->setObjectName("TagPillCloseBtn");
 

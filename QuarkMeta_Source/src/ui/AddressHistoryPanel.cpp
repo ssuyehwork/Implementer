@@ -98,7 +98,7 @@ void AddressHistoryPanel::rebuild() {
             QPushButton* btnRemove = new QPushButton(row);
             btnRemove->setFixedSize(16, 16);
             btnRemove->setFlat(true);
-            btnRemove->setIcon(UiHelper::getIcon("close", QColor("#555555"), 12));
+            btnRemove->setIcon(UiHelper::getIcon("clear-2.svg", QColor("#555555"), 12));
             btnRemove->setIconSize(QSize(12, 12));
             btnRemove->setObjectName("HistoryBtnRemove");
             connect(btnRemove, &QPushButton::clicked, this, [path]() {

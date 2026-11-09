@@ -83,7 +83,7 @@ std::unique_ptr<QMenu> LibraryMenuBuilder::buildContextMenu(const QModelIndex& i
 
     // 4. 三大分组标头
     if (kind == LibraryNodeKind::SectionQuickAccess) {
-        QAction* clearAct = menu->addAction(UiHelper::getIcon("close", QColor("#EEEEEE")), "清空快速访问");
+        QAction* clearAct = menu->addAction(UiHelper::getIcon("clear-2.svg", QColor("#EEEEEE")), "清空快速访问");
         QObject::connect(clearAct, &QAction::triggered, [actions]() {
             if (actions.onClearQuickAccess) actions.onClearQuickAccess();
         });
