@@ -192,7 +192,17 @@ void ContentContextMenu::showMenu(QAbstractItemView* view, const QPoint& pos) {
             if (selPathsDrive.isEmpty() && !path.isEmpty()) selPathsDrive << path;
 
             MarkedFolderService::instance().buildMarkAction(&menu, selPathsDrive, m_panel);
-            FavoriteService::instance().buildFavoriteAction(&menu, path, m_panel);
+
+            // 归一化笔记实体收藏动作：直接通过 AppCommand 投递 ToggleFavorite
+            QAction* actFavDrive = menu.addAction(UiHelper::getIcon("Favorites.svg", QColor("#EEEEEE"), 18), "收藏");
+            QObject::connect(actFavDrive, &QAction::triggered, m_panel, [this, selPathsDrive, path]() {
+                QStringList targets = selPathsDrive.isEmpty() ? QStringList{path} : selPathsDrive;
+                AppCommand cmd;
+                cmd.type = AppCommandType::ToggleFavorite;
+                cmd.targetPaths = targets;
+                CoreEngine::instance().executeCommand(cmd);
+            });
+
             LibraryService::instance().buildLibraryAction(&menu, selPathsDrive, m_panel);
 
             int driveItemCount = selPathsDrive.size() > 0 ? static_cast<int>(selPathsDrive.size()) : 1;
@@ -321,7 +331,17 @@ void ContentContextMenu::showMenu(QAbstractItemView* view, const QPoint& pos) {
             if (selPathsItem.isEmpty() && !path.isEmpty()) selPathsItem << path;
 
             MarkedFolderService::instance().buildMarkAction(&menu, selPathsItem, m_panel);
-            FavoriteService::instance().buildFavoriteAction(&menu, path, m_panel);
+
+            // 归一化笔记实体收藏动作：直接通过 AppCommand 投递 ToggleFavorite
+            QAction* actFavItem = menu.addAction(UiHelper::getIcon("Favorites.svg", QColor("#EEEEEE"), 18), "收藏");
+            QObject::connect(actFavItem, &QAction::triggered, m_panel, [this, selPathsItem, path]() {
+                QStringList targets = selPathsItem.isEmpty() ? QStringList{path} : selPathsItem;
+                AppCommand cmd;
+                cmd.type = AppCommandType::ToggleFavorite;
+                cmd.targetPaths = targets;
+                CoreEngine::instance().executeCommand(cmd);
+            });
+
             LibraryService::instance().buildLibraryAction(&menu, selPathsItem, m_panel);
 
             int selItemCount = selPathsItem.size() > 0 ? static_cast<int>(selPathsItem.size()) : 1;

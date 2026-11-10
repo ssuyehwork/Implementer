@@ -82,7 +82,7 @@ void SidebarContainerWidget::initUi() {
     m_tabBar->setDrawBase(false);
     m_tabBar->setUsesScrollButtons(false);
     m_tabBar->setIconSize(QSize(16, 16));
-    m_tabBar->addTab(UiHelper::getIcon("Favorites.svg", "#888888", 16), "收藏夹");
+    m_tabBar->addTab(UiHelper::getIcon("Favorites.svg", "#888888", 16), "收藏");
     m_tabBar->addTab(UiHelper::getIcon("Search-in-library", "#888888", 16), "库");
     m_tabBar->addTab(UiHelper::getIcon("Destination.svg", "#888888", 16), "标记");
     m_tabBar->setCursor(Qt::PointingHandCursor);
