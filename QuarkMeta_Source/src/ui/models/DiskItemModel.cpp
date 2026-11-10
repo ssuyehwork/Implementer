@@ -108,11 +108,43 @@ void DiskItemModel::addItemRecord(const ItemRecord& record) {
 }
 
 void DiskItemModel::appendRecord(const ItemRecord& record) {
-    int newRow = static_cast<int>(m_allRecords.size());
-    beginInsertRows(QModelIndex(), newRow, newRow);
-    m_allRecords.push_back(record);
-    m_pathToIndex[record.path] = newRow;
+    appendRecords({record});
+}
+
+void DiskItemModel::appendRecords(const std::vector<ItemRecord>& records) {
+    if (records.empty()) return;
+
+    std::vector<ItemRecord> newRecords = records;
+    QStringList addedPaths;
+    addedPaths.reserve(static_cast<qsizetype>(newRecords.size()));
+
+    for (auto& rec : newRecords) {
+        if (rec.isDir || !ColorPaletteEngine::isGraphicsFile(rec.suffix.toLower())) {
+            rec.thumbnailState = ItemRecord::ThumbnailState::NotApplicable;
+        } else if (rec.thumbStatus == 1) {
+            rec.thumbnailState = ItemRecord::ThumbnailState::Failed;
+        } else {
+            rec.thumbnailState = ItemRecord::ThumbnailState::Pending;
+        }
+        addedPaths.append(rec.path);
+    }
+
+    MetadataManager::instance().seedMemoryCacheBatch(newRecords);
+
+    int firstNewRow = static_cast<int>(m_allRecords.size());
+    int lastNewRow = firstNewRow + static_cast<int>(newRecords.size()) - 1;
+
+    beginInsertRows(QModelIndex(), firstNewRow, lastNewRow);
+    m_allRecords.reserve(m_allRecords.size() + newRecords.size());
+    for (size_t i = 0; i < newRecords.size(); ++i) {
+        int rowIdx = firstNewRow + static_cast<int>(i);
+        m_allRecords.push_back(std::move(newRecords[i]));
+        m_pathToIndex[m_allRecords.back().path] = rowIdx;
+    }
+    m_iconCache.setMaxCost(qMax(m_iconCache.maxCost(), static_cast<int>(m_allRecords.size()) + 50));
     endInsertRows();
+
+    preloadDimensionsAsync(addedPaths);
 }
 
 void DiskItemModel::setRecords(const std::vector<ItemRecord>& records, RecordSource source) {

@@ -46,6 +46,11 @@ namespace QuarkMeta {
         virtual const std::vector<QuarkMeta::ItemRecord>& allRecords() const = 0;
         virtual void setRecords(const std::vector<QuarkMeta::ItemRecord>& records, RecordSource source = RecordSource::Disk) = 0;
         virtual void appendRecord(const QuarkMeta::ItemRecord& record) = 0;
+        virtual void appendRecords(const std::vector<QuarkMeta::ItemRecord>& records) {
+            for (const auto& rec : records) {
+                appendRecord(rec);
+            }
+        }
         virtual void clear() = 0;
         virtual void updateRecordMetadata(QString path) = 0;
         virtual void updateRecordMetadataBatch(const QStringList& paths) {

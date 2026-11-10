@@ -1466,5 +1466,25 @@ QuarkMeta 采用“侧车文件持久化 + 中心数据库索引”的读写分�
    - **【暂停 / 继续】功能**：提供暂停按钮，点击后通过后台线程挂起信号量/条件变量阻断下一项文件的 I/O 搬运，按钮切换为“继续”；点击“继续”后无缝唤醒恢复搬运；
    - **【取消】功能**：提供取消按钮，点击后立即触发取消原子标志位（`isCanceled = true`），安全终止后续文件的读取与写入，保持已写入文件的合法性并优雅关闭弹窗。
 
+---
+
+## 54. 大规模数据流式分批加载与主线程卡死彻底治愈规范 (Chunk Streaming DataLoader Specification)
+
+> 本章节记录在加载近 4000 个项时，杜绝主线程单次事件循环独占耗尽、代理模型全量重排和 Windows 白雾假死，落地 Chunk Streaming 分批流式加载与增量行追加的架构决策。
+
+### 54.1 历史缺陷根因
+1. **主线程独占阻塞**：`ContentDataLoader::loadLibraryPaths` 在后台完成数千条记录装配后，一次性打包抛回 GUI 主线程。主线程内连续执行 `setRecords`、全量排序、全量统计与自适应卡片几何测量，独占超过 5 秒，触发系统“无响应”白雾；
+2. **多层代理模型重置风暴**：`setRecords` 触发 `modelReset`，使得 `FilterProxyModel`、`SectionProxyModel` 全量重构内部映射表；
+3. **退化追加实现**：旧有的 `appendPaths` 取出全量 records 再次传入 `setRecords`，引发重复的 `modelReset`。
+
+### 54.2 核心架构决策与 SSOT 契约
+1. **分批流式加载（Chunk Streaming，首批 100 项，后续 500 项）**：
+   - **首屏瞬间呈现**：首批提取前 100 项传入 `setRecords`，耗时 $\le 50\text{ms}$，首屏瞬间填满视口，并立即解开 `setLoading(false)`，用户可以立即点击与滚动首屏内容；
+   - **异步事件让出（`QTimer::singleShot(0, ...)`）**：剩余记录按 500 项/批切片，通过 `QTimer::singleShot(0, ...)` 挂入 Qt 事件队列末尾。每批追加后主动交出主线程事件循环，处理 Win32 / Qt 消息队列，保证界面平滑保持 60fps 响应；
+   - **收尾集中结算**：流式追加过程中挂起中间排序与统计；最后一批完成后，集中执行一次全量排序（`applySort`）、防抖统计（`recalculateAndEmitStats`）、筛选更新（`applyFilters`）、选区恢复（`restoreSelections`）、媒体特征新鲜度检查以及后台增量对账。
+2. **底层模型原生行增量追加接口（`appendRecords`）**：
+   - 在 `ItemModelBase` 与 `DiskItemModel` 中原生实现 `appendRecords(const std::vector<ItemRecord>& records)`；
+   - 使用 Qt 标准的 `beginInsertRows` / `endInsertRows` 进行增量行插入，局部更新 `m_pathToIndex` 并异步预取尺寸，完全避免触发 `modelReset`；
+   - `appendRecord` 与 `appendPaths` 统一路由至 `appendRecords` 契约，维持数据流单一事实来源（SSOT）。
 
 

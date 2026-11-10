@@ -39,7 +39,8 @@ public:
     const std::vector<QuarkMeta::ItemRecord>& allRecords() const override { return m_allRecords; }
     void setRecords(const std::vector<QuarkMeta::ItemRecord>& records, RecordSource source = RecordSource::Disk) override;
     void addItemRecord(const QuarkMeta::ItemRecord& record);
-    void appendRecord(const QuarkMeta::ItemRecord& record);
+    void appendRecord(const QuarkMeta::ItemRecord& record) override;
+    void appendRecords(const std::vector<QuarkMeta::ItemRecord>& records) override;
     void clear() override;
     void updateRecordMetadata(QString path) override;
     void updateRecordMetadataBatch(const QStringList& paths) override;

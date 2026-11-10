@@ -19,6 +19,11 @@
 #include <QCoreApplication>
 #include <QPointer>
 #include <QDebug>
+#include <QTimer>
+#include <algorithm>
+#include <functional>
+#include <iterator>
+#include <memory>
 
 namespace QuarkMeta {
 
@@ -308,23 +313,104 @@ void ContentDataLoader::loadLibraryPaths(const QStringList& paths, int reqId) {
 
         if (!weakPanel) return;
 
-        QMetaObject::invokeMethod(QCoreApplication::instance(), [weakPanel, validRecords, reqId]() {
-            if (weakPanel && weakPanel->loadRequestId() == reqId) {
+        // 流式分批调度常数定义
+        constexpr size_t kFirstChunkSize = 100;
+        constexpr size_t kSubsequentChunkSize = 500;
+
+        const size_t totalRecords = validRecords.size();
+        const size_t initialBatchSize = std::min(totalRecords, kFirstChunkSize);
+
+        std::vector<ItemRecord> firstChunk(
+            std::make_move_iterator(validRecords.begin()),
+            std::make_move_iterator(validRecords.begin() + initialBatchSize)
+        );
+
+        auto remainingRecords = std::make_shared<std::vector<ItemRecord>>(
+            std::make_move_iterator(validRecords.begin() + initialBatchSize),
+            std::make_move_iterator(validRecords.end())
+        );
+
+        // 统一在主线程执行首批装配与流式切片调度
+        QMetaObject::invokeMethod(QCoreApplication::instance(), [weakPanel, firstChunk = std::move(firstChunk), remainingRecords, reqId]() mutable {
+            if (!weakPanel || weakPanel->loadRequestId() != reqId) return;
+
+            if (weakPanel->model()) {
+                weakPanel->model()->setRecords(firstChunk, RecordSource::Prepared);
+            }
+            weakPanel->applySort();
+            weakPanel->setLoading(false);
+            weakPanel->recalculateAndEmitStats();
+            weakPanel->applyFilters();
+
+            if (remainingRecords->empty()) {
+                weakPanel->restoreSelections();
                 if (weakPanel->model()) {
-                    weakPanel->model()->setRecords(validRecords, RecordSource::Prepared);
+                    const auto& all = weakPanel->model()->allRecords();
+                    MetadataManager::instance().registerLibraryItemsAsync(all);
+                    LibraryValidationService::instance().validateRecordsAsync(all, weakPanel.data(), reqId);
                 }
+                return;
+            }
+
+            // 定义流式递归注入调度函数 (Sequential Async Waterfall using QTimer::singleShot)
+            struct StreamContext {
+                size_t offset = 0;
+            };
+            auto ctx = std::make_shared<StreamContext>();
+
+            auto scheduleNextChunk = std::make_shared<std::function<void()>>();
+            *scheduleNextChunk = [weakPanel, remainingRecords, reqId, ctx, scheduleNextChunk]() {
+                if (!weakPanel || weakPanel->loadRequestId() != reqId) {
+                    // 若面板已销毁或已发起新请求，主动打断自持有强引用，释放内存
+                    *scheduleNextChunk = nullptr;
+                    return;
+                }
+
+                if (ctx->offset < remainingRecords->size()) {
+                    size_t chunkSize = std::min(kSubsequentChunkSize, remainingRecords->size() - ctx->offset);
+                    std::vector<ItemRecord> chunk(
+                        remainingRecords->begin() + ctx->offset,
+                        remainingRecords->begin() + ctx->offset + chunkSize
+                    );
+                    ctx->offset += chunkSize;
+
+                    if (weakPanel->model()) {
+                        weakPanel->model()->appendRecords(chunk);
+                    }
+
+                    if (ctx->offset < remainingRecords->size()) {
+                        // 让出主线程事件循环，处理 Win32 / Qt 消息队列后注入下一批；通过捕获 scheduleNextChunk 维持接力生命周期
+                        QTimer::singleShot(0, weakPanel, [scheduleNextChunk]() {
+                            if (*scheduleNextChunk) {
+                                (*scheduleNextChunk)();
+                            }
+                        });
+                        return;
+                    }
+                }
+
+                // 所有批次全部注入完成：执行统一收尾结算
                 weakPanel->applySort();
-                weakPanel->setLoading(false);
                 weakPanel->recalculateAndEmitStats();
                 weakPanel->applyFilters();
                 weakPanel->restoreSelections();
 
-                // 库模式媒体特征新鲜度检查（不读 JSON）
-                MetadataManager::instance().registerLibraryItemsAsync(validRecords);
+                if (weakPanel->model()) {
+                    const auto& all = weakPanel->model()->allRecords();
+                    MetadataManager::instance().registerLibraryItemsAsync(all);
+                    LibraryValidationService::instance().validateRecordsAsync(all, weakPanel.data(), reqId);
+                }
 
-                // 启动后台可取消增量对账校验
-                LibraryValidationService::instance().validateRecordsAsync(validRecords, weakPanel.data(), reqId);
-            }
+                // 主动解开自身强引用闭包，确保 std::function 与捕获的 remainingRecords 顺利析构
+                *scheduleNextChunk = nullptr;
+            };
+
+            // 派发第一批后续追加任务
+            QTimer::singleShot(0, weakPanel, [scheduleNextChunk]() {
+                if (*scheduleNextChunk) {
+                    (*scheduleNextChunk)();
+                }
+            });
         });
     });
 }
@@ -335,18 +421,17 @@ void ContentDataLoader::appendPaths(const QStringList& paths, int reqId) {
     (void)QtConcurrent::run([weakPanel, paths, reqId]() {
         if (!weakPanel) return;
         std::vector<ItemRecord> newRecs;
+        newRecs.reserve(static_cast<size_t>(paths.size()));
         for (const QString& p : paths) {
             newRecs.push_back(ItemRecord::create(p));
         }
         MetaCacheDecorator::decorate(newRecs);
         if (!weakPanel) return;
 
-        QMetaObject::invokeMethod(QCoreApplication::instance(), [weakPanel, newRecs, reqId]() {
+        QMetaObject::invokeMethod(QCoreApplication::instance(), [weakPanel, newRecs = std::move(newRecs), reqId]() {
             if (weakPanel && (reqId == 0 || weakPanel->loadRequestId() == reqId)) {
                 if (weakPanel->model()) {
-                    std::vector<ItemRecord> all = weakPanel->model()->allRecords();
-                    all.insert(all.end(), newRecs.begin(), newRecs.end());
-                    weakPanel->model()->setRecords(all);
+                    weakPanel->model()->appendRecords(newRecs);
                 }
                 weakPanel->recalculateAndEmitStats();
                 weakPanel->applyFilters();
