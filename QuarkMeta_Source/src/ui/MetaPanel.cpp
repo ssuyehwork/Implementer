@@ -16,6 +16,11 @@
 #include <QElapsedTimer>
 #include "components/FlowLayout.h"
 #include "../util/ShellHelper.h"
+#include "../meta/DuplicateDetectorService.h"
+#include "dialogs/FileCompareDialog.h"
+#include <QtConcurrent>
+#include <atomic>
+#include <memory>
 #include <QVBoxLayout>
 #include <QPushButton>
 #include <QToolButton>
@@ -389,6 +394,62 @@ void MetaPanel::initUi() {
     pathBtnL->addWidget(m_btnOpenLocation);
 
     pathL->addLayout(pathBtnL);
+
+    // 操作按钮行：查看属性、查看哈希值
+    QHBoxLayout* actionBtnL = new QHBoxLayout();
+    actionBtnL->setContentsMargins(0, 4, 0, 0);
+    actionBtnL->setSpacing(6);
+
+    m_btnShowProperties = new QPushButton("查看属性", pathBox);
+    m_btnShowProperties->setFocusPolicy(Qt::NoFocus);
+    m_btnShowProperties->setFixedHeight(24);
+    m_btnShowProperties->setCursor(Qt::PointingHandCursor);
+    m_btnShowProperties->setObjectName("BtnShowProperties");
+    connect(m_btnShowProperties, &QPushButton::clicked, this, &MetaPanel::onShowPropertiesClicked);
+    actionBtnL->addWidget(m_btnShowProperties);
+
+    m_btnComputeHash = new QPushButton("查看哈希值", pathBox);
+    m_btnComputeHash->setFocusPolicy(Qt::NoFocus);
+    m_btnComputeHash->setFixedHeight(24);
+    m_btnComputeHash->setCursor(Qt::PointingHandCursor);
+    m_btnComputeHash->setObjectName("BtnComputeHash");
+    connect(m_btnComputeHash, &QPushButton::clicked, this, &MetaPanel::onComputeHashClicked);
+    actionBtnL->addWidget(m_btnComputeHash);
+
+    pathL->addLayout(actionBtnL);
+
+    // 单个项目哈希结果展示容器（默认隐藏）
+    m_hashResultBox = new QWidget(pathBox);
+    m_hashResultBox->setObjectName("MetaHashResultBox");
+    m_hashResultBox->hide();
+    QHBoxLayout* hashL = new QHBoxLayout(m_hashResultBox);
+    hashL->setContentsMargins(0, 4, 0, 0);
+    hashL->setSpacing(4);
+
+    m_hashValueLabel = new QLabel(m_hashResultBox);
+    m_hashValueLabel->setObjectName("MetaHashValueLabel");
+    m_hashValueLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    QFont monoFont("Consolas");
+    monoFont.setPointSize(9);
+    m_hashValueLabel->setFont(monoFont);
+    hashL->addWidget(m_hashValueLabel, 1);
+
+    m_btnCopyHash = new QPushButton("复制", m_hashResultBox);
+    m_btnCopyHash->setFocusPolicy(Qt::NoFocus);
+    m_btnCopyHash->setFixedSize(36, 20);
+    m_btnCopyHash->setCursor(Qt::PointingHandCursor);
+    m_btnCopyHash->setObjectName("BtnCopyHash");
+    connect(m_btnCopyHash, &QPushButton::clicked, this, [this]() {
+        QString h = m_hashValueLabel ? m_hashValueLabel->text().trimmed() : QString();
+        if (!h.isEmpty() && h != "计算中…" && !h.startsWith("无法")) {
+            QApplication::clipboard()->setText(h);
+            ToolTipOverlay::instance()->showToast("已复制哈希值", 1200, QColor("#2ecc71"));
+        }
+    });
+    hashL->addWidget(m_btnCopyHash);
+
+    pathL->addWidget(m_hashResultBox);
+
     m_containerLayout->addWidget(createCollapsibleSection("物理路径", pathBox, true));
 
     m_containerLayout->addStretch(1);
@@ -603,6 +664,18 @@ void MetaPanel::setSelectedPaths(const QStringList& paths) {
         m_isUserEditing = false;
     }
 
+    // 切换选择时：安全取消正在计算的哈希任务并隐匿结果框
+    if (m_hashCancelToken) {
+        m_hashCancelToken->store(true);
+        m_hashCancelToken.reset();
+    }
+    if (m_hashResultBox) {
+        m_hashResultBox->hide();
+    }
+    if (m_hashValueLabel) {
+        m_hashValueLabel->clear();
+    }
+
     QElapsedTimer timer;
     timer.start();
     m_selectedPaths = paths;
@@ -696,6 +769,12 @@ void MetaPanel::updateControlsState(bool hasSelection, bool isMultiSelection, bo
     }
     if (m_btnOpenLocation) {
         m_btnOpenLocation->setEnabled(hasSelection && !isMultiSelection);
+    }
+    if (m_btnShowProperties) {
+        m_btnShowProperties->setEnabled(hasSelection && !isMultiSelection);
+    }
+    if (m_btnComputeHash) {
+        m_btnComputeHash->setEnabled(hasSelection);
     }
 }
 
@@ -1062,6 +1141,64 @@ void MetaPanel::setAsPrimaryColor(const QColor& color) {
     if (!currentPath.isEmpty() && !currentPath.startsWith("已选中")) {
         emit primaryColorChanged(currentPath, color);
     }
+}
+
+void MetaPanel::onShowPropertiesClicked() {
+    if (m_selectedPaths.isEmpty()) return;
+    QString path = m_selectedPaths.first();
+    if (!path.isEmpty() && !path.contains("://")) {
+        ShellHelper::showProperties(path);
+    }
+}
+
+void MetaPanel::onComputeHashClicked() {
+    if (m_selectedPaths.isEmpty()) return;
+
+    // 过滤出所有选中的非文件夹实体文件
+    QStringList validFiles;
+    for (const QString& p : m_selectedPaths) {
+        if (!p.isEmpty() && !p.contains("://") && !QFileInfo(p).isDir()) {
+            validFiles << p;
+        }
+    }
+
+    if (validFiles.isEmpty()) {
+        ToolTipOverlay::instance()->showToast("所选项目不包含可计算哈希的文件", 1500, QColor("#e81123"));
+        return;
+    }
+
+    // 多选文件（>= 2）：弹出专用 FileCompareDialog
+    if (validFiles.size() >= 2) {
+        FileCompareDialog dlg(validFiles, this);
+        dlg.exec();
+        return;
+    }
+
+    // 单个文件：在下方结果框异步计算并展示
+    QString targetFile = validFiles.first();
+    if (!m_hashResultBox || !m_hashValueLabel) return;
+
+    m_hashResultBox->show();
+    m_hashValueLabel->setText("计算中…");
+
+    if (m_hashCancelToken) {
+        m_hashCancelToken->store(true);
+    }
+    m_hashCancelToken = std::make_shared<std::atomic<bool>>(false);
+    auto cancelToken = m_hashCancelToken;
+
+    QPointer<MetaPanel> weakThis(this);
+    (void)QtConcurrent::run([weakThis, targetFile, cancelToken]() {
+        QString hash = DuplicateDetectorService::computeFullSha256(targetFile, cancelToken.get());
+        if (cancelToken->load()) return;
+
+        QMetaObject::invokeMethod(qApp, [weakThis, hash, cancelToken]() {
+            if (!weakThis || cancelToken->load()) return;
+            if (weakThis->m_hashValueLabel) {
+                weakThis->m_hashValueLabel->setText(hash.isEmpty() ? "无法读取" : hash);
+            }
+        });
+    });
 }
 
 bool MetaPanel::eventFilter(QObject* watched, QEvent* event) {

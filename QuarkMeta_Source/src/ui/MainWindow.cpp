@@ -214,6 +214,17 @@ void MainWindow::setupControllersAndMediators() {
     m_panelMediator = new PanelMediator(components, this);
     m_panelMediator->setupConnections();
 
+    if (m_titleBarWidget && m_titleBarWidget->tabBar()) {
+        connect(m_titleBarWidget->tabBar(), &TabBarWidget::tabDisplayTitleChanged, this, [this](const QString& title) {
+            QString cleanTitle = title.trimmed();
+            if (cleanTitle.isEmpty() || cleanTitle == "此电脑") {
+                setWindowTitle("此电脑-QuarkMeta");
+            } else {
+                setWindowTitle(QString("%1-QuarkMeta").arg(cleanTitle));
+            }
+        });
+    }
+
     connect(m_panelMediator, &PanelMediator::statusMessageRequested, this, [this](const QString& msg) {
         if (m_statusLeft) m_statusLeft->setText(msg);
     });

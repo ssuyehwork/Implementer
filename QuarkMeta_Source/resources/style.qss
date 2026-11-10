@@ -1818,6 +1818,39 @@ QPushButton#BtnOpenLocation:hover {
     border-color: #378ADD;
     color: #FFFFFF;
 }
+QPushButton#BtnShowProperties, QPushButton#BtnComputeHash {
+    background: #252526;
+    border: 1px solid #3c3c3c;
+    border-radius: 4px;
+    color: #CCCCCC;
+    font-size: 11px;
+    outline: none;
+}
+QPushButton#BtnShowProperties:hover, QPushButton#BtnComputeHash:hover {
+    background: #333333;
+    color: #FFFFFF;
+}
+QLabel#MetaHashValueLabel {
+    font-size: 10px;
+    color: #3498db;
+    background: #1e1e1e;
+    border: 1px solid #333333;
+    border-radius: 3px;
+    padding: 2px 4px;
+}
+QPushButton#BtnCopyHash {
+    background: #252526;
+    border: 1px solid #3c3c3c;
+    border-radius: 3px;
+    color: #CCCCCC;
+    font-size: 10px;
+    outline: none;
+}
+QPushButton#BtnCopyHash:hover {
+    background: #378ADD;
+    border-color: #378ADD;
+    color: #FFFFFF;
+}
 QLabel#MetaInfoKeyLabel {
     font-size: 11px;
     color: #888888;
