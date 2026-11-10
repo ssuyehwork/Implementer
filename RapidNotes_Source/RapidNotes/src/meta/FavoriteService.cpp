@@ -92,7 +92,7 @@ QAction* FavoriteService::buildFavoriteAction(QMenu* parentMenu, const QString& 
 
     bool fav = isFavorite(path);
     QIcon favIcon = fav ? UiHelper::getIcon("close", QColor("#EEEEEE"), 18) : UiHelper::getIcon("Favorites.svg", QColor("#EEEEEE"), 18);
-    QString text = fav ? "从收藏夹移除" : "添加至收藏夹";
+    QString text = fav ? "取消收藏" : "收藏";
 
     QAction* action = parentMenu->addAction(favIcon, text);
     connect(action, &QAction::triggered, receiver ? receiver : parentMenu, [this, path]() {
