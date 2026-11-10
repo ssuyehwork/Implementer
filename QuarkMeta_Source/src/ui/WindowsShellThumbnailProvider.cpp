@@ -12,6 +12,7 @@
 #include "SvgIconRenderer.h"
 #include <QtConcurrent/QtConcurrent>
 #include <QDebug>
+#include "Logger.h"
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -148,6 +149,7 @@ void WindowsShellThumbnailProvider::recordShellFailure() {
         int64_t nowMs = QDateTime::currentMSecsSinceEpoch();
         g_cooldownUntilMs.store(nowMs + 1000); // 触发 1000ms 熔断冷却，允许 Shell 缓存池 GC
         g_consecutiveFailures.store(0);
+        Logger::log(QString("[WindowsShellThumbnailProvider] 连续失败达到阈值，触发 1000ms 熔断冷却以释放 Shell 缓存池"));
     }
 }
 
@@ -195,6 +197,8 @@ void WindowsShellThumbnailProvider::handleIconLoad(const QString& filePath, cons
         } catch (...) {
             recordShellFailure();
             icon = SvgIconRenderer::getIcon(isDir ? "folder_filled" : "file", QColor("#888888"), 128);
+            Logger::log(QString("[WindowsShellThumbnailProvider] 捕获 Windows Shell 底层异常(CacheOverflowException 等), key=%1, path=%2")
+                .arg(key, filePath));
         }
 
         {

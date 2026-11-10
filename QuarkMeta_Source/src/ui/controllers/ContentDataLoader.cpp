@@ -20,6 +20,8 @@
 #include <QPointer>
 #include <QDebug>
 #include <QTimer>
+#include <QElapsedTimer>
+#include "../Logger.h"
 #include <algorithm>
 #include <functional>
 #include <iterator>
@@ -331,8 +333,11 @@ void ContentDataLoader::loadLibraryPaths(const QStringList& paths, int reqId) {
         );
 
         // 统一在主线程执行首批装配与流式切片调度
-        QMetaObject::invokeMethod(QCoreApplication::instance(), [weakPanel, firstChunk = std::move(firstChunk), remainingRecords, reqId]() mutable {
+        QMetaObject::invokeMethod(QCoreApplication::instance(), [weakPanel, firstChunk = std::move(firstChunk), remainingRecords, reqId, totalRecords]() mutable {
             if (!weakPanel || weakPanel->loadRequestId() != reqId) return;
+
+            QElapsedTimer firstChunkTimer;
+            firstChunkTimer.start();
 
             if (weakPanel->model()) {
                 weakPanel->model()->setRecords(firstChunk, RecordSource::Prepared);
@@ -341,6 +346,10 @@ void ContentDataLoader::loadLibraryPaths(const QStringList& paths, int reqId) {
             weakPanel->setLoading(false);
             weakPanel->recalculateAndEmitStats();
             weakPanel->applyFilters();
+
+            qint64 firstChunkMs = firstChunkTimer.elapsed();
+            Logger::log(QString("[Perf-DataLoader] 首批数据上屏完成: count=%1/%2, 耗时=%3ms, reqId=%4")
+                .arg(firstChunk.size()).arg(totalRecords).arg(firstChunkMs).arg(reqId));
 
             if (remainingRecords->empty()) {
                 weakPanel->restoreSelections();
@@ -355,18 +364,22 @@ void ContentDataLoader::loadLibraryPaths(const QStringList& paths, int reqId) {
             // 定义流式递归注入调度函数 (Sequential Async Waterfall using QTimer::singleShot)
             struct StreamContext {
                 size_t offset = 0;
+                int chunkIndex = 0;
+                QElapsedTimer streamTimer;
             };
             auto ctx = std::make_shared<StreamContext>();
+            ctx->streamTimer.start();
 
             auto scheduleNextChunk = std::make_shared<std::function<void()>>();
-            *scheduleNextChunk = [weakPanel, remainingRecords, reqId, ctx, scheduleNextChunk]() {
+            *scheduleNextChunk = [weakPanel, remainingRecords, reqId, ctx, scheduleNextChunk, totalRecords]() {
                 if (!weakPanel || weakPanel->loadRequestId() != reqId) {
-                    // 若面板已销毁或已发起新请求，主动打断自持有强引用，释放内存
+                    Logger::log(QString("[Perf-DataLoader] 流式加载中止 (面板已销毁或已发起新请求): reqId=%1").arg(reqId));
                     *scheduleNextChunk = nullptr;
                     return;
                 }
 
                 if (ctx->offset < remainingRecords->size()) {
+                    ctx->chunkIndex++;
                     size_t chunkSize = std::min(kSubsequentChunkSize, remainingRecords->size() - ctx->offset);
                     std::vector<ItemRecord> chunk(
                         remainingRecords->begin() + ctx->offset,
@@ -374,9 +387,16 @@ void ContentDataLoader::loadLibraryPaths(const QStringList& paths, int reqId) {
                     );
                     ctx->offset += chunkSize;
 
+                    QElapsedTimer appendTimer;
+                    appendTimer.start();
+
                     if (weakPanel->model()) {
                         weakPanel->model()->appendRecords(chunk);
                     }
+
+                    qint64 appendMs = appendTimer.elapsed();
+                    Logger::log(QString("[Perf-DataLoader] 追加批次 #%1: 追加项数=%2, 当前累计=%3/%4, 批次耗时=%5ms")
+                        .arg(ctx->chunkIndex).arg(chunkSize).arg(ctx->offset + kFirstChunkSize).arg(totalRecords).arg(appendMs));
 
                     if (ctx->offset < remainingRecords->size()) {
                         // 让出主线程事件循环，处理 Win32 / Qt 消息队列后注入下一批；通过捕获 scheduleNextChunk 维持接力生命周期
@@ -390,6 +410,9 @@ void ContentDataLoader::loadLibraryPaths(const QStringList& paths, int reqId) {
                 }
 
                 // 所有批次全部注入完成：执行统一收尾结算
+                QElapsedTimer finishTimer;
+                finishTimer.start();
+
                 weakPanel->applySort();
                 weakPanel->recalculateAndEmitStats();
                 weakPanel->applyFilters();
@@ -400,6 +423,11 @@ void ContentDataLoader::loadLibraryPaths(const QStringList& paths, int reqId) {
                     MetadataManager::instance().registerLibraryItemsAsync(all);
                     LibraryValidationService::instance().validateRecordsAsync(all, weakPanel.data(), reqId);
                 }
+
+                qint64 finishMs = finishTimer.elapsed();
+                qint64 totalStreamMs = ctx->streamTimer.elapsed();
+                Logger::log(QString("[Perf-DataLoader] 全部数据流式加载完毕: 总记录数=%1, 收尾耗时=%2ms, 流式全过程总耗时=%3ms")
+                    .arg(totalRecords).arg(finishMs).arg(totalStreamMs));
 
                 // 主动解开自身强引用闭包，确保 std::function 与捕获的 remainingRecords 顺利析构
                 *scheduleNextChunk = nullptr;

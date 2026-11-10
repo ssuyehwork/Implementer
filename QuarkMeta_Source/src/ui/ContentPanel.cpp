@@ -28,6 +28,8 @@
 
 #include "../core/AppConfig.h"
 #include "../core/CoreEngine.h"
+#include "Logger.h"
+#include <QElapsedTimer>
 #include "../core/CoreController.h"
 #include "../core/TrashService.h"
 #include "../core/PermanentDeleteService.h"
@@ -413,9 +415,15 @@ void ContentPanel::ensureSourceModelIsDiskModel() {
 
 void ContentPanel::applySort() {
     if (m_sortController) {
+        QElapsedTimer timer;
+        timer.start();
         if (m_proxyModel) m_sortController->applySortToModel(m_proxyModel);
         if (m_columnView) {
             m_columnView->applySort(static_cast<int>(m_sortController->sortType()), m_sortController->sortOrder());
+        }
+        qint64 ms = timer.elapsed();
+        if (ms > 5) {
+            Logger::log(QString("[Perf-ContentPanel] applySort 耗时=%1ms, viewMode=%2").arg(ms).arg(m_currentViewMode));
         }
     }
 }
@@ -1295,6 +1303,10 @@ void ContentPanel::endWatchSuppress() {
 }
 
 void ContentPanel::recalculateAndEmitStats() {
+    QElapsedTimer timer;
+    timer.start();
+    size_t count = 0;
+
     // 🚀【杜绝主线程全量深拷贝】：提取指针并在非空时仅进行一次轻量级移动处理
     if (m_currentViewMode == ColumnView && m_columnView) {
         ColumnViewPane* pane = m_columnView->rightmostPane();
@@ -1302,6 +1314,7 @@ void ContentPanel::recalculateAndEmitStats() {
         if (pane && pane->model() && m_statsWorker) {
             const auto& allRecs = pane->model()->allRecords();
             if (!allRecs.empty()) {
+                count = allRecs.size();
                 std::vector<ItemRecord> snapshot = allRecs;
                 m_statsWorker->processAsync(std::move(snapshot), m_currentFilter.showHidden);
             }
@@ -1309,9 +1322,15 @@ void ContentPanel::recalculateAndEmitStats() {
     } else if (m_model && m_statsWorker) {
         const auto& allRecs = m_model->allRecords();
         if (!allRecs.empty()) {
+            count = allRecs.size();
             std::vector<ItemRecord> snapshot = allRecs;
             m_statsWorker->processAsync(std::move(snapshot), m_currentFilter.showHidden);
         }
+    }
+
+    qint64 ms = timer.elapsed();
+    if (ms > 5 || count > 500) {
+        Logger::log(QString("[Perf-ContentPanel] recalculateAndEmitStats 调度派发: 记录数=%1, 主线程派发耗时=%2ms").arg(count).arg(ms));
     }
 }
 

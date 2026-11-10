@@ -20,6 +20,8 @@
 #include "MetadataManager.h"
 #include "DriveMetaDao.h"
 #include "../../core/LastOperationManager.h"
+#include "../Logger.h"
+#include <QElapsedTimer>
 
 namespace QuarkMeta {
 
@@ -114,6 +116,9 @@ void DiskItemModel::appendRecord(const ItemRecord& record) {
 void DiskItemModel::appendRecords(const std::vector<ItemRecord>& records) {
     if (records.empty()) return;
 
+    QElapsedTimer timer;
+    timer.start();
+
     std::vector<ItemRecord> newRecords = records;
     QStringList addedPaths;
     addedPaths.reserve(static_cast<qsizetype>(newRecords.size()));
@@ -145,6 +150,10 @@ void DiskItemModel::appendRecords(const std::vector<ItemRecord>& records) {
     endInsertRows();
 
     preloadDimensionsAsync(addedPaths);
+
+    qint64 ms = timer.elapsed();
+    Logger::log(QString("[Perf-DiskItemModel] appendRecords 完成: 追加行数=%1, 总行数=%2, 耗时=%3ms")
+        .arg(records.size()).arg(m_allRecords.size()).arg(ms));
 }
 
 void DiskItemModel::setRecords(const std::vector<ItemRecord>& records, RecordSource source) {
