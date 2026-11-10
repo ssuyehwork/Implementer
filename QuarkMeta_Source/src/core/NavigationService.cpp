@@ -46,16 +46,16 @@ QString NavigationService::currentDisplayPath() const {
 
     if (m_currentUrl.startsWith("library://")) {
         int catId = m_currentUrl.mid(10).toInt();
-        if (catId == -1) return "库 → 全部数据";
-        if (catId == -2) return "库 → 未分类";
+        if (catId == -1) return "全部数据";
+        if (catId == -2) return "未分类";
         LibraryCategoryRecord rec = LibraryDao::getCategoryById(catId);
-        return rec.name.isEmpty() ? "库" : ("库 → " + rec.name);
+        return rec.name.isEmpty() ? "库" : rec.name;
     }
 
     if (m_currentUrl.startsWith("smartfolder://")) {
         int sfId = m_currentUrl.mid(14).toInt();
         SmartFolderRecord rec = SmartFolderDao::getSmartFolderById(sfId);
-        return rec.name.isEmpty() ? "库" : ("库 → " + rec.name);
+        return rec.name.isEmpty() ? "库" : rec.name;
     }
 
     if (m_currentUrl.contains("://")) return m_currentUrl;

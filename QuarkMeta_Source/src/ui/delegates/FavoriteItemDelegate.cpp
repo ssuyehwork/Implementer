@@ -100,23 +100,28 @@ void FavoriteItemDelegate::paint(QPainter* painter, const QStyleOptionViewItem& 
     QColor matchTextColor("#3498db");
 
     bool isAutoRec = index.data(Qt::UserRole + 9).toBool();
-    int rightIconWidth = isAutoRec ? 22 : 0;
-    QRect adjustedTextRect = textRect.adjusted(0, 0, -rightIconWidth, 0);
+    bool isMarked = index.data(Qt::UserRole + 10).toBool();
+
+    // 遵循 Memories 第 44 章规范：7px 滚动条 + 10px 呼吸间距 = 17px 基础右边距
+    int rightReserved = 17;
+    if (isAutoRec) rightReserved += 20;
+    if (isMarked) rightReserved += 20;
+
+    QRect adjustedTextRect = textRect.adjusted(0, 0, -(rightReserved - 8), 0);
 
     paintHighlightedText(painter, adjustedTextRect, text, m_filterKeyword, opt.font, normalTextColor, matchTextColor);
 
     // 绘制开启自动递归右侧 layers 图标与标记 Destination 图标
-    bool isMarked = index.data(Qt::UserRole + 10).toBool();
-    int rightOffset = 22;
+    int currentOffset = 17 + 16; // 图标宽 16px，最右侧保留 17px
     if (isAutoRec) {
-        QRect layersRect(opt.rect.right() - rightOffset, opt.rect.top() + (opt.rect.height() - 16) / 2, 16, 16);
+        QRect layersRect(opt.rect.right() - currentOffset, opt.rect.top() + (opt.rect.height() - 16) / 2, 16, 16);
         QIcon layersIcon = UiHelper::getIcon("layers", QColor("#2ecc71"), 16);
         layersIcon.paint(painter, layersRect, Qt::AlignCenter, QIcon::Normal, QIcon::Off);
-        rightOffset += 20;
+        currentOffset += 20;
     }
 
     if (isMarked) {
-        QRect markIconRect(opt.rect.right() - rightOffset, opt.rect.top() + (opt.rect.height() - 16) / 2, 16, 16);
+        QRect markIconRect(opt.rect.right() - currentOffset, opt.rect.top() + (opt.rect.height() - 16) / 2, 16, 16);
         QIcon markIcon = UiHelper::getIcon("Destination.svg", QColor("#ff551c"), 16);
         markIcon.paint(painter, markIconRect, Qt::AlignCenter, QIcon::Normal, QIcon::Off);
     }
@@ -198,7 +203,10 @@ void FavoriteItemDelegate::updateEditorGeometry(QWidget* editor, const QStyleOpt
     int textLeft = option.rect.left() + leftMargin + iconSize + spacing;
     
     bool isAutoRec = index.data(Qt::UserRole + 9).toBool();
-    int rightMargin = isAutoRec ? 26 : 8;
+    bool isMarked = index.data(Qt::UserRole + 10).toBool();
+    int rightMargin = 17;
+    if (isAutoRec) rightMargin += 20;
+    if (isMarked) rightMargin += 20;
 
     QRect editorRect = option.rect;
     editorRect.setLeft(textLeft - 2);

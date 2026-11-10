@@ -48,6 +48,16 @@ void TabBarCoordinator::wire() {
         NavigationService::instance().navigateTo(url);
     });
 
+    // 分屏窗格结构或路径改变时，自动同步更新多窗格标签页标题
+    if (root && root->splitManager()) {
+        connect(root->splitManager(), &ContentPaneSplitManager::layoutChanged, this, [this, root]() {
+            if (m_tabBar && root->splitManager()) {
+                TabSplitState state = root->splitManager()->exportSplitState();
+                m_tabBar->updateSplitTabTitle(state);
+            }
+        });
+    }
+
     // 标签页刷新请求
     connect(m_tabBar, &TabBarWidget::refreshRequested, this, [this]() {
         if (m_refreshCurrentFunc) {

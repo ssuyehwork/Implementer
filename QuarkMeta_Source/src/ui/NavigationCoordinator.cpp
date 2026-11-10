@@ -188,7 +188,7 @@ void NavigationCoordinator::wire() {
                 target->setLastLoadedLibraryPaths(paths);
                 target->loadLibraryPaths(paths);
             }
-            showLocation("库 → " + name, name, "library://" + QString::number(categoryId));
+            showLocation(name, name, "library://" + QString::number(categoryId));
         });
 
         connect(m_libraryPanel, &LibraryPanel::smartFolderSelected, this, [this](const SmartFolderRecord& record) {
@@ -197,7 +197,7 @@ void NavigationCoordinator::wire() {
                 target->setActivePane(true);
                 target->loadSmartFolder(record, record.name);
             }
-            showLocation("库 → " + record.name, record.name, "smartfolder://" + QString::number(record.id));
+            showLocation(record.name, record.name, "smartfolder://" + QString::number(record.id));
         });
 
         connect(m_libraryPanel, &LibraryPanel::smartFolderPreviewRequested, this, [this](const SmartFolderRecord& record) {
@@ -207,7 +207,7 @@ void NavigationCoordinator::wire() {
                 target->setActivePane(true);
                 target->loadSmartFolder(record, displayName);
             }
-            showLocation("库 → " + displayName, displayName, "smartfolder://" + QString::number(record.id));
+            showLocation(displayName, displayName, "smartfolder://" + QString::number(record.id));
         });
     }
 
