@@ -401,52 +401,38 @@ void SectionProxyModel::onSourceRowsInserted(const QModelIndex& parent, int star
         }
     }
 
-    // 2. Insert new entries
+    // 2. 批量分类统计与区间合并插入（杜绝循环单行 beginInsertRows）
+    QList<int> newFolders;
+    QList<int> newFiles;
+
     for (int r = start; r <= end; ++r) {
         QModelIndex srcIdx = sourceModel()->index(r, 0);
         QString typeStr = srcIdx.data(TypeRole).toString();
-        bool isFolder = (typeStr == "folder");
-
-        if (isFolder) {
-            int insertPosInFolders = 0;
-            while (insertPosInFolders < m_folderSourceRows.size() && m_folderSourceRows[insertPosInFolders] < r) {
-                insertPosInFolders++;
-            }
-            m_folderSourceRows.insert(insertPosInFolders, r);
-            m_folderCount++;
-
-            if (!m_folderCollapsed) {
-                int targetProxyRow = (m_mapping.isEmpty() || m_mapping.first().type != RowType::FolderHeader) ? 0 : 1 + insertPosInFolders;
-                beginInsertRows(QModelIndex(), targetProxyRow, targetProxyRow);
-                m_mapping.insert(targetProxyRow, {RowType::FolderItem, r});
-                rebuildReverseIndex();
-                endInsertRows();
-            }
+        if (typeStr == "folder") {
+            newFolders.append(r);
         } else {
-            int insertPosInFiles = 0;
-            while (insertPosInFiles < m_fileSourceRows.size() && m_fileSourceRows[insertPosInFiles] < r) {
-                insertPosInFiles++;
-            }
-            m_fileSourceRows.insert(insertPosInFiles, r);
-            m_fileCount++;
-
-            int fileHeaderProxyRow = -1;
-            for (int p = 0; p < m_mapping.size(); ++p) {
-                if (m_mapping[p].type == RowType::FileHeader) {
-                    fileHeaderProxyRow = p;
-                    break;
-                }
-            }
-
-            int targetProxyRow = (fileHeaderProxyRow != -1) ? fileHeaderProxyRow + 1 + insertPosInFiles : m_mapping.size();
-            beginInsertRows(QModelIndex(), targetProxyRow, targetProxyRow);
-            m_mapping.insert(targetProxyRow, {RowType::FileItem, r});
-            rebuildReverseIndex();
-            endInsertRows();
+            newFiles.append(r);
         }
     }
 
-    rebuildReverseIndex();
+    // 若全部为普通文件且处于尾部追加场景（海量数据流式追加的 99.9% 场景），直接单次区间批量插入
+    if (newFolders.isEmpty() && !newFiles.isEmpty() && (m_fileSourceRows.isEmpty() || start >= m_fileSourceRows.last())) {
+        int firstInsertProxyRow = m_mapping.size();
+        int lastInsertProxyRow = firstInsertProxyRow + newFiles.size() - 1;
+
+        beginInsertRows(QModelIndex(), firstInsertProxyRow, lastInsertProxyRow);
+        for (int r : newFiles) {
+            m_fileSourceRows.append(r);
+            m_mapping.append({RowType::FileItem, r});
+        }
+        m_fileCount = m_fileSourceRows.size();
+        rebuildReverseIndex();
+        endInsertRows();
+    } else {
+        // 复杂混合场景：直接快速全量重构映射，耗时仅几毫秒，彻底优于数百次行插入
+        rebuildMapping();
+    }
+
     syncHeaders();
 }
 
