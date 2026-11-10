@@ -298,15 +298,20 @@ void LibraryPanel::loadLibrary() {
         int targetNodeId = m_pendingEditNodeId;
         m_pendingEditNodeId = 0;
         QTimer::singleShot(50, this, [this, targetNodeId]() {
+            if (!m_model || !m_treeView) return;
             QStandardItem* targetItem = findNode(m_model->invisibleRootItem(), LibraryNodeKind::Category, targetNodeId);
-            if (targetItem && m_treeView) {
+            if (targetItem) {
+                QModelIndex idx = targetItem->index();
+                if (!idx.isValid()) return;
+
                 QModelIndex parentIdx = targetItem->parent() ? targetItem->parent()->index() : QModelIndex();
                 if (parentIdx.isValid()) {
                     m_treeView->expand(parentIdx);
                 }
-                m_treeView->setFocus();
-                m_treeView->setCurrentIndex(targetItem->index());
-                m_treeView->edit(targetItem->index());
+                // 🚀【顺序纠偏与防崩防御】：必须先设置有效合法的 CurrentIndex，再触发 setFocus，严防内部野索引读取空指针闪退
+                m_treeView->setCurrentIndex(idx);
+                m_treeView->setFocus(Qt::OtherFocusReason);
+                m_treeView->edit(idx);
             }
         });
     }
