@@ -301,17 +301,18 @@ void LibraryPanel::loadLibrary() {
             if (!m_model || !m_treeView) return;
             QStandardItem* targetItem = findNode(m_model->invisibleRootItem(), LibraryNodeKind::Category, targetNodeId);
             if (targetItem) {
-                QModelIndex idx = targetItem->index();
-                if (!idx.isValid()) return;
+                QPersistentModelIndex pIdx(targetItem->index());
+                if (!pIdx.isValid() || pIdx.model() != m_model) return;
 
                 QModelIndex parentIdx = targetItem->parent() ? targetItem->parent()->index() : QModelIndex();
                 if (parentIdx.isValid()) {
                     m_treeView->expand(parentIdx);
                 }
-                // 🚀【顺序纠偏与防崩防御】：必须先设置有效合法的 CurrentIndex，再触发 setFocus，严防内部野索引读取空指针闪退
-                m_treeView->setCurrentIndex(idx);
+
+                // 必须先 setCurrentIndex，且使用持久化校验后的索引，再 focus 和 edit
+                m_treeView->setCurrentIndex(pIdx);
                 m_treeView->setFocus(Qt::OtherFocusReason);
-                m_treeView->edit(idx);
+                m_treeView->edit(pIdx);
             }
         });
     }
@@ -407,12 +408,15 @@ bool LibraryPanel::eventFilter(QObject* watched, QEvent* event) {
 void LibraryPanel::onCategoryClicked(const QModelIndex& index) {
     if (!index.isValid()) return;
 
-    // 🚀【防抢焦机制】：在信号分发导致的后台联动（NavPanel/ContentPanel）完成后，将焦点稳稳锁定在自己身上
-    QTimer::singleShot(0, this, [this, index]() {
-        if (m_treeView) {
-            m_treeView->setFocus(Qt::MouseFocusReason);
-            m_treeView->setCurrentIndex(index);
-        }
+    // 🚀【防崩与持久化索引契约】：跨事件循环 (QTimer::singleShot) 绝不能捕获临时 QModelIndex，必须使用 QPersistentModelIndex
+    QPersistentModelIndex pIndex(index);
+    QTimer::singleShot(0, this, [this, pIndex]() {
+        if (!m_treeView || !m_model) return;
+        // 关键守卫：若在延迟期间 model 被重置/重新加载，pIndex 会自动失效，严禁执行野指针解引用！
+        if (!pIndex.isValid() || pIndex.model() != m_model) return;
+
+        m_treeView->setCurrentIndex(pIndex);
+        m_treeView->setFocus(Qt::MouseFocusReason);
     });
 
     LibraryNodeKind kind = static_cast<LibraryNodeKind>(index.data(NodeKindRole).toInt());
