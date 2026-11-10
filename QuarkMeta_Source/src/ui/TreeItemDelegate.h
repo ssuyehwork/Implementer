@@ -13,6 +13,7 @@
 #include "ContentPanel.h"
 #include "RenameCapableDelegate.h"
 #include "ViewDragDropHelper.h"
+#include "../core/ClipboardService.h"
 #include "RatingBarLayout.h"
 #include "RowLayoutEngine.h"
 #include "../meta/MetadataManager.h"
@@ -111,6 +112,13 @@ public:
         painter->setPen(Qt::NoPen);
         painter->drawRect(option.rect);
         painter->restore();
+
+        QString itemPath = index.data(FilePathRole).toString();
+        bool isCut = !itemPath.isEmpty() && ClipboardService::instance().isItemCut(itemPath);
+        painter->save();
+        if (isCut) {
+            painter->setOpacity(0.5);
+        }
 
         QStyleOptionViewItem opt = option;
         if (index.column() >= 1) {
@@ -273,6 +281,7 @@ public:
         } else {
             QStyledItemDelegate::paint(painter, opt, index);
         }
+        painter->restore();
     }
 
     void updateEditorGeometry(QWidget* editor, const QStyleOptionViewItem& option, const QModelIndex& index) const override {

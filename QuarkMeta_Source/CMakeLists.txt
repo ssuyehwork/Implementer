@@ -429,6 +429,7 @@ set(SOURCES
     src/ui/dialogs/FramelessConfirmDialog.cpp
     src/ui/dialogs/FramelessMessageBox.h
     src/ui/dialogs/FramelessMessageBox.cpp
+    src/ui/dialogs/ProgressDialog.h
     src/ui/CardLayoutEngine.h
     src/ui/CardLayoutEngine.cpp
     src/ui/RowLayoutEngine.h

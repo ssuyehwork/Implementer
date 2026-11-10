@@ -4,7 +4,11 @@
 #include "../util/DiskIoService.h"
 #include "../ui/ToolTipOverlay.h"
 #include "../ui/FileCollisionDialog.h"
+#include "../ui/dialogs/ProgressDialog.h"
+#include "TaskProgressService.h"
 #include "ModelContract.h"
+#include <QtConcurrent>
+#include <QThread>
 #include <QAbstractItemView>
 #include <QApplication>
 #include <QClipboard>
@@ -25,7 +29,39 @@ ClipboardService& ClipboardService::instance() {
     return s_instance;
 }
 
-ClipboardService::ClipboardService(QObject* parent) : QObject(parent) {}
+ClipboardService::ClipboardService(QObject* parent) : QObject(parent) {
+    connect(QApplication::clipboard(), &QClipboard::dataChanged, this, [this]() {
+        const QMimeData* mime = QApplication::clipboard()->mimeData();
+        if (!mime) {
+            clearCutState();
+            return;
+        }
+        bool hasMove = false;
+        if (mime->hasFormat("Preferred DropEffect")) {
+            QByteArray effect = mime->data("Preferred DropEffect");
+            if (!effect.isEmpty() && (effect.at(0) & 0x02)) hasMove = true;
+        }
+        if (!hasMove) {
+            clearCutState();
+        }
+    });
+}
+
+bool ClipboardService::isItemCut(const QString& path) const {
+    if (path.isEmpty() || m_cutPaths.isEmpty()) return false;
+    return m_cutPaths.contains(QDir::cleanPath(path).toLower());
+}
+
+const QSet<QString>& ClipboardService::cutPaths() const {
+    return m_cutPaths;
+}
+
+void ClipboardService::clearCutState() {
+    if (!m_cutPaths.isEmpty()) {
+        m_cutPaths.clear();
+        emit cutItemsChanged(m_cutPaths);
+    }
+}
 
 void ClipboardService::setCopiedTags(const QStringList& tags) {
     m_copiedTags = tags;
@@ -81,6 +117,8 @@ bool ClipboardService::executePasteTags(QAbstractItemView* view) {
 void ClipboardService::copyItems(const QStringList& paths) {
     if (paths.isEmpty()) return;
 
+    clearCutState();
+
     QMimeData* mime = new QMimeData();
     QList<QUrl> urls;
     for (const QString& p : paths) {
@@ -93,10 +131,14 @@ void ClipboardService::copyItems(const QStringList& paths) {
 void ClipboardService::cutItems(const QStringList& paths) {
     if (paths.isEmpty()) return;
 
+    m_cutPaths.clear();
     QMimeData* mime = new QMimeData();
     QList<QUrl> urls;
     for (const QString& p : paths) {
-        if (!p.isEmpty()) urls << QUrl::fromLocalFile(p);
+        if (!p.isEmpty()) {
+            m_cutPaths.insert(QDir::cleanPath(p).toLower());
+            urls << QUrl::fromLocalFile(p);
+        }
     }
     mime->setUrls(urls);
 
@@ -105,6 +147,7 @@ void ClipboardService::cutItems(const QStringList& paths) {
     mime->setData("Preferred DropEffect", effectData);
 
     QApplication::clipboard()->setMimeData(mime);
+    emit cutItemsChanged(m_cutPaths);
 }
 
 bool ClipboardService::canPaste(const QString& targetDir) const {
@@ -287,17 +330,85 @@ void ClipboardService::executePaste(const QString& targetDir, QWidget* parentWid
     }
 
     QPointer<ClipboardService> weakThis(this);
-    DiskIoService::instance().executeAsync(ioCtx, [weakThis, targetDir](bool success) {
-        QMetaObject::invokeMethod(QCoreApplication::instance(), [weakThis, targetDir, success]() {
-            if (weakThis) {
-                if (success) {
-                    emit weakThis->pasteCompleted(targetDir);
-                } else {
-                    ToolTipOverlay::instance()->showToast("粘贴失败：物理写入未能完成", 2000, QColor("#e81123"));
+    auto destMap = std::make_shared<QMap<QString, QString>>();
+    ioCtx.actualDestMap = destMap;
+
+    if (activeSources.size() > 20) {
+        // 模式 1：超过 20 项，调用具备暂停与取消的 ProgressDialog
+        auto* dlg = new ProgressDialog(isMove ? "正在移动项目..." : "正在复制项目...", parentWidget);
+        dlg->setAttribute(Qt::WA_DeleteOnClose);
+        QPointer<ProgressDialog> weakDlg(dlg);
+
+        (void)QtConcurrent::run([weakThis, targetDir, ioCtx, weakDlg, destMap]() {
+            int total = ioCtx.sources.size();
+            int current = 0;
+            bool anyFailed = false;
+
+            for (const QString& src : ioCtx.sources) {
+                if (!weakDlg || weakDlg->isCanceled()) {
+                    break;
                 }
+
+                while (weakDlg && weakDlg->isPaused() && !weakDlg->isCanceled()) {
+                    QThread::msleep(100);
+                }
+                if (!weakDlg || weakDlg->isCanceled()) break;
+
+                current++;
+                QString fileName = QFileInfo(src).fileName();
+                QMetaObject::invokeMethod(weakDlg.data(), "updateProgress",
+                                          Qt::QueuedConnection,
+                                          Q_ARG(int, current),
+                                          Q_ARG(int, total),
+                                          Q_ARG(QString, fileName));
+
+                bool ok = ShellHelper::copyOrMoveItems({src}, ioCtx.destination, ioCtx.isMove,
+                                                       ioCtx.overwriteAll, ioCtx.autoRenameAll,
+                                                       ioCtx.overwriteFiles, ioCtx.autoRenameFiles,
+                                                       destMap.get());
+                if (!ok) anyFailed = true;
             }
+
+            QMetaObject::invokeMethod(QCoreApplication::instance(), [weakThis, targetDir, weakDlg, anyFailed, destMap]() {
+                if (weakDlg) weakDlg->accept();
+                if (weakThis) {
+                    weakThis->clearCutState();
+                    QStringList landed = destMap ? destMap->values() : QStringList();
+                    if (!anyFailed) {
+                        emit weakThis->pasteCompletedWithTargets(targetDir, landed);
+                        emit weakThis->pasteCompleted(targetDir);
+                    } else {
+                        ToolTipOverlay::instance()->showToast("部分项目未能完成写入", 2000, QColor("#e81123"));
+                        emit weakThis->pasteCompletedWithTargets(targetDir, landed);
+                        emit weakThis->pasteCompleted(targetDir);
+                    }
+                }
+            });
         });
-    });
+
+        dlg->exec();
+    } else {
+        // 模式 2：少于等于 20 项，调用底栏 TaskProgressService 进度条
+        int total = activeSources.size();
+        int jobId = TaskProgressService::instance().createJob(isMove ? "正在移动项目..." : "正在复制项目...", total);
+
+        DiskIoService::instance().executeAsync(ioCtx, [weakThis, targetDir, jobId, total, destMap](bool success) {
+            QMetaObject::invokeMethod(QCoreApplication::instance(), [weakThis, targetDir, jobId, total, destMap, success]() {
+                TaskProgressService::instance().updateProgress(jobId, total, total, "粘贴完成");
+                TaskProgressService::instance().finishJob(jobId);
+                if (weakThis) {
+                    weakThis->clearCutState();
+                    QStringList landed = destMap ? destMap->values() : QStringList();
+                    if (success) {
+                        emit weakThis->pasteCompletedWithTargets(targetDir, landed);
+                        emit weakThis->pasteCompleted(targetDir);
+                    } else {
+                        ToolTipOverlay::instance()->showToast("粘贴失败：物理写入未能完成", 2000, QColor("#e81123"));
+                    }
+                }
+            });
+        });
+    }
 }
 
 } // namespace QuarkMeta

@@ -1,6 +1,7 @@
 #include "ThumbnailDelegate.h"
 #include "CardLayoutEngine.h"
 #include "ViewDragDropHelper.h"
+#include "../core/ClipboardService.h"
 #include "ContentPanel.h"
 #include "CardPainterHelper.h"
 #include "ElidedTextUtility.h"
@@ -74,6 +75,14 @@ void ThumbnailDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opt
 
     bool isGrid = option.widget ? option.widget->property("gridMode").toBool() : false;
 
+    QString itemPath = (m_pathRole != -1) ? index.data(m_pathRole).toString() : QString();
+    bool isCut = !itemPath.isEmpty() && ClipboardService::instance().isItemCut(itemPath);
+
+    painter->save();
+    if (isCut) {
+        painter->setOpacity(0.5);
+    }
+
     bool isDropTarget = ViewDragDropHelper::isDropTarget(
         qobject_cast<const QAbstractItemView*>(option.widget), index);
 
@@ -137,6 +146,8 @@ void ThumbnailDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opt
             CardPainterHelper::drawEmptyFolderBorder(painter, l.coverRect);
         }
     }
+
+    painter->restore();
 }
 
 void ThumbnailDelegate::drawFileNameText(QPainter* painter, const QRect& textRect, bool isSelected, const QModelIndex& index, const QStyleOptionViewItem& option) const {

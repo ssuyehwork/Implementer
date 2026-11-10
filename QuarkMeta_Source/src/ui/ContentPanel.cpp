@@ -213,6 +213,19 @@ void ContentPanel::initUi() {
 
     m_mainLayout->addWidget(m_headerWidget);
 
+    connect(&ClipboardService::instance(), &ClipboardService::cutItemsChanged, this, [this]() {
+        if (m_treeView && m_treeView->viewport()) m_treeView->viewport()->update();
+        if (m_gridView && m_gridView->viewport()) m_gridView->viewport()->update();
+    });
+
+    connect(&ClipboardService::instance(), &ClipboardService::pasteCompletedWithTargets, this,
+            [this](const QString& targetDir, const QStringList& targetPaths) {
+        if (QDir::cleanPath(targetDir).compare(QDir::cleanPath(m_currentPath), Qt::CaseInsensitive) == 0) {
+            setPendingSelectPaths(targetPaths);
+            refreshAll();
+        }
+    });
+
     m_viewStack = new QStackedWidget(this);
     m_viewStack->setFrameShape(QFrame::NoFrame);
     initEmptyFilterOverlay();
@@ -1503,6 +1516,14 @@ void ContentPanel::setPendingSelectPath(const QString& fullPath, bool edit) {
     if (fullPath.isEmpty()) return;
     m_pendingSelectPath = QDir::toNativeSeparators(QDir::cleanPath(fullPath));
     m_pendingIsEdit = edit;
+}
+
+void ContentPanel::setPendingSelectPaths(const QStringList& fullPaths) {
+    if (fullPaths.isEmpty()) return;
+    m_selectionState.selectedPaths.clear();
+    for (const QString& p : fullPaths) {
+        m_selectionState.selectedPaths.insert(QDir::toNativeSeparators(QDir::cleanPath(p)));
+    }
 }
 
 void ContentPanel::setPendingSelectName(const QString& name, bool edit) {

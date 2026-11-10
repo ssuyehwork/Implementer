@@ -448,6 +448,13 @@ bool ContentKeyHandler::handleKeyPress(QObject* obj, QEvent* event) {
     QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
     if (qobject_cast<QLineEdit*>(QApplication::focusWidget())) return false;
 
+    if (keyEvent->key() == Qt::Key_Escape && keyEvent->modifiers() == Qt::NoModifier) {
+        if (!ClipboardService::instance().cutPaths().isEmpty()) {
+            ClipboardService::instance().clearCutState();
+            return true;
+        }
+    }
+
     // 局部 F5 刷新当前聚焦窗格，坚决阻断按键冒泡至全局引发的主窗格错误刷新
     if (keyEvent->key() == Qt::Key_F5 && keyEvent->modifiers() == Qt::NoModifier) {
         m_panel->setActivePane(true);

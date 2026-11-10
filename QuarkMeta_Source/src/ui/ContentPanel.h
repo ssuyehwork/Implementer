@@ -237,6 +237,7 @@ public slots:
     void onPathsDropped(const QStringList& paths, const QModelIndex& targetIndex, const QString& targetDirOverride = QString(), Qt::DropAction action = Qt::CopyAction);
     void loadDirectory(const QString& path, bool recursive = false);
     void setPendingSelectPath(const QString& fullPath, bool edit = false);
+    void setPendingSelectPaths(const QStringList& fullPaths);
     void setPendingSelectName(const QString& name, bool edit = false);
     void refreshAll();
     void loadSmartFolder(const SmartFolderRecord& record, const QString& displayName = QString());

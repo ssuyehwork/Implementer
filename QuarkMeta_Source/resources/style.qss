@@ -2514,3 +2514,40 @@ QPushButton#EmptyFilterResetBtn:hover {
 QPushButton#EmptyFilterResetBtn:pressed {
     background-color: #e04b17;
 }
+
+/* ============================================================ */
+/* ProgressDialog (进度对话框)                                   */
+/* ============================================================ */
+QLabel#ProgressStatusLabel {
+    color: #EEEEEE;
+    font-size: 13px;
+}
+
+QProgressBar#ProgressDialogBar {
+    background-color: #2D2D2D;
+    border: none;
+    border-radius: 4px;
+}
+
+QProgressBar#ProgressDialogBar::chunk {
+    background-color: #378ADD;
+    border-radius: 4px;
+}
+
+QPushButton#ProgressPauseBtn, QPushButton#ProgressCancelBtn {
+    background-color: #2D2D30;
+    color: #EEEEEE;
+    border: 1px solid #3E3E42;
+    border-radius: 4px;
+    font-size: 12px;
+    outline: none;
+}
+
+QPushButton#ProgressPauseBtn:hover, QPushButton#ProgressCancelBtn:hover {
+    background-color: #3E3E42;
+    border-color: #555555;
+}
+
+QPushButton#ProgressPauseBtn:pressed, QPushButton#ProgressCancelBtn:pressed {
+    background-color: #1E1E1E;
+}
