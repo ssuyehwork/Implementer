@@ -1,5 +1,7 @@
 #include "ShortcutActionRouter.h"
 #include "ActivePaneCoordinator.h"
+#include "SearchController.h"
+#include "ContentPanel.h"
 #include "controllers/ContextMenuFactory.h"
 #include "ToolTipOverlay.h"
 #include "../core/TrashService.h"
@@ -14,13 +16,15 @@ ShortcutActionRouter::ShortcutActionRouter(ActivePaneCoordinator* activeCoordina
                                            TitleBarWidget* titleBar,
                                            PanelLayoutManager* layoutManager,
                                            FilterPanel* filterPanel,
+                                           SearchController* searchController,
                                            QObject* parent)
     : QObject(parent),
       m_activeCoordinator(activeCoordinator),
       m_shortcutController(shortcutController),
       m_titleBar(titleBar),
       m_layoutManager(layoutManager),
-      m_filterPanel(filterPanel) {
+      m_filterPanel(filterPanel),
+      m_searchController(searchController) {
 }
 
 void ShortcutActionRouter::wire() {
@@ -117,11 +121,8 @@ void ShortcutActionRouter::wire() {
         });
 
         if (m_filterPanel) {
-            connect(m_shortcutController, &AppShortcutController::resetFilterRequested, m_filterPanel, [this]() {
-                if (m_filterPanel) {
-                    m_filterPanel->clearAllFilters(true);
-                }
-            });
+            connect(m_shortcutController, &AppShortcutController::resetFilterRequested, this, &ShortcutActionRouter::triggerUnifiedReset);
+            connect(m_filterPanel, &FilterPanel::resetFilterRequested, this, &ShortcutActionRouter::triggerUnifiedReset);
         }
 
         connect(m_shortcutController, &AppShortcutController::moveToTrashRequested, this, [this]() {
@@ -163,6 +164,24 @@ void ShortcutActionRouter::wire() {
             }
         });
     }
+}
+
+void ShortcutActionRouter::triggerUnifiedReset() {
+    if (m_filterPanel) {
+        m_filterPanel->clearAllFilters(true);
+    }
+    if (m_searchController) {
+        m_searchController->clearSearch(true);
+    }
+    ContentPanel* target = m_activeCoordinator ? m_activeCoordinator->currentTarget() : nullptr;
+    if (target) {
+        target->search("");
+    }
+}
+
+void ShortcutActionRouter::bindPane(ContentPanel* pane) {
+    if (!pane) return;
+    connect(pane, &ContentPanel::filterResetRequested, this, &ShortcutActionRouter::triggerUnifiedReset);
 }
 
 } // namespace QuarkMeta

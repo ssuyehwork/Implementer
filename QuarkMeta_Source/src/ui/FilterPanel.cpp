@@ -166,7 +166,10 @@ FilterPanel::FilterPanel(QWidget* parent) : QFrame(parent) {
     m_btnClearAll->setCursor(Qt::PointingHandCursor);
     m_btnClearAll->setProperty("tooltipText", "重置筛选条件（Ctrl + D）");
     m_btnClearAll->installEventFilter(this);
-    connect(m_btnClearAll, &QPushButton::clicked, this, [this]() { clearAllFilters(true); });
+    connect(m_btnClearAll, &QPushButton::clicked, this, [this]() {
+        clearAllFilters(true);
+        emit resetFilterRequested();
+    });
 
     m_btnPin = new QPushButton(topBar);
     m_btnPin->setObjectName("FilterHeaderBtn");

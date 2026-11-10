@@ -78,6 +78,7 @@ protected:
 
 signals:
     void filterChanged(const FilterState& state);
+    void resetFilterRequested();
 
 public slots:
     void clearAllFilters(bool force = false);

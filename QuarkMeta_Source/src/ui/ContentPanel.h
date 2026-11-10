@@ -207,8 +207,10 @@ protected:
     void dragMoveEvent(QDragMoveEvent* event) override;
     void dragLeaveEvent(QDragLeaveEvent* event) override;
     void dropEvent(QDropEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
 
 signals:
+    void filterResetRequested();
     void panelActivated(ContentPanel* panel);
     void secondaryPaneCreated(ContentPanel* pane);
     void secondaryPaneClosed();
@@ -264,6 +266,8 @@ private:
     void initListView();
     void updateGridSize();
     void updateStatusBarStats(int cachedSelectedCount = -1);
+    void initEmptyFilterOverlay();
+    void updateEmptyStateOverlay(int visibleCount, int fullCount, int hiddenCount);
     void emitSelectionChangedSignal();
 
     // 单一事实来源配置与状态 (FilterState)
@@ -309,6 +313,10 @@ private:
     SectionProxyModel* m_sectionModel = nullptr;
 
     QStackedWidget* m_viewStack = nullptr;
+    QWidget* m_emptyFilterOverlay = nullptr;
+    QLabel* m_emptyFilterTitleLabel = nullptr;
+    QLabel* m_emptyFilterSubLabel = nullptr;
+    QPushButton* m_emptyFilterResetBtn = nullptr;
     class ColumnViewWidget* m_columnView = nullptr;
     DiskItemModel* m_diskModel = nullptr;
     ItemModelBase* m_model = nullptr;

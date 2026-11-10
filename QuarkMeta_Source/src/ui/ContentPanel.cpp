@@ -215,6 +215,7 @@ void ContentPanel::initUi() {
 
     m_viewStack = new QStackedWidget(this);
     m_viewStack->setFrameShape(QFrame::NoFrame);
+    initEmptyFilterOverlay();
 
     m_columnView = new ColumnViewWidget(this, this);
     connect(m_columnView, &ColumnViewWidget::selectionChanged, this, &ContentPanel::onSelectionChanged);
@@ -685,6 +686,13 @@ void ContentPanel::dropEvent(QDropEvent* event) {
         root->splitManager()->hideDragOverlay();
     }
     QFrame::dropEvent(event);
+}
+
+void ContentPanel::resizeEvent(QResizeEvent* event) {
+    QFrame::resizeEvent(event);
+    if (m_emptyFilterOverlay && m_viewStack) {
+        m_emptyFilterOverlay->setGeometry(m_viewStack->rect());
+    }
 }
 
 void ContentPanel::setCurrentCategoryTitle(const QString& title) {
@@ -1169,6 +1177,8 @@ void ContentPanel::updateStatusBarStats(int cachedSelectedCount) {
     int hiddenCount = fullCount - visibleCount;
     int selectedCount = (cachedSelectedCount >= 0) ? cachedSelectedCount : getSelectedIndexes().size();
 
+    updateEmptyStateOverlay(visibleCount, fullCount, hiddenCount);
+
     QString numStyle = "color:#ff551c; font-weight:bold;";
     QString statusText = (hiddenCount > 0)
         ? QString("<html><body style=\"margin:0px; padding:0px; font-size:11px;\"><span style=\"%1\">%2</span> 个项目，<span style=\"%1\">%3</span> 个已隐藏，选中了 <span style=\"%1\">%4</span> 个</body></html>")
@@ -1177,6 +1187,62 @@ void ContentPanel::updateStatusBarStats(int cachedSelectedCount) {
               .arg(numStyle).arg(visibleCount).arg(selectedCount);
 
     emit statusBarMessageReady(statusText);
+}
+
+void ContentPanel::initEmptyFilterOverlay() {
+    if (m_emptyFilterOverlay || !m_viewStack) return;
+
+    m_emptyFilterOverlay = new QWidget(m_viewStack);
+    m_emptyFilterOverlay->setObjectName("EmptyFilterOverlay");
+    m_emptyFilterOverlay->setAttribute(Qt::WA_StyledBackground, true);
+
+    QVBoxLayout* layout = new QVBoxLayout(m_emptyFilterOverlay);
+    layout->setContentsMargins(20, 20, 20, 20);
+    layout->setSpacing(12);
+    layout->setAlignment(Qt::AlignCenter);
+
+    QLabel* iconLabel = new QLabel(m_emptyFilterOverlay);
+    iconLabel->setPixmap(UiHelper::getIcon("filter", QColor("#888888"), 48).pixmap(48, 48));
+    iconLabel->setAlignment(Qt::AlignCenter);
+    layout->addWidget(iconLabel);
+
+    m_emptyFilterTitleLabel = new QLabel(m_emptyFilterOverlay);
+    m_emptyFilterTitleLabel->setObjectName("EmptyFilterTitleLabel");
+    m_emptyFilterTitleLabel->setAlignment(Qt::AlignCenter);
+    layout->addWidget(m_emptyFilterTitleLabel);
+
+    m_emptyFilterSubLabel = new QLabel("未显示内容是因为筛选器或搜索过滤了结果", m_emptyFilterOverlay);
+    m_emptyFilterSubLabel->setObjectName("EmptyFilterSubLabel");
+    m_emptyFilterSubLabel->setAlignment(Qt::AlignCenter);
+    layout->addWidget(m_emptyFilterSubLabel);
+
+    m_emptyFilterResetBtn = new QPushButton("重置筛选与搜索 (Ctrl + D)", m_emptyFilterOverlay);
+    m_emptyFilterResetBtn->setObjectName("EmptyFilterResetBtn");
+    m_emptyFilterResetBtn->setFocusPolicy(Qt::NoFocus);
+    m_emptyFilterResetBtn->setCursor(Qt::PointingHandCursor);
+    m_emptyFilterResetBtn->setFixedSize(190, 32);
+    connect(m_emptyFilterResetBtn, &QPushButton::clicked, this, [this]() {
+        search("");
+        emit filterResetRequested();
+    });
+    layout->addWidget(m_emptyFilterResetBtn, 0, Qt::AlignCenter);
+
+    m_emptyFilterOverlay->hide();
+}
+
+void ContentPanel::updateEmptyStateOverlay(int visibleCount, int fullCount, int hiddenCount) {
+    if (!m_emptyFilterOverlay) return;
+
+    if (fullCount > 0 && visibleCount == 0) {
+        if (m_emptyFilterTitleLabel) {
+            m_emptyFilterTitleLabel->setText(QString("当前共有 %1 个项目，已过滤隐藏 %2 个项目").arg(fullCount).arg(hiddenCount));
+        }
+        m_emptyFilterOverlay->setGeometry(m_viewStack->rect());
+        m_emptyFilterOverlay->show();
+        m_emptyFilterOverlay->raise();
+    } else {
+        m_emptyFilterOverlay->hide();
+    }
 }
 
 void ContentPanel::runWhenStatsSettled(std::function<void()> fn) {

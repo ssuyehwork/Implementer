@@ -79,6 +79,9 @@ void PanelMediator::distributeBindPane(ContentPanel* pane) {
     if (m_navCoordinator) {
         m_navCoordinator->bindPane(pane);
     }
+    if (m_shortcutRouter) {
+        m_shortcutRouter->bindPane(pane);
+    }
 
     // 动态副窗格递归分发
     connect(pane, &ContentPanel::secondaryPaneCreated, this, [this](ContentPanel* secondaryPane) {
@@ -100,6 +103,7 @@ void PanelMediator::setupConnections() {
         m_titleBar.data(),
         m_layoutManager.data(),
         m_filterPanel.data(),
+        m_searchController.data(),
         this
     );
 

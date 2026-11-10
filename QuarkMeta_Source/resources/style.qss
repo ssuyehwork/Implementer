@@ -2498,3 +2498,39 @@ QPushButton#FileCompareCloseBtn:hover {
 QPushButton#FileCompareCloseBtn:pressed {
     background-color: #1E1E1E;
 }
+
+/* ============================================================ */
+/* Empty Filter Overlay (内容面板过滤空态提示)                     */
+/* ============================================================ */
+QWidget#EmptyFilterOverlay {
+    background-color: transparent;
+}
+
+QLabel#EmptyFilterTitleLabel {
+    color: #DDDDDD;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+QLabel#EmptyFilterSubLabel {
+    color: #888888;
+    font-size: 12px;
+}
+
+QPushButton#EmptyFilterResetBtn {
+    background-color: #ff551c;
+    color: #FFFFFF;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    border: none;
+    outline: none;
+}
+
+QPushButton#EmptyFilterResetBtn:hover {
+    background-color: #ff6e3d;
+}
+
+QPushButton#EmptyFilterResetBtn:pressed {
+    background-color: #e04b17;
+}
