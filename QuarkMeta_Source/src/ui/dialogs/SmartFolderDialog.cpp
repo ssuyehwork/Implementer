@@ -23,7 +23,7 @@ SmartFolderDialog::SmartFolderDialog(const SmartFolderRecord& record, QWidget* p
 }
 
 void SmartFolderDialog::setupUi() {
-    resize(520, 420);
+    resize(600, 420);
 
     QWidget* bodyWidget = getContentArea();
     QVBoxLayout* bodyLayout = new QVBoxLayout(bodyWidget);
@@ -165,13 +165,13 @@ void SmartFolderDialog::adjustAdaptiveSize() {
 
     int maxScreenH = targetScreen ? static_cast<int>(targetScreen->availableGeometry().height() * 0.8) : 800;
 
-    // 测量除了滚动区以外的固定控件高度（顶层布局在 520 宽度下的高度 - 滚动区当前高度）
-    int layoutH = layout()->heightForWidth(520);
+    // 测量除了滚动区以外的固定控件高度（顶层布局在 600 宽度下的高度 - 滚动区当前高度）
+    int layoutH = layout()->heightForWidth(600);
     int fixedH = layoutH - m_scrollArea->height();
 
     // 1. 假设无需滚动条，计算可用规则列表宽度
-    // 520 (对话框宽度) - 20*2 (getContentArea 边距)
-    int availRulesWidthNoScroll = 520 - 40;
+    // 600 (对话框宽度) - 20*2 (getContentArea 边距)
+    int availRulesWidthNoScroll = 600 - 40;
 
     QWidget* scrollContent = m_scrollArea->widget();
     int scrollContentH = 0;
@@ -196,7 +196,7 @@ void SmartFolderDialog::adjustAdaptiveSize() {
     int finalH = qMin(totalDesiredH, maxScreenH);
     finalH = qMax(420, finalH);
 
-    resize(520, finalH);
+    resize(600, finalH);
 }
 
 bool SmartFolderDialog::event(QEvent* event) {

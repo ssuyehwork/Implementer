@@ -2343,7 +2343,7 @@ QComboBox#SmartFolderComboBox {
     color: #EEEEEE;
     border: 1px solid #333333;
     border-radius: 4px;
-    padding: 2px 8px;
+    padding: 2px 22px 2px 8px;
     min-height: 24px;
 }
 

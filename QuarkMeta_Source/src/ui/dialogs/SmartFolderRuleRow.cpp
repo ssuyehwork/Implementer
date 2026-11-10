@@ -19,6 +19,8 @@ void SmartFolderRuleRow::initUi() {
 
     m_typeCombo = new QComboBox(this);
     m_typeCombo->setObjectName("SmartFolderComboBox");
+    m_typeCombo->setMinimumWidth(100);
+    m_typeCombo->setSizeAdjustPolicy(QComboBox::AdjustToContents);
     m_typeCombo->addItem("星级", static_cast<int>(SmartRuleType::Rating));
     m_typeCombo->addItem("名称", static_cast<int>(SmartRuleType::Name));
     m_typeCombo->addItem("扩展名", static_cast<int>(SmartRuleType::Extension));
@@ -38,6 +40,8 @@ void SmartFolderRuleRow::initUi() {
 
     m_opCombo = new QComboBox(this);
     m_opCombo->setObjectName("SmartFolderComboBox");
+    m_opCombo->setMinimumWidth(125);
+    m_opCombo->setSizeAdjustPolicy(QComboBox::AdjustToContents);
 
     m_btnDelete = new QPushButton(this);
     m_btnDelete->setFixedSize(24, 24);
@@ -195,7 +199,8 @@ void SmartFolderRuleRow::updateValueWidget() {
 
     m_valueWidget = newWidget;
     m_valueWidget->setRuleValues(m_currentRule);
-    m_layout->insertWidget(2, m_valueWidget, 1);
+    bool isDummy = (qobject_cast<DummyValueWidget*>(m_valueWidget) != nullptr);
+    m_layout->insertWidget(2, m_valueWidget, isDummy ? 0 : 1);
 
     connect(m_valueWidget, &ISmartFolderValueWidget::valueChanged, this, [this, type]() {
         // 如果是评分规则选了 0 星，锁定运算符为 Equals
