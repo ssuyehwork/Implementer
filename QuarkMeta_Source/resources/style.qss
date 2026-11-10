@@ -1787,7 +1787,7 @@ QPushButton#BtnAddTagSmall:hover {
     background-color: #378ADD;
     border-color: #378ADD;
 }
-QTextEdit#MetaPathEdit, QTextEdit#MetaHashEdit {
+QTextEdit#MetaPathEdit {
     background: #1E1E1E;
     border: 1px solid #2A2A2A;
     border-radius: 4px;
@@ -2550,4 +2550,46 @@ QPushButton#ProgressPauseBtn:hover, QPushButton#ProgressCancelBtn:hover {
 
 QPushButton#ProgressPauseBtn:pressed, QPushButton#ProgressCancelBtn:pressed {
     background-color: #1E1E1E;
+}
+
+/* 文件哈希值独立展示弹窗样式 */
+QLabel#FileHashDialogFileName {
+    color: #888888;
+    font-size: 11px;
+}
+
+QLabel#FileHashDialogTitleLabel {
+    color: #CCCCCC;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+QTextEdit#FileHashDialogEdit {
+    background: #1E1E1E;
+    border: 1px solid #333333;
+    border-radius: 4px;
+    color: #3498db;
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 12px;
+    padding: 6px;
+}
+
+QPushButton#FileHashDialogCopyBtn, QPushButton#FileHashDialogCloseBtn {
+    background-color: #2D2D30;
+    color: #EEEEEE;
+    border: 1px solid #3E3E42;
+    border-radius: 4px;
+    font-size: 12px;
+    outline: none;
+}
+
+QPushButton#FileHashDialogCopyBtn:hover, QPushButton#FileHashDialogCloseBtn:hover {
+    background-color: #378ADD;
+    border-color: #378ADD;
+    color: #FFFFFF;
+}
+
+QPushButton#FileHashDialogCloseBtn:hover {
+    background-color: #3E3E42;
+    border-color: #555555;
 }

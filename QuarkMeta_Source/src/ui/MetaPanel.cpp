@@ -18,6 +18,7 @@
 #include "../util/ShellHelper.h"
 #include "../meta/DuplicateDetectorService.h"
 #include "dialogs/FileCompareDialog.h"
+#include "dialogs/FileHashDialog.h"
 #include <QtConcurrent>
 #include <atomic>
 #include <memory>
@@ -418,13 +419,6 @@ void MetaPanel::initUi() {
 
     pathL->addLayout(actionBtnL);
 
-    // 单个项目哈希自适应展示框（默认隐藏，架构与 m_pathEdit 完全统一）
-    m_hashEdit = new ElasticEdit(pathBox);
-    m_hashEdit->setReadOnly(true);
-    m_hashEdit->setObjectName("MetaHashEdit");
-    m_hashEdit->hide();
-    pathL->addWidget(m_hashEdit);
-
     m_containerLayout->addWidget(createCollapsibleSection("物理路径", pathBox, true));
 
     m_containerLayout->addStretch(1);
@@ -639,14 +633,10 @@ void MetaPanel::setSelectedPaths(const QStringList& paths) {
         m_isUserEditing = false;
     }
 
-    // 切换选择时：安全取消正在计算的哈希任务，隐匿哈希框并复位按钮文案
+    // 切换选择时：安全取消正在计算的哈希任务，复位按钮文案
     if (m_hashCancelToken) {
         m_hashCancelToken->store(true);
         m_hashCancelToken.reset();
-    }
-    if (m_hashEdit) {
-        m_hashEdit->clear();
-        m_hashEdit->hide();
     }
     if (m_btnComputeHash) {
         m_btnComputeHash->setText("查看哈希值");
@@ -1130,18 +1120,6 @@ void MetaPanel::onShowPropertiesClicked() {
 void MetaPanel::onComputeHashClicked() {
     if (m_selectedPaths.isEmpty()) return;
 
-    // 若当前状态已计算完成，点击直接执行复制操作并弹出 Toast
-    if (m_btnComputeHash && m_btnComputeHash->text() == "复制哈希值") {
-        if (m_hashEdit) {
-            QString h = m_hashEdit->toPlainText().trimmed();
-            if (!h.isEmpty() && !h.startsWith("无法")) {
-                QApplication::clipboard()->setText(h);
-                ToolTipOverlay::instance()->showToast("已复制哈希值", 1200, QColor("#2ecc71"));
-                return;
-            }
-        }
-    }
-
     // 过滤出所有选中的非文件夹实体文件
     QStringList validFiles;
     for (const QString& p : m_selectedPaths) {
@@ -1162,12 +1140,12 @@ void MetaPanel::onComputeHashClicked() {
         return;
     }
 
-    // 单个文件：在下方 ElasticEdit 自适应框中异步计算并展示
+    // 单个文件：异步计算并在完成后弹出独立的 FileHashDialog 弹窗
     QString targetFile = validFiles.first();
-    if (!m_hashEdit) return;
 
-    m_hashEdit->show();
-    m_hashEdit->setPlainText("计算中…");
+    if (m_btnComputeHash) {
+        m_btnComputeHash->setText("正在计算…");
+    }
 
     if (m_hashCancelToken) {
         m_hashCancelToken->store(true);
@@ -1180,15 +1158,17 @@ void MetaPanel::onComputeHashClicked() {
         QString hash = DuplicateDetectorService::computeFullSha256(targetFile, cancelToken.get());
         if (cancelToken->load()) return;
 
-        QMetaObject::invokeMethod(qApp, [weakThis, hash, cancelToken]() {
+        QMetaObject::invokeMethod(qApp, [weakThis, targetFile, hash, cancelToken]() {
             if (!weakThis || cancelToken->load()) return;
-            if (weakThis->m_hashEdit) {
-                weakThis->m_hashEdit->setPlainText(hash.isEmpty() ? "无法读取" : hash);
-                // 只有成功计算出哈希值，才将按钮文案切换为“复制哈希值”
-                if (!hash.isEmpty() && weakThis->m_btnComputeHash) {
-                    weakThis->m_btnComputeHash->setText("复制哈希值");
-                }
+            if (weakThis->m_btnComputeHash) {
+                weakThis->m_btnComputeHash->setText("查看哈希值");
             }
+            if (hash.isEmpty()) {
+                ToolTipOverlay::instance()->showToast("无法读取或计算该文件哈希值", 2000, QColor("#e81123"));
+                return;
+            }
+            FileHashDialog dlg(targetFile, hash, weakThis);
+            dlg.exec();
         });
     });
 }

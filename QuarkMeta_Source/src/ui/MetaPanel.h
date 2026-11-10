@@ -134,7 +134,6 @@ private:
     QPushButton* m_btnOpenLocation = nullptr;
     QPushButton* m_btnShowProperties = nullptr;
     QPushButton* m_btnComputeHash = nullptr;
-    ElasticEdit* m_hashEdit = nullptr;
     std::shared_ptr<std::atomic<bool>> m_hashCancelToken;
 
     QStringList m_selectedPaths;
