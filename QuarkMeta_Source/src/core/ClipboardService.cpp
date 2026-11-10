@@ -333,7 +333,7 @@ void ClipboardService::executePaste(const QString& targetDir, QWidget* parentWid
     auto destMap = std::make_shared<QMap<QString, QString>>();
     ioCtx.actualDestMap = destMap;
 
-    if (activeSources.size() > 20) {
+    if (ioCtx.sources.size() > 20) {
         // 模式 1：超过 20 项，调用具备暂停与取消的 ProgressDialog
         auto* dlg = new ProgressDialog(isMove ? "正在移动项目..." : "正在复制项目...", parentWidget);
         dlg->setAttribute(Qt::WA_DeleteOnClose);
@@ -389,7 +389,7 @@ void ClipboardService::executePaste(const QString& targetDir, QWidget* parentWid
         dlg->exec();
     } else {
         // 模式 2：少于等于 20 项，调用底栏 TaskProgressService 进度条
-        int total = activeSources.size();
+        int total = ioCtx.sources.size();
         int jobId = TaskProgressService::instance().createJob(isMove ? "正在移动项目..." : "正在复制项目...", total);
 
         DiskIoService::instance().executeAsync(ioCtx, [weakThis, targetDir, jobId, total, destMap](bool success) {

@@ -113,7 +113,7 @@ public:
         painter->drawRect(option.rect);
         painter->restore();
 
-        QString itemPath = index.data(FilePathRole).toString();
+        QString itemPath = index.data(PathRole).toString();
         bool isCut = !itemPath.isEmpty() && ClipboardService::instance().isItemCut(itemPath);
         painter->save();
         if (isCut) {
