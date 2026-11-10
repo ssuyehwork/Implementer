@@ -1787,7 +1787,7 @@ QPushButton#BtnAddTagSmall:hover {
     background-color: #378ADD;
     border-color: #378ADD;
 }
-QTextEdit#MetaPathEdit {
+QTextEdit#MetaPathEdit, QTextEdit#MetaHashEdit {
     background: #1E1E1E;
     border: 1px solid #2A2A2A;
     border-radius: 4px;
@@ -1803,7 +1803,8 @@ QPushButton#BtnCopyPath {
     font-size: 11px;
 }
 QPushButton#BtnCopyPath:hover {
-    background: #333333;
+    background: #378ADD;
+    border-color: #378ADD;
     color: #FFFFFF;
 }
 QPushButton#BtnOpenLocation {
@@ -1828,27 +1829,6 @@ QPushButton#BtnShowProperties, QPushButton#BtnComputeHash {
 }
 QPushButton#BtnShowProperties:hover, QPushButton#BtnComputeHash:hover {
     background: #333333;
-    color: #FFFFFF;
-}
-QLabel#MetaHashValueLabel {
-    font-size: 10px;
-    color: #3498db;
-    background: #1e1e1e;
-    border: 1px solid #333333;
-    border-radius: 3px;
-    padding: 2px 4px;
-}
-QPushButton#BtnCopyHash {
-    background: #252526;
-    border: 1px solid #3c3c3c;
-    border-radius: 3px;
-    color: #CCCCCC;
-    font-size: 10px;
-    outline: none;
-}
-QPushButton#BtnCopyHash:hover {
-    background: #378ADD;
-    border-color: #378ADD;
     color: #FFFFFF;
 }
 QLabel#MetaInfoKeyLabel {

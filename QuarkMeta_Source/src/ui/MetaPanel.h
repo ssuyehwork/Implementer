@@ -134,9 +134,7 @@ private:
     QPushButton* m_btnOpenLocation = nullptr;
     QPushButton* m_btnShowProperties = nullptr;
     QPushButton* m_btnComputeHash = nullptr;
-    QWidget* m_hashResultBox = nullptr;
-    QLabel* m_hashValueLabel = nullptr;
-    QPushButton* m_btnCopyHash = nullptr;
+    ElasticEdit* m_hashEdit = nullptr;
     std::shared_ptr<std::atomic<bool>> m_hashCancelToken;
 
     QStringList m_selectedPaths;

@@ -418,37 +418,12 @@ void MetaPanel::initUi() {
 
     pathL->addLayout(actionBtnL);
 
-    // 单个项目哈希结果展示容器（默认隐藏）
-    m_hashResultBox = new QWidget(pathBox);
-    m_hashResultBox->setObjectName("MetaHashResultBox");
-    m_hashResultBox->hide();
-    QHBoxLayout* hashL = new QHBoxLayout(m_hashResultBox);
-    hashL->setContentsMargins(0, 4, 0, 0);
-    hashL->setSpacing(4);
-
-    m_hashValueLabel = new QLabel(m_hashResultBox);
-    m_hashValueLabel->setObjectName("MetaHashValueLabel");
-    m_hashValueLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
-    QFont monoFont("Consolas");
-    monoFont.setPointSize(9);
-    m_hashValueLabel->setFont(monoFont);
-    hashL->addWidget(m_hashValueLabel, 1);
-
-    m_btnCopyHash = new QPushButton("复制", m_hashResultBox);
-    m_btnCopyHash->setFocusPolicy(Qt::NoFocus);
-    m_btnCopyHash->setFixedSize(36, 20);
-    m_btnCopyHash->setCursor(Qt::PointingHandCursor);
-    m_btnCopyHash->setObjectName("BtnCopyHash");
-    connect(m_btnCopyHash, &QPushButton::clicked, this, [this]() {
-        QString h = m_hashValueLabel ? m_hashValueLabel->text().trimmed() : QString();
-        if (!h.isEmpty() && h != "计算中…" && !h.startsWith("无法")) {
-            QApplication::clipboard()->setText(h);
-            ToolTipOverlay::instance()->showToast("已复制哈希值", 1200, QColor("#2ecc71"));
-        }
-    });
-    hashL->addWidget(m_btnCopyHash);
-
-    pathL->addWidget(m_hashResultBox);
+    // 单个项目哈希自适应展示框（默认隐藏，架构与 m_pathEdit 完全统一）
+    m_hashEdit = new ElasticEdit(pathBox);
+    m_hashEdit->setReadOnly(true);
+    m_hashEdit->setObjectName("MetaHashEdit");
+    m_hashEdit->hide();
+    pathL->addWidget(m_hashEdit);
 
     m_containerLayout->addWidget(createCollapsibleSection("物理路径", pathBox, true));
 
@@ -664,16 +639,17 @@ void MetaPanel::setSelectedPaths(const QStringList& paths) {
         m_isUserEditing = false;
     }
 
-    // 切换选择时：安全取消正在计算的哈希任务并隐匿结果框
+    // 切换选择时：安全取消正在计算的哈希任务，隐匿哈希框并复位按钮文案
     if (m_hashCancelToken) {
         m_hashCancelToken->store(true);
         m_hashCancelToken.reset();
     }
-    if (m_hashResultBox) {
-        m_hashResultBox->hide();
+    if (m_hashEdit) {
+        m_hashEdit->clear();
+        m_hashEdit->hide();
     }
-    if (m_hashValueLabel) {
-        m_hashValueLabel->clear();
+    if (m_btnComputeHash) {
+        m_btnComputeHash->setText("查看哈希值");
     }
 
     QElapsedTimer timer;
@@ -1154,6 +1130,18 @@ void MetaPanel::onShowPropertiesClicked() {
 void MetaPanel::onComputeHashClicked() {
     if (m_selectedPaths.isEmpty()) return;
 
+    // 若当前状态已计算完成，点击直接执行复制操作并弹出 Toast
+    if (m_btnComputeHash && m_btnComputeHash->text() == "复制哈希值") {
+        if (m_hashEdit) {
+            QString h = m_hashEdit->toPlainText().trimmed();
+            if (!h.isEmpty() && !h.startsWith("无法")) {
+                QApplication::clipboard()->setText(h);
+                ToolTipOverlay::instance()->showToast("已复制哈希值", 1200, QColor("#2ecc71"));
+                return;
+            }
+        }
+    }
+
     // 过滤出所有选中的非文件夹实体文件
     QStringList validFiles;
     for (const QString& p : m_selectedPaths) {
@@ -1174,12 +1162,12 @@ void MetaPanel::onComputeHashClicked() {
         return;
     }
 
-    // 单个文件：在下方结果框异步计算并展示
+    // 单个文件：在下方 ElasticEdit 自适应框中异步计算并展示
     QString targetFile = validFiles.first();
-    if (!m_hashResultBox || !m_hashValueLabel) return;
+    if (!m_hashEdit) return;
 
-    m_hashResultBox->show();
-    m_hashValueLabel->setText("计算中…");
+    m_hashEdit->show();
+    m_hashEdit->setPlainText("计算中…");
 
     if (m_hashCancelToken) {
         m_hashCancelToken->store(true);
@@ -1194,8 +1182,12 @@ void MetaPanel::onComputeHashClicked() {
 
         QMetaObject::invokeMethod(qApp, [weakThis, hash, cancelToken]() {
             if (!weakThis || cancelToken->load()) return;
-            if (weakThis->m_hashValueLabel) {
-                weakThis->m_hashValueLabel->setText(hash.isEmpty() ? "无法读取" : hash);
+            if (weakThis->m_hashEdit) {
+                weakThis->m_hashEdit->setPlainText(hash.isEmpty() ? "无法读取" : hash);
+                // 只有成功计算出哈希值，才将按钮文案切换为“复制哈希值”
+                if (!hash.isEmpty() && weakThis->m_btnComputeHash) {
+                    weakThis->m_btnComputeHash->setText("复制哈希值");
+                }
             }
         });
     });
