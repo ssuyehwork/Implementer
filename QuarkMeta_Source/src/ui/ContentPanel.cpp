@@ -715,7 +715,7 @@ void ContentPanel::setCurrentCategoryTitle(const QString& title) {
 
 QString ContentPanel::displayPath() const {
     if (!m_categoryTitle.isEmpty() && (m_currentCategoryType == "library" || m_currentCategoryType == "smart_folder")) {
-        return "库 → " + m_categoryTitle;
+        return m_categoryTitle;
     }
     return m_currentPath;
 }

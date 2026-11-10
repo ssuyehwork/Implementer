@@ -5,6 +5,8 @@
 #include "ColorPicker.h"
 #include "HoverEventFilter.h"
 #include "../core/AppConfig.h"
+#include "../meta/LibraryDao.h"
+#include "../meta/SmartFolderDao.h"
 
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -255,8 +257,17 @@ void TabBarWidget::resizeEvent(QResizeEvent* event) {
 static QString cleanNameForTab(const QString& path) {
     if (path.isEmpty() || path == "computer://") return "此电脑";
     if (path == "trash://") return "回收站";
-    if (path.startsWith("library://") || path.startsWith("smartfolder://")) {
-        return "库";
+    if (path.startsWith("library://")) {
+        int catId = path.mid(10).toInt();
+        if (catId == -1) return "全部数据";
+        if (catId == -2) return "未分类";
+        LibraryCategoryRecord rec = LibraryDao::getCategoryById(catId);
+        return rec.name.isEmpty() ? "库" : rec.name;
+    }
+    if (path.startsWith("smartfolder://")) {
+        int sfId = path.mid(14).toInt();
+        SmartFolderRecord rec = SmartFolderDao::getSmartFolderById(sfId);
+        return rec.name.isEmpty() ? "库" : rec.name;
     }
     QString cleanP = QDir::cleanPath(path);
     QFileInfo fi(cleanP);
@@ -471,6 +482,7 @@ void TabBarWidget::updateSplitTabTitle(const TabSplitState& state) {
 
     applyDiffUpdate();
     saveStateToConfig();
+    emit tabDisplayTitleChanged(currentTab.title);
 }
 
 void TabBarWidget::selectNextTab() {
