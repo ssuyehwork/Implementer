@@ -215,6 +215,12 @@ void DatabaseManager::logStartup(const QString& msg) {
 
 bool DatabaseManager::init(const QString& dbPath) {
     QMutexLocker locker(&m_mutex);
+
+    // 【核心修复】：若已经初始化且数据库已开启，严禁重复关闭现有连接（杜绝底层 sqlite3* 句柄失效引发 c0000005 闪退）
+    if (m_isInitialized && m_db.isOpen()) {
+        return true;
+    }
+
     m_isInitialized = false;
     m_lastError.clear();
     
@@ -224,10 +230,6 @@ bool DatabaseManager::init(const QString& dbPath) {
         m_lastError = "Qt 环境缺失 QSQLITE 驱动支持。";
         logStartup("[ERR] " + m_lastError);
         return false;
-    }
-    
-    if (m_isInitialized && m_db.isOpen()) {
-        return true;
     }
     // 统一明文数据库路径 (程序目录下的 inspiration.db)
     m_realDbPath = dbPath.isEmpty() ? (QCoreApplication::applicationDirPath() + "/inspiration.db") : dbPath; 

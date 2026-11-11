@@ -364,3 +364,19 @@
   1. 在 `LibraryPanel::loadLibrary()` 恢复树节点高亮处引入持久化索引有效性与归属核验；
   2. 在新建分类 50ms 延迟行内编辑 Lambda 中引入 `QPointer<LibraryPanel> weakThis(this)` 守卫，核查宿主、模型与树视图非空；
   3. 引入 `QPersistentModelIndex pIdx(targetItem->index())` 并在有效断言通过后依次调用 `expand`、`setCurrentIndex`、`setFocus(Qt::OtherFocusReason)` 与 `edit(pIdx)`。
+
+### 2026-11-11: 核心数据库连接防重复关闭与单例生命周期守卫 (Database Connection Lifetime & Anti-Reinitialization Guard)
+- **时间轴**：2026-11-11
+- **修改原因**：
+  1. 彻底根除点击 QuickWindow 工具栏 `btnMainWindow` 打开主窗口时发生的 `c0000005 Attempt to execute non-executable address 0000000000000000` 闪退缺陷；
+  2. 修复 `DatabaseManager::init()` 内部将幂等检查语句误放在 `m_isInitialized = false;` 之后导致每次调用无条件执行 `m_db.close()` 误杀现有连接、释放底层 `sqlite3*` 句柄的问题；
+  3. 加固 `MetaDbRepository::initDatabase()`，在外部前置检查数据库开启状态，避免多余初始化。
+- **涉及文件**：
+  - `RapidNotes_Source/RapidNotes/src/core/DatabaseManager.cpp`
+  - `RapidNotes_Source/RapidNotes/src/meta/MetaDbRepository.cpp`
+  - `RapidNotes_Source/RapidNotes/Memories_RapidNotes.md`
+  - `RapidNotes_Source/RapidNotes/Timeline_RapidNotes.md`
+- **修改内容**：
+  1. 将 `DatabaseManager.cpp` 中的 `if (m_isInitialized && m_db.isOpen()) return true;` 提升至函数第一行执行，确保初始化幂等；
+  2. 在 `MetaDbRepository.cpp` 中将 `DatabaseManager::instance().init();` 改为在 `!m_db.isOpen()` 条件下触发；
+  3. 杜绝了 `MainWindow` 构造装配过程中触发 `m_db.close()` 引起的驱动 handle 野指针或虚表寻址崩溃。

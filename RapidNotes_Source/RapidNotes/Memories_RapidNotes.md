@@ -853,3 +853,18 @@ QuarkMeta 原版面向本地磁盘物理文件系统（磁盘驱动器、物理�
      3. 赋予视图焦点（`setFocus(Qt::OtherFocusReason)`）；
      4. 唤起目标持久化索引的行内编辑器（`edit(pIdx)`）；
    - 坚决杜绝在未确立有效当前项时盲调 `setFocus()` 触发 Qt 内部焦点分发异常。
+
+---
+
+## 32. 核心数据库连接防重复关闭与单例生命周期守卫规范 (Database Connection Lifetime & Anti-Reinitialization Guard)
+
+> 本章节记录用户的核心设计理念指导与明确共识，作为消除 `DatabaseManager::init()` 在重入/重复调用时关闭现有连接、释放底层 `sqlite3*` 句柄导致子模块（如打开主界面 MainWindow）发生 `c0000005` 空指针地址执行/崩溃的唯一真理源 (SSOT)。
+
+### 32.1 核心设计理念与架构铁律 (Core Philosophy & Architecture Locks)
+1. **数据库初始化函数幂等性与连接单例守卫**：
+   - `DatabaseManager::init()` 必须在函数最开头进行幂等性检测：
+     `if (m_isInitialized && m_db.isOpen()) return true;`；
+   - 严禁在校验前提前将 `m_isInitialized` 置为 `false`，彻底杜绝已打开的数据库连接被误杀关闭（`m_db.close()`）；
+   - 确保全生命周期内获取的底层 SQLite 驱动句柄 `sqlite3*` 持续有效，防止异步线程或新装配窗口访问时出现悬空指针或跳转 `0x0` 地址。
+2. **外部模块数据库初始化前置检查**：
+   - 在 `MetaDbRepository::initDatabase()` 等桥接层中，调用 `DatabaseManager::instance().init()` 之前必须核查 `if (!DatabaseManager::instance().database().isOpen())`，避免任何多余无参初始化调用。
