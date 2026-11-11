@@ -216,3 +216,19 @@
   1. **品牌资产主次对齐**：贯彻“以 RapidNotes 为主，QuarkMeta 为次”的核心设计理念，消除 Windows 清单中残留的 QuarkMeta 标识与描述；将 `QuarkMeta.manifest` 装配件名称统一更新为 `RapidNotes`，描述更新为 `RapidNotes Desktop Application`，确保任务管理器、UAC 提权窗口及系统属性呈现统一的 RapidNotes 品牌形象；
   2. **修正资源清单引用说明**：将 `QuarkMeta.rc` 中的注释引用同步修正为 `RapidNotes.manifest`；
   3. **注销孤儿死代码**：在 `CMakeLists.txt` 中物理注销未被任何模块引用的 `QuarkApplication.cpp` 与 `QuarkApplication.h` 构建条目，避免编译资源浪费与命名污染。
+
+#### 4. QuickWindow 上帝类四模块正交拆解（架构治理与职责解耦）
+- **时间轴**：2026-11-11
+- **涉及文件**：
+  - `src/ui/controllers/QuickMediator.h` / `src/ui/controllers/QuickMediator.cpp` [新建]
+  - `src/ui/controllers/QuickPasteDeliveryService.h` / `src/ui/controllers/QuickPasteDeliveryService.cpp` [新建]
+  - `src/ui/controllers/QuickContextMenuBuilder.h` / `src/ui/controllers/QuickContextMenuBuilder.cpp` [新建]
+  - `src/ui/controllers/QuickShortcutHandler.h` / `src/ui/controllers/QuickShortcutHandler.cpp` [新建]
+  - `CMakeLists.txt`
+- **修改原因与设计**：
+  1. **上帝类职责极端过载治理**：`QuickWindow.cpp` 包含 4200+ 行代码，杂糅了 Win32 原生线程注入模拟粘贴、右键复杂菜单硬编码、打字态焦点保护及全局事件响应等 8 种正交职责；
+  2. **专职中枢协调器 (`QuickMediator`)**：承担 `QuickWindow` 与中央大脑 `CoreEngine` / `CentralEventHub` 的双向通信，将移入分类、收藏、删除、星级、颜色、标签等状态变更收敛为标准 `AppCommand` 命令分发并监听全局增量更新；
+  3. **专职剪贴板与模拟按键服务 (`QuickPasteDeliveryService`)**：抽离双模剪贴板写入与底层 Win32 API（`AttachThreadInput`、`SetForegroundWindow`、`SendInput` 等），隔离平台级细节；
+  4. **专职菜单构建器 (`QuickContextMenuBuilder`)**：对齐 `ContextMenuFactory` 工业级范式，专职构建列表项与侧边栏右键上下文菜单，消除大段行内硬编码；
+  5. **专职快捷键拦截器 (`QuickShortcutHandler`)**：对齐 `LocalShortcutInterceptor`，实现严格的打字态焦点保护（在输入框中放行按键）与删除/退出快捷键的安全分发；
+  6. **构建注册**：在 `CMakeLists.txt` 中完整注册上述四大模块源文件，确保符号完整链接与零编译警告。

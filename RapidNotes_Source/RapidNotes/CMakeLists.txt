@@ -303,6 +303,14 @@ set(SOURCES
     src/ui/QuickPreview.h
     src/ui/QuickWindow.cpp
     src/ui/QuickWindow.h
+    src/ui/controllers/QuickMediator.cpp
+    src/ui/controllers/QuickMediator.h
+    src/ui/controllers/QuickContextMenuBuilder.cpp
+    src/ui/controllers/QuickContextMenuBuilder.h
+    src/ui/controllers/QuickPasteDeliveryService.cpp
+    src/ui/controllers/QuickPasteDeliveryService.h
+    src/ui/controllers/QuickShortcutHandler.cpp
+    src/ui/controllers/QuickShortcutHandler.h
     src/ui/RecentNotesDelegate.cpp
     src/ui/RecentNotesDelegate.h
     src/ui/RecentNotesWindow.cpp

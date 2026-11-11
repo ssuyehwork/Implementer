@@ -12,6 +12,10 @@ using RapidNotes::DropTreeView;
 #include "QuickPreview.h"
 #include "PasswordVerifyDialog.h"
 #include "QuickFilterPanel.h"
+#include "controllers/QuickMediator.h"
+#include "controllers/QuickShortcutHandler.h"
+#include "controllers/QuickPasteDeliveryService.h"
+#include "controllers/QuickContextMenuBuilder.h"
 #include "../models/NoteModel.h"
 #include <QSortFilterProxyModel>
 #include <QTreeView>
@@ -259,6 +263,9 @@ setAttribute(Qt::WA_TranslucentBackground);
 
     setMouseTracking(true);
     setAttribute(Qt::WA_Hover);
+
+    m_mediator = new RapidNotes::QuickMediator(this, this);
+    m_shortcutHandler = new RapidNotes::QuickShortcutHandler(this, this);
 
     initUI();
 
@@ -1813,8 +1820,12 @@ void QuickWindow::doDeleteSelected(bool physical) {
 
         if (msg.exec() == QDialog::Accepted) {
             if (!idsToDelete.isEmpty()) {
-                DatabaseManager::instance().deleteNotesBatch(idsToDelete);
-                refreshData();
+                 if (m_mediator) {
+                     m_mediator->requestPermanentDelete(idsToDelete);
+                 } else {
+                     DatabaseManager::instance().deleteNotesBatch(idsToDelete);
+                     refreshData();
+                 }
                 refreshSidebar();
                 ToolTipOverlay::instance()->showText(QCursor::pos(), QString("<b style='color: #2ecc71;'>[OK] 已永久删除 %1 条数据</b>").arg(idsToDelete.size()));
             }
@@ -1823,8 +1834,12 @@ void QuickWindow::doDeleteSelected(bool physical) {
         
         QList<int> idsToTrash;
         for (const auto& index : std::as_const(selected)) idsToTrash << index.data(NoteModel::IdRole).toInt();
-        DatabaseManager::instance().softDeleteNotes(idsToTrash);
-        refreshData();
+        if (m_mediator) {
+            m_mediator->requestMoveToTrash(idsToTrash);
+        } else {
+            DatabaseManager::instance().softDeleteNotes(idsToTrash);
+            refreshData();
+        }
     }
     refreshSidebar();
 }
@@ -1839,17 +1854,22 @@ void QuickWindow::doRestoreTrash() {
 void QuickWindow::doToggleFavorite() {
     auto selected = m_listView->selectionModel()->selectedIndexes();
     if (selected.isEmpty()) return;
-    bool isFav = false;
+    QList<int> ids;
     for (const auto& index : std::as_const(selected)) {
-        int id = index.data(NoteModel::IdRole).toInt();
-        isFav = DatabaseManager::instance().toggleNoteState(id, "is_favorite");
+        ids << index.data(NoteModel::IdRole).toInt();
     }
-    refreshData();
-    
-    // 2026-04-xx 按照用户要求：增加显式反馈，并提升优先级以防被覆盖
-    ToolTipOverlay::instance()->showText(QCursor::pos(), 
-        isFav ? "<b style='color: #2ecc71;'>★ 已添加至收藏</b>" : "<b style='color: #aaaaaa;'>☆ 已取消收藏</b>", 
-        1000, QColor("#B0B0B0"), ToolTipOverlay::ActivePriority);
+    if (m_mediator) {
+        m_mediator->requestToggleFavorite(ids);
+    } else {
+        bool isFav = false;
+        for (int id : ids) {
+            isFav = DatabaseManager::instance().toggleNoteState(id, "is_favorite");
+        }
+        refreshData();
+        ToolTipOverlay::instance()->showText(QCursor::pos(),
+            isFav ? "<b style='color: #2ecc71;'>★ 已添加至收藏</b>" : "<b style='color: #aaaaaa;'>☆ 已取消收藏</b>",
+            1000, QColor("#B0B0B0"), ToolTipOverlay::ActivePriority);
+    }
 }
 
 void QuickWindow::doTogglePin() {
