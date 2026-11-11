@@ -113,35 +113,27 @@ public:
         : QWidget(parent), m_correctPassword(correctPassword) {
         setObjectName("AppLockWidget");
         setFocusPolicy(Qt::StrongFocus);
-        setAttribute(Qt::WA_StyledBackground);
+        setAttribute(Qt::WA_StyledBackground, true);
 
         auto* layout = new QVBoxLayout(this);
         layout->setAlignment(Qt::AlignCenter);
         layout->setSpacing(20);
-
-        
-
 
         auto* appTitle = new QLabel("懒人笔记");
         appTitle->setObjectName("QuickWindow_appTitle_1");
         appTitle->setAlignment(Qt::AlignCenter);
         layout->addWidget(appTitle);
 
-        
         auto* lockIcon = new QLabel();
-
         lockIcon->setPixmap(IconHelper::getIcon("lock_secure", "#00A650").pixmap(64, 64));
         lockIcon->setAlignment(Qt::AlignCenter);
         layout->addWidget(lockIcon);
 
-        
         auto* titleLabel = new QLabel("已锁定");
-
         titleLabel->setObjectName("QuickWindow_titleLabel_2");
         titleLabel->setAlignment(Qt::AlignCenter);
         layout->addWidget(titleLabel);
 
-        
         QSettings settings("RapidNotes", "QuickWindow");
         QString hint = settings.value("appPasswordHint", "请输入启动密码").toString();
         auto* hintLabel = new QLabel(hint);
@@ -149,7 +141,6 @@ public:
         hintLabel->setAlignment(Qt::AlignCenter);
         layout->addWidget(hintLabel);
 
-        
         m_pwdEdit = new QLineEdit();
         m_pwdEdit->setObjectName("QuickWindow_m_pwdEdit");
         m_pwdEdit->setEchoMode(QLineEdit::Password);
@@ -160,7 +151,6 @@ public:
         connect(m_pwdEdit, &QLineEdit::returnPressed, this, &AppLockWidget::handleVerify);
         layout->addWidget(m_pwdEdit, 0, Qt::AlignHCenter);
 
-        
         m_closeBtn = new QPushButton(this);
         m_closeBtn->setObjectName("QuickWindow_m_closeBtn");
         m_closeBtn->setIcon(IconHelper::getIcon("close", "#aaaaaa"));
@@ -169,7 +159,6 @@ public:
         m_closeBtn->setCursor(Qt::PointingHandCursor);
         connect(m_closeBtn, &QPushButton::clicked, []() { QApplication::quit(); });
 
-        
         m_pwdEdit->setFocus();
     }
 
@@ -179,9 +168,16 @@ public:
     }
 
 protected:
+    void paintEvent(QPaintEvent* event) override {
+        QStyleOption opt;
+        opt.initFrom(this);
+        QPainter p(this);
+        style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
+        QWidget::paintEvent(event);
+    }
+
     void keyPressEvent(QKeyEvent* event) override {
         if (event->key() == Qt::Key_Escape) {
-            
             event->accept();
             return;
         }
