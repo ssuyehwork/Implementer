@@ -76,7 +76,7 @@ void NavigationCoordinator::locateItem(const QString& fullPath) {
 
 void NavigationCoordinator::refreshCurrent() {
     ContentPanel* target = m_activeCoordinator ? m_activeCoordinator->currentTarget() : nullptr;
-    if (target && (target->getCurrentCategoryType() == "library" || target->getCurrentCategoryType() == "smart_folder")) {
+    if (target) {
         target->refreshAll();
     } else {
         NavigationService::instance().refresh();

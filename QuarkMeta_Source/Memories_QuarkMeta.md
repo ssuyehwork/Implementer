@@ -1539,5 +1539,9 @@ QuarkMeta 采用“侧车文件持久化 + 中心数据库索引”的读写分�
 2. **多窗格焦点切换体验**：
    - 用户点击任意分屏窗格或通过按键将焦点切换到目标分屏时，`ActivePaneCoordinator` 触发 `activePaneChanged`；
    - 地址栏立即无感知、无闪烁地切换显示当前激活窗格的路径（物理路径或库/智能文件夹名称 `displayPath()`），彻底解决分屏焦点在右侧而地址栏死在左侧的历史缺陷。
+3. **分屏刷新行为绑定激活窗格 (Active Pane Refresh Scope)**：
+   - `NavigationCoordinator::refreshCurrent()` 统领地址栏刷新按钮及相关全局刷新动作；
+   - 坚决杜绝刷新时调用单实例 `NavigationService::instance().refresh()`（该调用广播的 `currentUrlChanged` 易错误覆盖非激活窗格的当前路径）；
+   - 严格通过 `target = m_activeCoordinator->currentTarget()` 并直接执行 `target->refreshAll()`，确保刷新行为百分之百严格作用于当前激活窗格（包括物理路径、库、智能文件夹、回收站或分栏视图），彻底防止刷新波及甚至覆写其他分屏窗格。
 
 
