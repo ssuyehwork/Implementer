@@ -29,6 +29,7 @@ enum class AppCommandType {
     SetPinned,         // 置顶/取消置顶
     ToggleFavorite,    // 添加/取消收藏
     MoveToTrash,       // 移入回收站
+    MoveToCategory,    // 批量移入指定分类
     RestoreFromTrash,  // 从回收站还原
     RenameItems,       // 重命名文件/文件夹
     DeletePermanently, // 物理删除文件

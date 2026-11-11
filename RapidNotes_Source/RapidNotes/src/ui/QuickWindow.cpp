@@ -579,17 +579,40 @@ void QuickWindow::initUI() {
 
         if (type == "category") {
             int catId = targetIndex.data(CategoryModel::IdRole).toInt();
-            DatabaseManager::instance().moveNotesToCategory(ids, catId);
+            QStringList pathUris;
+            pathUris.reserve(ids.size());
+            for (int id : ids) pathUris.append(QString("note://%1").arg(id));
+
+            RapidNotes::AppCommand cmd;
+            cmd.type = RapidNotes::AppCommandType::MoveToCategory;
+            cmd.targetPaths = pathUris;
+            cmd.params["categoryId"] = catId;
+            RapidNotes::CoreEngine::instance().executeCommand(cmd);
+
             ActionRecorder::instance().recordMoveToCategory(catId);
             StringUtils::recordRecentCategory(catId);
         } else if (type == "uncategorized") {
-            DatabaseManager::instance().moveNotesToCategory(ids, -1);
+            QStringList pathUris;
+            pathUris.reserve(ids.size());
+            for (int id : ids) pathUris.append(QString("note://%1").arg(id));
+
+            RapidNotes::AppCommand cmd;
+            cmd.type = RapidNotes::AppCommandType::MoveToCategory;
+            cmd.targetPaths = pathUris;
+            cmd.params["categoryId"] = -1;
+            RapidNotes::CoreEngine::instance().executeCommand(cmd);
+
             ActionRecorder::instance().recordMoveToCategory(-1);
-        } else {
-            for (int id : ids) {
-                if (type == "bookmark") DatabaseManager::instance().updateNoteState(id, "is_favorite", 1);
-                else if (type == "trash") DatabaseManager::instance().updateNoteState(id, "is_deleted", 1);
-            }
+        } else if (type == "bookmark") {
+            DatabaseManager::instance().updateNoteStateBatch(ids, "is_favorite", 1);
+            RapidNotes::AppEvent ev;
+            ev.type = RapidNotes::AppEventType::MetadataUpdated;
+            RapidNotes::CentralEventHub::instance().publishEvent(ev);
+        } else if (type == "trash") {
+            RapidNotes::AppCommand cmd;
+            cmd.type = RapidNotes::AppCommandType::MoveToTrash;
+            for (int id : ids) cmd.targetPaths.append(QString("note://%1").arg(id));
+            RapidNotes::CoreEngine::instance().executeCommand(cmd);
         }
         
         

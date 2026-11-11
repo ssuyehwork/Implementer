@@ -148,6 +148,17 @@ bool CoreEngine::executeCommand(const AppCommand& cmd) {
         }
         break;
     }
+    case AppCommandType::MoveToCategory: {
+        int catId = cmd.params.value("categoryId", -1).toInt();
+        QList<int> noteIds = extractNoteIds(cmd.targetPaths);
+        DatabaseManager::instance().moveNotesToCategory(noteIds, catId);
+
+        AppEvent ev;
+        ev.type = AppEventType::MetadataUpdated;
+        ev.paths = cmd.targetPaths;
+        CentralEventHub::instance().publishEvent(ev);
+        break;
+    }
     case AppCommandType::MoveToTrash: {
         QList<int> noteIds = extractNoteIds(cmd.targetPaths);
         DatabaseManager::instance().softDeleteNotes(noteIds);

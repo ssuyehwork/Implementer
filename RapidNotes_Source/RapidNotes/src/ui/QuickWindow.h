@@ -11,6 +11,8 @@
 #include <QByteArray>
 #include <QElapsedTimer>
 #include "../core/DatabaseManager.h"
+#include "../core/CoreEngine.h"
+#include "../core/CentralEventHub.h"
 
 // 前向声明，减少头文件污染
 class SearchLineEdit;
