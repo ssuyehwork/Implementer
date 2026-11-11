@@ -35,6 +35,10 @@ class ClickableLineEdit;
 class CleanListView;
 class QuickFilterPanel;
 class QVBoxLayout;
+namespace RapidNotes {
+class QuickMediator;
+class QuickShortcutHandler;
+}
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -195,6 +199,9 @@ public:
     int m_sidebarWidth = 163;
     int m_filterWidth = 163;
     QElapsedTimer m_lastWheelPageTimer;    // [NEW] 用于滚轮翻页防抖
+
+    RapidNotes::QuickMediator* m_mediator = nullptr;
+    RapidNotes::QuickShortcutHandler* m_shortcutHandler = nullptr;
 
     // 2026-03-20 [NEW] 记录最近一次发送灵感的上下文快照 (上下各5条，共11条)
     QList<QVariantMap> m_contextNotesSnapshot;
