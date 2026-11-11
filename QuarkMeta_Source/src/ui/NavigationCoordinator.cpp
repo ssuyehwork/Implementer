@@ -76,7 +76,7 @@ void NavigationCoordinator::locateItem(const QString& fullPath) {
 
 void NavigationCoordinator::refreshCurrent() {
     ContentPanel* target = m_activeCoordinator ? m_activeCoordinator->currentTarget() : nullptr;
-    if (target && (target->getCurrentCategoryType() == "library" || target->getCurrentCategoryType() == "smart_folder")) {
+    if (target) {
         target->refreshAll();
     } else {
         NavigationService::instance().refresh();
@@ -108,6 +108,14 @@ void NavigationCoordinator::bindPane(ContentPanel* pane) {
 }
 
 void NavigationCoordinator::wire() {
+    if (m_activeCoordinator && m_addressBar) {
+        connect(m_activeCoordinator, &ActivePaneCoordinator::activePaneChanged, this, [this](ContentPanel* activePanel) {
+            if (activePanel && m_addressBar) {
+                m_addressBar->setPath(activePanel->displayPath());
+            }
+        });
+    }
+
     connect(&NavigationService::instance(), &NavigationService::requestLocateItem, this, &NavigationCoordinator::locateItem);
 
     connect(&NavigationService::instance(), &NavigationService::requestOpenInNewTab, this, [this](const QString& url) {
