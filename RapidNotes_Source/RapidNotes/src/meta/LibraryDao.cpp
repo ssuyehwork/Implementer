@@ -456,7 +456,7 @@ bool LibraryDao::updatePresetTags(int id, const QStringList& tags) {
     return success;
 }
 
-QStringList LibraryDao::getCategoryPaths(int id, bool verifyExistence) {
+QStringList LibraryDao::getCategoryPaths(int id) {
     QStringList rawPaths;
     sqlite3* db = DatabaseManager::instance().getGlobalDb();
     if (!db || id == 0) return rawPaths;
@@ -500,41 +500,7 @@ QStringList LibraryDao::getCategoryPaths(int id, bool verifyExistence) {
         }
     }
 
-    if (!verifyExistence) {
-        return rawPaths;
-    }
-
-    QStringList validPaths;
-    QStringList invalidPaths;
-    for (const QString& path : rawPaths) {
-        if (QFileInfo::exists(path)) {
-            validPaths.append(path);
-        } else {
-            invalidPaths.append(path);
-        }
-    }
-
-    if (!invalidPaths.isEmpty()) {
-        std::lock_guard<std::mutex> lock(DatabaseManager::instance().getGlobalMutex());
-        SqlTransaction trans(db);
-
-        const char* delSql = "DELETE FROM library_category_paths WHERE path = ?;";
-        sqlite3_stmt* stmt = nullptr;
-        if (sqlite3_prepare_v2(db, delSql, -1, &stmt, nullptr) == SQLITE_OK) {
-            for (const QString& invP : invalidPaths) {
-                std::string pStd = invP.toStdString();
-                sqlite3_bind_text(stmt, 1, pStd.c_str(), -1, SQLITE_TRANSIENT);
-                sqlite3_step(stmt);
-                sqlite3_reset(stmt);
-            }
-            sqlite3_finalize(stmt);
-        }
-        if (trans.commit()) {
-            sqlite3_wal_checkpoint_v2(db, nullptr, SQLITE_CHECKPOINT_PASSIVE, nullptr, nullptr);
-        }
-    }
-
-    return validPaths;
+    return rawPaths;
 }
 
 } // namespace RapidNotes

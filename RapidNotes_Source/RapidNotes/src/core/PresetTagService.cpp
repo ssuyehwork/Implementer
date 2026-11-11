@@ -56,7 +56,7 @@ void PresetTagService::processAsyncPresetTagsUpdate(int jobId, int categoryId, c
     }
 
     // B. 后台线程高效检索分类下关联的所有文件路径
-    QStringList paths = LibraryDao::getCategoryPaths(categoryId, false);
+    QStringList paths = LibraryDao::getCategoryPaths(categoryId);
     paths.removeDuplicates();
     if (paths.isEmpty()) {
         TaskProgressService::instance().finishJob(jobId);
