@@ -10,7 +10,7 @@
       "cacheVariables": {
         "CMAKE_C_COMPILER": "cl.exe",
         "CMAKE_CXX_COMPILER": "cl.exe",
-        "CMAKE_PREFIX_PATH": "G:/Qt/6.10.2/msvc2022_64_static"
+        "CMAKE_PREFIX_PATH": "C:/Qt/6.10.2/msvc2022_64"
       },
       "condition": {
         "type": "equals",

@@ -10,8 +10,8 @@ project(RapidNotes VERSION 1.0.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# 全局设置 MSVC 为静态运行时库 (/MT Release, /MTd Debug)，匹配静态 Qt6 (msvc2022_64_static)
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+# 全局设置 MSVC 为动态运行时库 (/MD Release, /MDd Debug)，严格匹配动态版 Qt6 (msvc2022_64)
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDLL$<$<CONFIG:Debug>:Debug>")
 
 # 2026-03-xx 按照用户要求：彻底废除 MinGW 支持，锁定 MSVC (Visual Studio 2022) 环境
 if(NOT MSVC)
@@ -32,9 +32,11 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-# 2026-03-xx 按照用户要求：增加环境自检提示，协助解决 Qt6 路径未找到问题
-if(NOT Qt6_DIR AND NOT CMAKE_PREFIX_PATH)
-    message(STATUS "🔍 [环境检测] 正在尝试从默认路径定位 Qt6...")
+# 优先探测 QT_DIR 环境变量，若无则使用标准动态版 Qt6 (msvc2022_64) 路径
+if(DEFINED ENV{QT_DIR})
+    set(CMAKE_PREFIX_PATH "$ENV{QT_DIR}")
+elseif(NOT Qt6_DIR AND NOT CMAKE_PREFIX_PATH)
+    message(STATUS "🔍 [环境检测] 正在尝试从默认路径定位动态版 Qt6...")
     set(CMAKE_PREFIX_PATH "C:/Qt/6.10.2/msvc2022_64")
 endif()
 
@@ -663,14 +665,8 @@ endif()
 
 add_executable(RapidNotes ${SOURCES})
 
-# 从静态 Qt 中排除无用的 PostgreSQL 驱动，彻底消除对 libpq.dll、libssl-3-x64.dll、libintl-9.dll 的依赖
-qt_import_plugins(RapidNotes
-    INCLUDE_BY_DEFAULT
-    EXCLUDE Qt6::QPSQLDriverPlugin
-)
-
-# 显式指定 Target 级别的静态运行时
-set_property(TARGET RapidNotes PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+# 显式指定 Target 级别的动态运行时 (/MD)
+set_property(TARGET RapidNotes PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreadedDLL$<$<CONFIG:Debug>:Debug>")
 
 # 强力锁定目标二进制输出路径，确保无论何种生成器与配置均绝对输出至 RapidNotes_Build/RapidNotes
 set_target_properties(RapidNotes PROPERTIES
@@ -712,7 +708,7 @@ add_executable(RapidNotesWatchdog
     src/watchdog/main.cpp
 )
 
-set_property(TARGET RapidNotesWatchdog PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+set_property(TARGET RapidNotesWatchdog PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreadedDLL$<$<CONFIG:Debug>:Debug>")
 
 set_target_properties(RapidNotesWatchdog PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${TARGET_APP_OUTPUT_DIR}"
