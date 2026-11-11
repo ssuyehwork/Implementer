@@ -44,7 +44,7 @@ public:
     static int getOrCreateCategory(const QString& name, int parentId = 0);
     static bool removePathsFromCategory(int id, const QStringList& paths);
     static bool removePathsFromLibrary(const QStringList& paths);
-    static QStringList getCategoryPaths(int id, bool verifyExistence = true);
+    static QStringList getCategoryPaths(int id);
     static QMap<int, int> getCategoryPathCountsBatch();
     static LibraryCategoryRecord getCategoryById(int id);
     static QStringList getPresetTagsWithAncestors(int id);

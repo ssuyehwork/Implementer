@@ -1487,5 +1487,23 @@ QuarkMeta 采用“侧车文件持久化 + 中心数据库索引”的读写分�
    - 使用 Qt 标准的 `beginInsertRows` / `endInsertRows` 进行增量行插入，局部更新 `m_pathToIndex` 并异步预取尺寸，完全避免触发 `modelReset`；
    - `appendRecord` 与 `appendPaths` 统一路由至 `appendRecords` 契约，维持数据流单一事实来源（SSOT）。
 
+---
+
+## 55. 库路径纯只读查询与代理模型 Qt 协议合规规约 (LibraryDao Pure Query & SectionProxyModel Protocol Specification)
+
+> 本章节记录彻底消除主线程同步磁盘 I/O 假死与代理模型重入重置死锁的架构决策。
+
+### 55.1 历史死穴分析
+1. **`LibraryDao::getCategoryPaths` 默认参数磁盘 I/O 陷阱**：旧实现声明了 `verifyExistence = true`，导致主线程查询数千项时，同步进行数千次 `QFileInfo::exists` 系统调用，若遇到休眠盘或网络离线盘直接导致主线程硬阻塞超过 5 秒；且在查询过程中直接 `DELETE FROM library_category_paths` 删库，严重破坏单一事实来源（SSOT）与只读契约；
+2. **`SectionProxyModel` 违背 Qt Model 协议导致迭代器破坏**：在响应 `onSourceRowsInserted` 与 `onSourceRowsRemoved` 信号槽中，当条目数较大或混合插入时调用 `rebuildMapping()`（内部触发 `beginResetModel()` 与 `endResetModel()`），紧接着又调用 `syncHeaders()` 触发 `beginInsertRows`。在接收行增量插入信号的处理链路中嵌套触发 `resetModel` 导致外层视图内部状态错乱与无限死循环卡死。
+
+### 55.2 核心架构决策与 SSOT 契约
+1. **`LibraryDao::getCategoryPaths` 彻底只读纯粹化**：
+   - 彻底移除 `verifyExistence` 参数与所有 `QFileInfo::exists` 磁盘遍历操作；
+   - 查询接口坚决保持纯 SQL 查询无副作用，严禁在读取过程中执行删库操作；
+2. **`SectionProxyModel` 严格遵守 Qt 增量通知协议**：
+   - 严禁在 `onSourceRowsInserted` 和 `onSourceRowsRemoved` 中调用 `beginResetModel()` / `rebuildMapping()`；
+   - 所有行插入严格使用 `beginInsertRows` / `endInsertRows`；
+   - 维持数据流与代理映射的一致性与稳定性。
 
 

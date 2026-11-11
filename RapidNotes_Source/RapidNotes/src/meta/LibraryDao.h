@@ -42,7 +42,7 @@ public:
     static bool addPathsToCategory(int id, const QStringList& paths);
     static bool removePathsFromCategory(int id, const QStringList& paths);
     static bool removePathsFromLibrary(const QStringList& paths);
-    static QStringList getCategoryPaths(int id, bool verifyExistence = true);
+    static QStringList getCategoryPaths(int id);
     static LibraryCategoryRecord getCategoryById(int id);
     static QStringList getPresetTagsWithAncestors(int id);
     static bool updatePresetTags(int id, const QStringList& tags);
