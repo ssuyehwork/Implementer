@@ -1,5 +1,6 @@
 // MSVC Rebuild Trigger 2026-08-28
 #include "TagLexiconService.h"
+#include "DatabaseManager.h"
 #include "../meta/DatabaseManager.h"
 #include <QDateTime>
 #include <mutex>
@@ -88,7 +89,7 @@ QList<TagGroup> TagLexiconService::getAllTagGroups() const {
 }
 
 QList<QVariantMap> TagLexiconService::getRecentTagsWithCounts(int limit) const {
-    return DatabaseManager::instance().getRecentTagsWithCounts(limit);
+    return ::DatabaseManager::instance().getRecentTagsWithCounts(limit);
 }
 
 QStringList TagLexiconService::getAllTagNames() const {

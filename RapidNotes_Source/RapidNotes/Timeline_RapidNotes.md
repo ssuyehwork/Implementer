@@ -305,3 +305,15 @@
   3. 创建专职服务 `RapidNotes::NoteIngestService`，实现 `ingestNote` 与 `updateNote`，完成标签清洗规范化与单事务落库；
   4. 在 `CMakeLists.txt` 中注册 `NoteIngestService.h` 与 `NoteIngestService.cpp` 构建单元；
   5. 在 `NoteEditWindow.cpp` 中将全部 7 处 `DatabaseManager::instance()` 直连调用替换为对应领域服务，UI 直连彻底清零。
+
+### 2026-11-11: 修复 TagLexiconService 跨命名空间 DatabaseManager 解析导致的 C2039 编译错误
+- **时间轴**：2026-11-11
+- **修改原因**：
+  1. `TagLexiconService.cpp` 处于 `namespace RapidNotes` 内且默认包含 `../meta/DatabaseManager.h`，在此作用域内裸调用 `DatabaseManager::instance()` 会错误解析为局部 `RapidNotes::DatabaseManager`，由于其缺少 `getRecentTagsWithCounts` 接口引发 MSVC C2039 编译错误；
+  2. 显式包含核心 `src/core/DatabaseManager.h` 并使用全局作用域解析符 `::DatabaseManager::instance().getRecentTagsWithCounts(limit)`，彻底消除歧义。
+- **涉及文件**：
+  - `RapidNotes_Source/RapidNotes/src/core/TagLexiconService.cpp`
+  - `RapidNotes_Source/RapidNotes/Timeline_RapidNotes.md`
+- **修改内容**：
+  1. 在 `TagLexiconService.cpp` 添加 `#include "DatabaseManager.h"`；
+  2. 将调用点修改为 `::DatabaseManager::instance().getRecentTagsWithCounts(limit)`。
