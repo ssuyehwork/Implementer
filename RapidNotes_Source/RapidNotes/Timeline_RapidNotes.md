@@ -349,3 +349,18 @@
   - `RapidNotes_Source/RapidNotes/src/ui/QuickWindow.cpp`
   - `RapidNotes_Source/RapidNotes/resources/style.qss`
   - `RapidNotes_Source/RapidNotes/Timeline_RapidNotes.md`
+
+### 2026-11-11: 树模型异步时序悬空治理与持久化索引规范 (Async Model Index Lifetime & Persistent Index Protocol)
+- **时间轴**：2026-11-11
+- **修改原因**：
+  1. 彻底根除转储日志 `Complex Issues/Crash/RapidNotes-shantui.md` 揭示的运行时 `c0000005` 空指针地址执行崩溃；
+  2. 修复 `LibraryPanel` 在异步延迟进入行内编辑以及恢复选中高亮时，解引用瞬时 `QModelIndex` 引发悬空访问与 Qt 焦点状态机撕裂缺陷；
+  3. 引入 `QPointer<LibraryPanel>` 弱引用守卫与 `QPersistentModelIndex` 持久化双重断言（`pIdx.isValid() && pIdx.model() == m_model`），规范展开、选中、焦点与编辑的状态机调用顺序。
+- **涉及文件**：
+  - `RapidNotes_Source/RapidNotes/src/ui/LibraryPanel.cpp`
+  - `RapidNotes_Source/RapidNotes/Memories_RapidNotes.md`
+  - `RapidNotes_Source/RapidNotes/Timeline_RapidNotes.md`
+- **修改内容**：
+  1. 在 `LibraryPanel::loadLibrary()` 恢复树节点高亮处引入持久化索引有效性与归属核验；
+  2. 在新建分类 50ms 延迟行内编辑 Lambda 中引入 `QPointer<LibraryPanel> weakThis(this)` 守卫，核查宿主、模型与树视图非空；
+  3. 引入 `QPersistentModelIndex pIdx(targetItem->index())` 并在有效断言通过后依次调用 `expand`、`setCurrentIndex`、`setFocus(Qt::OtherFocusReason)` 与 `edit(pIdx)`。

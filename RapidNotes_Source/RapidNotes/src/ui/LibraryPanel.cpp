@@ -1437,27 +1437,39 @@ void LibraryPanel::loadLibrary() {
     }
 
     // 恢复树节点的选中高亮状态：严格同时校验 ID 与节点类型，严禁把普通分类的高亮挂到同名同 ID 的智能文件夹上
-    if (savedSelectedNodeId != 0 && m_treeView) {
+    if (savedSelectedNodeId != 0 && m_treeView && m_model) {
         QStandardItem* targetItem = findItemByNodeId(m_model->invisibleRootItem(), savedSelectedNodeId, savedSelectedType);
         if (targetItem) {
-            m_treeView->setCurrentIndex(targetItem->index());
+            QPersistentModelIndex pIdx(targetItem->index());
+            if (pIdx.isValid() && pIdx.model() == m_model) {
+                m_treeView->setCurrentIndex(pIdx);
+            }
         }
     }
 
+    // 延迟进入行内编辑（新建分类场景）：严格引入 QPointer 弱引用与持久化索引双重防悬空校验
     if (m_pendingEditNodeId > 0 && m_treeView) {
         int targetNodeId = m_pendingEditNodeId;
         m_pendingEditNodeId = 0;
-        QTimer::singleShot(50, this, [this, targetNodeId]() {
-            QStandardItem* targetItem = findItemByNodeId(m_model->invisibleRootItem(), targetNodeId);
-            if (targetItem && m_treeView) {
-                QModelIndex parentIdx = targetItem->parent() ? targetItem->parent()->index() : QModelIndex();
-                if (parentIdx.isValid()) {
-                    m_treeView->expand(parentIdx);
-                }
-                m_treeView->setFocus();
-                m_treeView->setCurrentIndex(targetItem->index());
-                m_treeView->edit(targetItem->index());
+        QPointer<LibraryPanel> weakThis(this);
+        QTimer::singleShot(50, this, [weakThis, targetNodeId]() {
+            if (!weakThis || !weakThis->m_model || !weakThis->m_treeView) return;
+
+            QStandardItem* targetItem = weakThis->findItemByNodeId(weakThis->m_model->invisibleRootItem(), targetNodeId);
+            if (!targetItem) return;
+
+            QPersistentModelIndex pIdx(targetItem->index());
+            if (!pIdx.isValid() || pIdx.model() != weakThis->m_model) return;
+
+            QModelIndex parentIdx = targetItem->parent() ? targetItem->parent()->index() : QModelIndex();
+            if (parentIdx.isValid()) {
+                weakThis->m_treeView->expand(parentIdx);
             }
+
+            // 必须先 setCurrentIndex，且使用持久化校验后的索引，再设置焦点和进入编辑
+            weakThis->m_treeView->setCurrentIndex(pIdx);
+            weakThis->m_treeView->setFocus(Qt::OtherFocusReason);
+            weakThis->m_treeView->edit(pIdx);
         });
     }
 }

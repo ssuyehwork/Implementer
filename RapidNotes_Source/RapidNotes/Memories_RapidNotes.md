@@ -831,3 +831,25 @@ QuarkMeta 原版面向本地磁盘物理文件系统（磁盘驱动器、物理�
 3. **接口扩展与能力收敛 (Capability Convergence)**：
    - 为 `src/core/DatabaseManager` 补齐安全规范的持久化路径获取接口 `QString getDbPath() const`；
    - 将 `TagLexiconService` 等标签词表与分类词库的管理彻底收敛到 `src/core/DatabaseManager` 的标准化 Qt SQL 操作中，实现高内聚与职责单一。
+
+---
+
+## 31. 树模型异步时序悬空治理与持久化索引规范 (Async Model Index Lifetime & Persistent Index Protocol)
+
+> 本章节记录用户的核心设计理念指导与明确共识，作为消除 `LibraryPanel` 等树视图组件在异步延迟操作中解引用瞬时 `QModelIndex` 导致 `c0000005` 空指针地址执行/非法内存读取的唯一真理源 (SSOT)。
+
+### 31.1 核心设计理念与架构铁律 (Core Philosophy & Architecture Locks)
+1. **异步定时器与跨事件循环索引持久化与归属断言**：
+   - 在任何跨事件循环边界（如 `QTimer::singleShot` 延迟编辑、异步数据加载回调）中，严禁直接捕获或解引用瞬时 `QModelIndex`；
+   - 必须通过 `QPersistentModelIndex pIdx(index)` 锚定索引的物理生命周期；
+   - 执行操作前必须执行严格的双重安全断言：`if (!pIdx.isValid() || pIdx.model() != m_model) return;`，防止底层模型清空重构导致的悬空迭代器崩溃。
+2. **UI 容器弱引用守卫保护 (`QPointer`)**：
+   - 异步回调内部必须使用 `QPointer<T> weakThis(this)` 对宿主控件进行弱引用守卫；
+   - 在执行回调前校验 `if (!weakThis || !weakThis->m_model || !weakThis->m_treeView) return;`，防止父级窗口销毁后野指针解引用。
+3. **状态机调用顺序规范化**：
+   - 视图状态机进入编辑模式前，必须严格遵循安全调用顺序：
+     1. 展开目标项父级路径（`expand(parentIdx)`）；
+     2. 确立当前项合法选中（`setCurrentIndex(pIdx)`）；
+     3. 赋予视图焦点（`setFocus(Qt::OtherFocusReason)`）；
+     4. 唤起目标持久化索引的行内编辑器（`edit(pIdx)`）；
+   - 坚决杜绝在未确立有效当前项时盲调 `setFocus()` 触发 Qt 内部焦点分发异常。
