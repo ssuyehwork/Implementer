@@ -27,7 +27,7 @@ CustomCalendar::CustomCalendar(QWidget* parent) : QCalendarWidget(parent) {
 }
 
 void CustomCalendar::paintCell(QPainter* painter, const QRect& rect, QDate date) const {
-    QList<DatabaseManager::Todo> todos = DatabaseManager::instance().getTodosByDate(date);
+    QList<DatabaseManager::Todo> todos = RapidNotes::TodoRepository::instance().getTodosByDate(date);
     bool isSelected = (date == selectedDate());
     bool isToday = (date == QDate::currentDate());
 
@@ -111,7 +111,7 @@ TodoCalendarWindow::TodoCalendarWindow(QWidget* parent) : FramelessDialog("待�
     connect(m_btnAdd, &QPushButton::clicked, this, &TodoCalendarWindow::onAddTodo);
     connect(m_todoList, &QListWidget::itemDoubleClicked, this, &TodoCalendarWindow::onEditTodo);
     connect(m_detailed24hList, &QListWidget::itemDoubleClicked, this, &TodoCalendarWindow::onDetailedItemDoubleClicked);
-    connect(&DatabaseManager::instance(), &DatabaseManager::todoChanged, this, &TodoCalendarWindow::refreshTodos);
+    connect(&RapidNotes::TodoRepository::instance(), &RapidNotes::TodoRepository::todoChanged, this, &TodoCalendarWindow::refreshTodos);
 
     m_todoList->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(m_todoList, &QListWidget::customContextMenuRequested, [this](const QPoint& pos){
@@ -129,14 +129,14 @@ TodoCalendarWindow::TodoCalendarWindow(QWidget* parent) : FramelessDialog("待�
 
         auto* doneAction = menu->addAction(IconHelper::getIcon("select", "#2ecc71"), items.size() > 1 ? QString("批量标记完成 (%1)").arg(items.size()) : "标记完成");
         connect(doneAction, &QAction::triggered, [this, items](){
-            QList<DatabaseManager::Todo> todos = DatabaseManager::instance().getTodosByDate(m_calendar->selectedDate());
+            QList<DatabaseManager::Todo> todos = RapidNotes::TodoRepository::instance().getTodosByDate(m_calendar->selectedDate());
             for (auto* item : items) {
                 int id = item->data(Qt::UserRole).toInt();
                 for (auto& t : todos) {
                     if (t.id == id) {
                         t.status = 1;
                         t.progress = 100;
-                        DatabaseManager::instance().updateTodo(t);
+                        RapidNotes::TodoRepository::instance().updateTodo(t);
                         break;
                     }
                 }
@@ -145,10 +145,11 @@ TodoCalendarWindow::TodoCalendarWindow(QWidget* parent) : FramelessDialog("待�
 
         auto* deleteAction = menu->addAction(IconHelper::getIcon("delete", "#e74c3c"), items.size() > 1 ? QString("批量删除 (%1)").arg(items.size()) : "删除此任务");
         connect(deleteAction, &QAction::triggered, [this, items](){
+            QList<int> idsToDelete;
             for (auto* item : items) {
-                int id = item->data(Qt::UserRole).toInt();
-                DatabaseManager::instance().deleteTodo(id);
+                idsToDelete << item->data(Qt::UserRole).toInt();
             }
+            RapidNotes::TodoRepository::instance().deleteTodosBatch(idsToDelete);
         });
 
         menu->exec(QCursor::pos());
@@ -428,7 +429,7 @@ void TodoCalendarWindow::initUI() {
 
         // 收集所有选中行中的任务ID
         QList<int> taskIds;
-        QList<DatabaseManager::Todo> todos = DatabaseManager::instance().getTodosByDate(m_calendar->selectedDate());
+        QList<DatabaseManager::Todo> todos = RapidNotes::TodoRepository::instance().getTodosByDate(m_calendar->selectedDate());
         
         for (auto* item : items) {
             int hour = m_detailed24hList->row(item);
@@ -448,13 +449,13 @@ void TodoCalendarWindow::initUI() {
                 auto* editAction = menu->addAction(IconHelper::getIcon("edit", "#4facfe"), "编辑任务");
                 auto* deleteAction = menu->addAction(IconHelper::getIcon("delete", "#e74c3c"), "删除任务");
                 connect(editAction, &QAction::triggered, [this, taskId](){
-                    QList<DatabaseManager::Todo> todos = DatabaseManager::instance().getTodosByDate(m_calendar->selectedDate());
+                    QList<DatabaseManager::Todo> todos = RapidNotes::TodoRepository::instance().getTodosByDate(m_calendar->selectedDate());
                     for(const auto& t : todos) if(t.id == taskId) { 
                         openEditDialog(t);
                         break; 
                     }
                 });
-                connect(deleteAction, &QAction::triggered, [this, taskId](){ DatabaseManager::instance().deleteTodo(taskId); });
+                connect(deleteAction, &QAction::triggered, [this, taskId](){ RapidNotes::TodoRepository::instance().deleteTodo(taskId); });
             } else {
                 auto* addAction = menu->addAction(IconHelper::getIcon("add", "#4facfe"), QString("在 %1:00 新增任务").arg(hour, 2, 10, QChar('0')));
                 connect(addAction, &QAction::triggered, [this, hour](){
@@ -464,7 +465,7 @@ void TodoCalendarWindow::initUI() {
                     auto* dlg = new TodoEditDialog(t, this);
                     dlg->setAttribute(Qt::WA_DeleteOnClose);
                     connect(dlg, &QDialog::accepted, [this, dlg](){ 
-                        DatabaseManager::instance().addTodo(dlg->getTodo());
+                        RapidNotes::TodoRepository::instance().addTodo(dlg->getTodo());
                         this->refreshTodos();
                     });
                     dlg->show();
@@ -475,13 +476,13 @@ void TodoCalendarWindow::initUI() {
             if (!taskIds.isEmpty()) {
                 auto* doneAction = menu->addAction(IconHelper::getIcon("select", "#2ecc71"), QString("批量标记完成 (%1)").arg(taskIds.size()));
                 connect(doneAction, &QAction::triggered, [this, taskIds](){
-                    QList<DatabaseManager::Todo> todos = DatabaseManager::instance().getTodosByDate(m_calendar->selectedDate());
+                    QList<DatabaseManager::Todo> todos = RapidNotes::TodoRepository::instance().getTodosByDate(m_calendar->selectedDate());
                     for (int id : taskIds) {
                         for (auto& t : todos) {
                             if (t.id == id) {
                                 t.status = 1;
                                 t.progress = 100;
-                                DatabaseManager::instance().updateTodo(t);
+                                RapidNotes::TodoRepository::instance().updateTodo(t);
                                 break;
                             }
                         }
@@ -490,9 +491,7 @@ void TodoCalendarWindow::initUI() {
 
                 auto* deleteAction = menu->addAction(IconHelper::getIcon("delete", "#e74c3c"), QString("批量删除任务 (%1)").arg(taskIds.size()));
                 connect(deleteAction, &QAction::triggered, [this, taskIds](){
-                    for (int id : taskIds) {
-                        DatabaseManager::instance().deleteTodo(id);
-                    }
+                    RapidNotes::TodoRepository::instance().deleteTodosBatch(taskIds);
                 });
             } else {
                 return; // 选中的全是空行且是多选，不显示菜单
@@ -536,7 +535,7 @@ bool TodoCalendarWindow::eventFilter(QObject* watched, QEvent* event) {
             menu->setObjectName("TodoCalendarWindow_menu_1"); // 2026-03-xx 统一菜单悬停色为 #3e3e42
 
             QDate selectedDate = m_calendar->selectedDate();
-            QList<DatabaseManager::Todo> todos = DatabaseManager::instance().getTodosByDate(selectedDate);
+            QList<DatabaseManager::Todo> todos = RapidNotes::TodoRepository::instance().getTodosByDate(selectedDate);
 
             auto* addAction = menu->addAction(IconHelper::getIcon("add", "#4facfe"), "在此日期新增待办");
             auto* detailAction = menu->addAction(IconHelper::getIcon("clock", "#4facfe"), "切换到排程视图");
@@ -615,7 +614,7 @@ bool TodoCalendarWindow::eventFilter(QObject* watched, QEvent* event) {
             }
 
             if (date.isValid()) {
-                QList<DatabaseManager::Todo> todos = DatabaseManager::instance().getTodosByDate(date);
+                QList<DatabaseManager::Todo> todos = RapidNotes::TodoRepository::instance().getTodosByDate(date);
                 if (!todos.isEmpty()) {
                     QString tip = "<b>" + date.toString("yyyy-MM-dd") + " 待办概要:</b><br>";
                     for (int i = 0; i < qMin((int)todos.size(), 5); ++i) {
@@ -649,7 +648,7 @@ bool TodoCalendarWindow::eventFilter(QObject* watched, QEvent* event) {
 
 void TodoCalendarWindow::update24hList(const QDate& date) {
     m_detailed24hList->clear();
-    QList<DatabaseManager::Todo> todos = DatabaseManager::instance().getTodosByDate(date);
+    QList<DatabaseManager::Todo> todos = RapidNotes::TodoRepository::instance().getTodosByDate(date);
     
     for (int h = 0; h < 24; ++h) {
         QString timeStr = QString("%1:00").arg(h, 2, 10, QChar('0'));
@@ -718,7 +717,7 @@ void TodoCalendarWindow::refreshTodos() {
     m_todoList->clear();
     
     // [USER_REQUEST] 2026-03-xx 获取全局任务数据，并根据页签及搜索词过滤
-    QList<DatabaseManager::Todo> allTodos = DatabaseManager::instance().getAllTodos();
+    QList<DatabaseManager::Todo> allTodos = RapidNotes::TodoRepository::instance().getAllTodos();
     QList<DatabaseManager::Todo> filtered;
     
     QString kw = m_searchEdit->text().trimmed();
@@ -812,7 +811,7 @@ void TodoCalendarWindow::onAddAlarm() {
     }
 
     connect(dlg, &QDialog::accepted, [this, dlg](){
-        DatabaseManager::instance().addTodo(dlg->getTodo());
+        RapidNotes::TodoRepository::instance().addTodo(dlg->getTodo());
         this->refreshTodos();
     });
     dlg->show();
@@ -828,7 +827,7 @@ void TodoCalendarWindow::onAddTodo() {
     auto* dlg = new TodoEditDialog(t, this);
     dlg->setAttribute(Qt::WA_DeleteOnClose);
     connect(dlg, &QDialog::accepted, [this, dlg](){
-        DatabaseManager::instance().addTodo(dlg->getTodo());
+        RapidNotes::TodoRepository::instance().addTodo(dlg->getTodo());
         this->refreshTodos();
     });
     dlg->show();
@@ -838,7 +837,7 @@ void TodoCalendarWindow::onAddTodo() {
 
 void TodoCalendarWindow::onEditTodo(QListWidgetItem* item) {
     int id = item->data(Qt::UserRole).toInt();
-    QList<DatabaseManager::Todo> todos = DatabaseManager::instance().getTodosByDate(m_calendar->selectedDate());
+    QList<DatabaseManager::Todo> todos = RapidNotes::TodoRepository::instance().getTodosByDate(m_calendar->selectedDate());
     for (const auto& t : todos) {
         if (t.id == id) {
             openEditDialog(t);
@@ -851,7 +850,7 @@ void TodoCalendarWindow::onDetailedItemDoubleClicked(QListWidgetItem* item) {
     // [USER_REQUEST] 2026-03-xx 按照用户要求，实现排程视图双击逻辑：有任务则编辑，无任务则按该小时新增
     int todoId = item->data(Qt::UserRole).toInt();
     if (todoId > 0) {
-        QList<DatabaseManager::Todo> todos = DatabaseManager::instance().getTodosByDate(m_calendar->selectedDate());
+        QList<DatabaseManager::Todo> todos = RapidNotes::TodoRepository::instance().getTodosByDate(m_calendar->selectedDate());
         for (const auto& t : todos) {
             if (t.id == todoId) {
                 openEditDialog(t);
@@ -868,7 +867,7 @@ void TodoCalendarWindow::onDetailedItemDoubleClicked(QListWidgetItem* item) {
         auto* dlg = new TodoEditDialog(t, this);
         dlg->setAttribute(Qt::WA_DeleteOnClose);
         connect(dlg, &QDialog::accepted, [this, dlg](){
-            DatabaseManager::instance().addTodo(dlg->getTodo());
+            RapidNotes::TodoRepository::instance().addTodo(dlg->getTodo());
             this->refreshTodos();
         });
         dlg->show();
@@ -891,7 +890,7 @@ void TodoCalendarWindow::openEditDialog(const DatabaseManager::Todo& t) {
         if (t.priority == 2) updatedTodo = qobject_cast<AlarmEditDialog*>(dlg)->getTodo();
         else updatedTodo = qobject_cast<TodoEditDialog*>(dlg)->getTodo();
         
-        DatabaseManager::instance().updateTodo(updatedTodo);
+        RapidNotes::TodoRepository::instance().updateTodo(updatedTodo);
         this->refreshTodos();
     });
     dlg->show();

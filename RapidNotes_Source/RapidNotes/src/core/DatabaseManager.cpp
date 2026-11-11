@@ -3306,13 +3306,27 @@ bool DatabaseManager::updateTodo(const Todo& todo) {
 }
 
 bool DatabaseManager::deleteTodo(int id) {
+    return deleteTodosBatch(QList<int>() << id);
+}
+
+bool DatabaseManager::deleteTodosBatch(const QList<int>& ids) {
+    if (ids.isEmpty()) return true;
+
     QMutexLocker locker(&m_mutex);
     if (!m_db.isOpen()) return false;
-    
+
+    QStringList placeholders;
+    placeholders.reserve(ids.size());
+    for (int i = 0; i < ids.size(); ++i) {
+        placeholders.append("?");
+    }
+
     QSqlQuery query(m_db);
-    query.prepare("DELETE FROM todos WHERE id = ?");
-    query.addBindValue(id);
-    
+    query.prepare(QString("DELETE FROM todos WHERE id IN (%1)").arg(placeholders.join(",")));
+    for (int id : ids) {
+        query.addBindValue(id);
+    }
+
     bool ok = query.exec();
     if (ok) {
         markDirty();

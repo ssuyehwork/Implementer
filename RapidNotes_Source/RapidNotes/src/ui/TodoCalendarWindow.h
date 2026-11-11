@@ -2,7 +2,7 @@
 #define TODOCALENDARWINDOW_H
 
 #include "FramelessDialog.h"
-#include "../core/DatabaseManager.h"
+#include "../core/TodoRepository.h"
 #include <QCalendarWidget>
 #include <QListWidget>
 #include <QStackedWidget>

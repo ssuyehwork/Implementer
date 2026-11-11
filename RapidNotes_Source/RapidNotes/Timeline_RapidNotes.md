@@ -248,3 +248,24 @@
   2. 将全部裸选择器精确绑定至各窗口的具体 `objectName` 作用域，杜绝全局样式泄漏；
   3. 在 `QuickWindow.cpp` 中显式为 `container`、`leftContent` 和 `customToolbar` 设置 `setAttribute(Qt::WA_StyledBackground, true)`，确保实体背景 `#1E1E1E` 和 `#252526` 稳定绘制，彻底消除半透明桌面穿透；
   4. 恢复 QuickWindow 专属工具栏无边框与悬停高亮，规范关闭按钮红底，完善 `TabBarScrollArea` 透明度适配。
+
+### 2026-11-11: TodoCalendarWindow 直连剥离与 TodoRepository 专职领域仓储重构
+- **时间轴**：2026-11-11
+- **修改原因**：
+  1. 治理 UI 层直接穿透调用底层上帝类 `DatabaseManager` 单例的坏味道，建立专职待办领域仓储层，遵循 `Shell -> View -> Controller -> Domain -> Data` 单向架构流动；
+  2. 根治既有批量删除操作中使用 `for` 循环单项删除导致的频繁加锁、频繁执行 SQL 与 UI 连环刷新风暴，提供原生原子批量删除接口，单次加锁单次事务执行并在完成后仅发射一次 `todoChanged` 信号；
+  3. 彻底将 `TodoCalendarWindow.cpp` 中的全部 22 处 `DatabaseManager::instance()` 直连替换为 `RapidNotes::TodoRepository::instance()`，彻底纯化 UI 容器。
+- **涉及文件**：
+  - `RapidNotes_Source/RapidNotes/src/core/DatabaseManager.h`
+  - `RapidNotes_Source/RapidNotes/src/core/DatabaseManager.cpp`
+  - `RapidNotes_Source/RapidNotes/src/core/TodoRepository.h` [新建]
+  - `RapidNotes_Source/RapidNotes/src/core/TodoRepository.cpp` [新建]
+  - `RapidNotes_Source/RapidNotes/src/ui/TodoCalendarWindow.h`
+  - `RapidNotes_Source/RapidNotes/src/ui/TodoCalendarWindow.cpp`
+  - `RapidNotes_Source/RapidNotes/CMakeLists.txt`
+  - `RapidNotes_Source/RapidNotes/Timeline_RapidNotes.md`
+- **修改内容**：
+  1. 在 `DatabaseManager` 声明并实现原生原子批量删除接口 `bool deleteTodosBatch(const QList<int>& ids)`，采用 `WHERE id IN (...)` 单事务执行，单项 `deleteTodo(id)` 委托给批量删除；
+  2. 新建专职领域仓储 `RapidNotes::TodoRepository`，确立 `TodoItem` 实体契约，封装数据读写与变更通知；
+  3. 在 `CMakeLists.txt` 中注册 `TodoRepository.h` 与 `TodoRepository.cpp` 构建单元；
+  4. 在 `TodoCalendarWindow.h` 与 `TodoCalendarWindow.cpp` 中将全部 22 处 `DatabaseManager::instance()` 直连调用替换为 `TodoRepository::instance()`，消灭右键批量删除中的伪批量循环。

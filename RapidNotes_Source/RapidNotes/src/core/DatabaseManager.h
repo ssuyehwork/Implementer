@@ -137,6 +137,7 @@ public:
     int addTodo(const Todo& todo);
     bool updateTodo(const Todo& todo);
     bool deleteTodo(int id);
+    bool deleteTodosBatch(const QList<int>& ids);
     QList<Todo> getTodosByDate(const QDate& date);
     QList<Todo> getAllPendingTodos();
     QList<Todo> getAllTodos();
