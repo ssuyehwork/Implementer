@@ -374,9 +374,13 @@
 - **涉及文件**：
   - `RapidNotes_Source/RapidNotes/src/core/DatabaseManager.cpp`
   - `RapidNotes_Source/RapidNotes/src/meta/MetaDbRepository.cpp`
+  - `RapidNotes_Source/RapidNotes/src/meta/LibraryDao.cpp`
+  - `RapidNotes_Source/RapidNotes/src/main.cpp`
   - `RapidNotes_Source/RapidNotes/Memories_RapidNotes.md`
   - `RapidNotes_Source/RapidNotes/Timeline_RapidNotes.md`
 - **修改内容**：
   1. 将 `DatabaseManager.cpp` 中的 `if (m_isInitialized && m_db.isOpen()) return true;` 提升至函数第一行执行，确保初始化幂等；
   2. 在 `MetaDbRepository.cpp` 中将 `DatabaseManager::instance().init();` 改为在 `!m_db.isOpen()` 条件下触发；
-  3. 杜绝了 `MainWindow` 构造装配过程中触发 `m_db.close()` 引起的驱动 handle 野指针或虚表寻址崩溃。
+  3. 在 `main.cpp` 中展示主窗口时核验数据库连接状态；
+  4. 在 `LibraryDao.cpp` 中增加对 `db == nullptr` 的明确判空防御与告警提示；
+  5. 彻底杜绝了 `MainWindow` 构造装配过程中触发 `m_db.close()` 引起的驱动 handle 野指针或虚表寻址崩溃。

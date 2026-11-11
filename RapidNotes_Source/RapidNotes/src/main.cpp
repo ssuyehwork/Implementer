@@ -302,6 +302,9 @@ int main(int argc, char *argv[]) {
     RapidNotes::MainWindow* mainWin = nullptr;
     std::function<void()> showMainWindow = [&]() {
         checkLockAndExecute([&](){
+            if (!DatabaseManager::instance().database().isOpen()) {
+                DatabaseManager::instance().init();
+            }
             if (!mainWin) {
                 mainWin = new RapidNotes::MainWindow();
             }

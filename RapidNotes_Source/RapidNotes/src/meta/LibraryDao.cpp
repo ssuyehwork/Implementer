@@ -10,7 +10,10 @@ namespace RapidNotes {
 
 bool LibraryDao::initTable() {
     sqlite3* db = DatabaseManager::instance().getGlobalDb();
-    if (!db) return false;
+    if (!db) {
+        qWarning() << "[LibraryDao] 数据库句柄不可用，安全跳过 initTable。";
+        return false;
+    }
 
     std::lock_guard<std::mutex> lock(DatabaseManager::instance().getGlobalMutex());
 
