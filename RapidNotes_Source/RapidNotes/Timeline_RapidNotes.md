@@ -338,3 +338,14 @@
   - `RapidNotes_Source/RapidNotes/src/core/DatabaseManager.h`
   - `RapidNotes_Source/RapidNotes/src/core/DatabaseManager.cpp`
   - `RapidNotes_Source/RapidNotes/Timeline_RapidNotes.md`
+
+### 2026-11-11: QuickWindow 启动锁遮罩实色绘制与关闭按钮样式修复 (AppLockWidget Opacity & Close Button Fix)
+- **时间轴**：2026-11-11
+- **修改原因**：
+  1. 修复 QuickWindow 全局启动锁 `AppLockWidget` 遮罩透明导致底层笔记内容泄露及右上角关闭按钮重复透出的严重缺陷；
+  2. 参考原版 `RapidNotes_Full Version` 实现，恢复 `AppLockWidget` 的实色不透光深灰背景（`#1C1C1C`，圆角 10px）并重写 `paintEvent` 触发 `QStyle::PE_Widget` 原生绘制，彻底根除在 `WA_TranslucentBackground` 下背景穿透的问题；
+  3. 恢复 `AppLockWidget` 右上角关闭按钮的悬停变红样式（`#E81123`），并在 `style.qss` 中补齐 `QPushButton#QuickWindow_m_closeBtn` 规则，确保完全遮蔽底层工具栏并维持统一视觉规范。
+- **涉及文件**：
+  - `RapidNotes_Source/RapidNotes/src/ui/QuickWindow.cpp`
+  - `RapidNotes_Source/RapidNotes/resources/style.qss`
+  - `RapidNotes_Source/RapidNotes/Timeline_RapidNotes.md`

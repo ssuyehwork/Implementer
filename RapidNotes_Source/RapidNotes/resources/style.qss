@@ -3666,7 +3666,14 @@ QLineEdit#QuickWindow_m_pwdEdit {
 QLineEdit#QuickWindow_m_pwdEdit:focus {
     border: 1px solid #3A90FF;
 }
-/* QuickWindow_m_closeBtn removed in favor of unified customToolbar btnClose */
+QPushButton#QuickWindow_m_closeBtn {
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+}
+QPushButton#QuickWindow_m_closeBtn:hover {
+    background-color: #E81123;
+}
 
 QWidget#QuickWindow_container {
     background-color: #1E1E1E;
