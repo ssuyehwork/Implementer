@@ -385,12 +385,12 @@
   4. 在 `LibraryDao.cpp` 中增加对 `db == nullptr` 的明确判空防御与告警提示；
   5. 彻底杜绝了 `MainWindow` 构造装配过程中触发 `m_db.close()` 引起的驱动 handle 野指针或虚表寻址崩溃。
 
-### 2026-11-11: QuickWindow 界面背景透明穿透与容器样式生效修复 (QuickWindow Opaque Background & StyledBackground Protocol)
+### 2026-11-11: QuickWindow 界面背景透明穿透与容器样式生效修复 (QuickWindow UI Background Opacity & Solid Rendering Fix)
 - **时间轴**：2026-11-11
 - **修改原因**：
-  1. 修复 QuickWindow 界面在开启 `Qt::WA_TranslucentBackground` 下，核心容器（`container`、`leftContent`、`customToolbar`、`m_filterWrapper`）未声明 `Qt::WA_StyledBackground` 导致 QSS 深色背景被 Qt 忽略、界面出现严重桌面绿色背景穿透的缺陷；
+  1. 修复 QuickWindow 界面在开启 `Qt::WA_TranslucentBackground` 下，核心容器（`container`、`leftContent`、`customToolbar`、`m_filterWrapper`）未声明 `Qt::WA_StyledBackground` 导致 QSS 深色背景未绘制、界面出现桌面绿色背景穿透的缺陷；
   2. 修复 `toggleLayoutDirection` 切换布局方向时，因 `container` 与 `leftContent` 的 objectName 含有前缀而未能正确 `findChild` 的兼容性问题；
-  3. 完善 `resources/style.qss` 中对于筛选容器包装类（`FilterWrapper` 与 `QuickWindow_m_filterWrapper_8`）的实色背景声明。
+  3. 清理 `resources/style.qss` 中的全局裸选择器，补齐筛选容器包装类（`FilterWrapper` 与 `QuickWindow_m_filterWrapper_8`）的实色背景声明，并在 `customToolbar` 作用域内限定按钮选中态样式。
 - **涉及文件**：
   - `RapidNotes_Source/RapidNotes/src/ui/QuickWindow.cpp`
   - `RapidNotes_Source/RapidNotes/resources/style.qss`
@@ -398,4 +398,4 @@
 - **修改内容**：
   1. 在 `QuickWindow::initUI()` 中为主容器 `container`、左侧容器 `leftContent`、筛选容器 `m_filterWrapper` 和右侧工具栏 `customToolbar` 补齐 `setAttribute(Qt::WA_StyledBackground, true);`；
   2. 在 `QuickWindow::toggleLayoutDirection()` 中增加对 `QuickWindow_container` 以及 `QuickWindow_leftContent_*` 的兼容查找，保障方向切换正常运行；
-  3. 在 `style.qss` 中统一添加 `QFrame#FilterWrapper` 与 `QFrame#QuickWindow_m_filterWrapper_8` 的不透明深色背景设置。
+  3. 在 `style.qss` 中统一添加 `QFrame#FilterWrapper` 与 `QFrame#QuickWindow_m_filterWrapper_8` 的不透明深色背景设置，移除裸 `QPushButton:checked` 并限定在 `QWidget#customToolbar QPushButton:checked`。

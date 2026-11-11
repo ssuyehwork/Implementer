@@ -2894,16 +2894,6 @@ QFrame#QuickWindow_m_filterWrapper_8 {
     font-size: 11px; color: #888;
 }
 
-QPushButton:checked { background-color: rgba(255, 255, 255, 0.1); }
-
-QPushButton::menu-indicator { width: 0px; image: none; }
-
-QPushButton:checked { background-color: rgba(255, 255, 255, 0.1); }
-
-QPushButton:checked { background-color: rgba(255, 255, 255, 0.1); }
-
-QPushButton:checked { background-color: rgba(255, 255, 255, 0.1); }
-
 #QuickWindow_totalLabel_16 {
     color: #666; font-size: 10px; border: none; background: transparent;
 }
@@ -3819,6 +3809,9 @@ QWidget#customToolbar QPushButton {
 }
 QWidget#customToolbar QPushButton:hover {
     background-color: #3e3e42;
+}
+QWidget#customToolbar QPushButton:checked {
+    background-color: rgba(255, 255, 255, 0.1);
 }
 QWidget#customToolbar QPushButton#btnClose {
     background-color: #E81123;
