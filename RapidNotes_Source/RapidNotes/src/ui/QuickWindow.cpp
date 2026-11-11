@@ -114,6 +114,8 @@ public:
         setObjectName("AppLockWidget");
         setFocusPolicy(Qt::StrongFocus);
         setAttribute(Qt::WA_StyledBackground, true);
+        setAttribute(Qt::WA_OpaquePaintEvent, true);
+        setAutoFillBackground(true);
 
         auto* layout = new QVBoxLayout(this);
         layout->setAlignment(Qt::AlignCenter);
@@ -169,10 +171,11 @@ public:
 
 protected:
     void paintEvent(QPaintEvent* event) override {
-        QStyleOption opt;
-        opt.initFrom(this);
         QPainter p(this);
-        style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
+        p.setRenderHint(QPainter::Antialiasing);
+        p.setBrush(QColor(0x1E, 0x1E, 0x1E));
+        p.setPen(Qt::NoPen);
+        p.drawRoundedRect(rect(), 10, 10);
         QWidget::paintEvent(event);
     }
 
@@ -1158,6 +1161,7 @@ void QuickWindow::setupAppLock() {
         connect(lock, &AppLockWidget::unlocked, this, [this]() {
             m_appLockWidget = nullptr;
             updateAppLockStatus();
+            refreshData();
 
             m_listView->setFocus();
             if (m_model->rowCount() > 0 && !m_listView->currentIndex().isValid()) {
@@ -1448,7 +1452,7 @@ void QuickWindow::onNoteAdded(const QVariantMap& note) {
 
 void QuickWindow::refreshData() {
     qDebug() << "[QuickWindow] 开始执行 refreshData()...";
-    if (!isVisible()) return;
+    if (!isVisible() || isLocked()) return;
 
     
     QSet<int> selectedIds;

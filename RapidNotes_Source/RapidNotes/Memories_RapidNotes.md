@@ -868,3 +868,18 @@ QuarkMeta 原版面向本地磁盘物理文件系统（磁盘驱动器、物理�
    - 确保全生命周期内获取的底层 SQLite 驱动句柄 `sqlite3*` 持续有效，防止异步线程或新装配窗口访问时出现悬空指针或跳转 `0x0` 地址。
 2. **外部模块数据库初始化前置检查**：
    - 在 `MetaDbRepository::initDatabase()` 等桥接层中，调用 `DatabaseManager::instance().init()` 之前必须核查 `if (!DatabaseManager::instance().database().isOpen())`，避免任何多余无参初始化调用。
+
+---
+
+## 33. QuickWindow 全局应用锁实体绘制与数据层安全隔离规范 (AppLock Forced Opacity & Defense-in-Depth Protocol)
+
+> 本章节记录用户的核心设计理念指导与明确共识，作为消除 `AppLockWidget` 在透明窗口下背景透视泄漏底层笔记内容及工具栏的唯一真理源 (SSOT)。
+
+### 33.1 核心设计理念与架构铁律 (Core Philosophy & Architecture Locks)
+1. **渲染层强制实色绘制与不透明属性**：
+   - 在透明父窗口（`Qt::WA_TranslucentBackground`）体系下，`AppLockWidget` 必须在构造函数中显式设置 `setAttribute(Qt::WA_OpaquePaintEvent, true)` 与 `setAutoFillBackground(true)`；
+   - 在 `AppLockWidget::paintEvent` 中，必须直接使用 `QPainter` 强制填充纯色不透明画刷（`QColor(0x1E, 0x1E, 0x1E)`）配合抗锯齿绘制 `drawRoundedRect(rect(), 10, 10)`，彻底杜绝底层图层穿透与半透明混合透视；
+2. **数据层深度防御拦截 (Defense-in-Depth)**：
+   - `QuickWindow::refreshData()` 在入口处强制执行双重断言：`if (!isVisible() || isLocked()) return;`；
+   - 在应用锁激活期间，严禁向底层模型或视图填充、渲染任何笔记数据，确保即使渲染发生极端异常，底层也无任何数据泄漏；
+   - 在 `AppLockWidget` 的 `unlocked` 信号回调中触发 `refreshData()`，实现解锁后的平滑无缝数据填充与视图聚焦。

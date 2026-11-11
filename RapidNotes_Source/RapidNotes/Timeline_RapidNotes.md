@@ -384,3 +384,19 @@
   3. 在 `main.cpp` 中展示主窗口时核验数据库连接状态；
   4. 在 `LibraryDao.cpp` 中增加对 `db == nullptr` 的明确判空防御与告警提示；
   5. 彻底杜绝了 `MainWindow` 构造装配过程中触发 `m_db.close()` 引起的驱动 handle 野指针或虚表寻址崩溃。
+
+### 2026-11-11: QuickWindow 全局应用锁实体绘制与数据层安全隔离 (AppLock Forced Opacity & Defense-in-Depth Protocol)
+- **时间轴**：2026-11-11
+- **修改原因**：
+  1. 彻底解决 QuickWindow 在开启应用锁时，锁屏半透明透出底层笔记正文、分类树以及原生关闭按钮重叠穿透的严重安全与视觉缺陷；
+  2. 采纳用户方案 1，在渲染层强制启用 `WA_OpaquePaintEvent` 与实体深灰底色（`#1E1E1E`，圆角 10px）绘制；
+  3. 在数据层实施深度防御，加锁期间硬性阻断 `refreshData()` 数据填充，解锁后自动恢复拉取。
+- **涉及文件**：
+  - `RapidNotes_Source/RapidNotes/src/ui/QuickWindow.cpp`
+  - `RapidNotes_Source/RapidNotes/Memories_RapidNotes.md`
+  - `RapidNotes_Source/RapidNotes/Timeline_RapidNotes.md`
+- **修改内容**：
+  1. 在 `AppLockWidget` 构造中追加 `setAttribute(Qt::WA_OpaquePaintEvent, true);` 与 `setAutoFillBackground(true);`；
+  2. 在 `AppLockWidget::paintEvent` 中使用 `QPainter` 强制填充纯黑深灰实体画刷（`QColor(0x1E, 0x1E, 0x1E)`）绘制圆角矩形，切断底层透视；
+  3. 在 `QuickWindow::refreshData()` 入口处增加 `if (!isVisible() || isLocked()) return;`，防止加锁期间装载笔记数据；
+  4. 在 `setupAppLock()` 的 `unlocked` 回调中追加调用 `refreshData()`，实现解锁后的平滑数据呈现。
