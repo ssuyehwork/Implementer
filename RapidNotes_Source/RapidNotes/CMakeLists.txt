@@ -440,6 +440,8 @@ set(SOURCES
     src/core/PresetTagService.cpp
     src/core/TagLexiconService.cpp
     src/core/TagLexiconService.h
+    src/core/TodoRepository.cpp
+    src/core/TodoRepository.h
     src/core/TransferToMarkedCommand.cpp
     src/core/TransferToMarkedCommand.h
     src/core/UndoManager.h
