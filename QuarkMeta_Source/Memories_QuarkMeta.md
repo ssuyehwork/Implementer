@@ -1513,5 +1513,31 @@ QuarkMeta 采用“侧车文件持久化 + 中心数据库索引”的读写分�
    - `LibraryService::syncWatchedFolderHierarchy` 严禁在递归子目录循环中逐个子目录调用单项事务；必须使用 `LibraryDao::bindPathsToCategoriesBatch` 进行整棵目录树的单次原子提交与单次 `wal_checkpoint`，消除数百次 `winSync / FlushFileBuffers` 导致的系统级硬等待；
    - `LibrarySyncService` 在目录变动后调用 `syncWatchedFolderHierarchy` 必须通过工作线程池（`QtConcurrent::run(&m_workPool, ...)`）执行，严禁阻塞 GUI 主线程。
 
+---
+
+## 56. 多分屏窗格焦点切换与地址栏路径实时同步规约 (Active Pane Address Sync Specification)
+
+> 本章节记录在开启多分屏（多窗格）模式下，焦点在不同窗格切换时，地址栏根据激活窗格实时更新路径的 SSOT 架构契约。
+
+### 56.1 历史缺陷与断点根因
+1. **重构解耦断点**：在对 `PanelMediator` 臃肿连接进行解耦重构期间，将窗格激活状态转交 `ActivePaneCoordinator` 管理，并在 `PanelMediator::activeContentPanelChanged` 中恢复了搜索、边框高亮、元数据面板与筛选面板的同步，但遗漏了地址栏同步代码；
+2. **职责归属**：地址栏与全应用路径导航的核心归口为 `NavigationCoordinator`，而 `NavigationCoordinator` 此前仅监听全局 `currentUrlChanged`（单次跳转），未感知分屏切换时的焦点转移。
+
+### 56.2 架构决策与 SSOT 契约
+1. **单一事实来源 (SSOT)**：
+   - 全局路径与地址栏联动统一由 `NavigationCoordinator` 管控；
+   - 在 `NavigationCoordinator::wire()` 中建立权威信号连接：
+     ```cpp
+     if (m_activeCoordinator && m_addressBar) {
+         connect(m_activeCoordinator, &ActivePaneCoordinator::activePaneChanged, this, [this](ContentPanel* activePanel) {
+             if (activePanel && m_addressBar) {
+                 m_addressBar->setPath(activePanel->displayPath());
+             }
+         });
+     }
+     ```
+2. **多窗格焦点切换体验**：
+   - 用户点击任意分屏窗格或通过按键将焦点切换到目标分屏时，`ActivePaneCoordinator` 触发 `activePaneChanged`；
+   - 地址栏立即无感知、无闪烁地切换显示当前激活窗格的路径（物理路径或库/智能文件夹名称 `displayPath()`），彻底解决分屏焦点在右侧而地址栏死在左侧的历史缺陷。
 
 
