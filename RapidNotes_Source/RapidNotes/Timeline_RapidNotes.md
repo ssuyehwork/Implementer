@@ -180,3 +180,28 @@
 #### 4. 解决 MainWindow 命名空间导出与主入口符号未声明问题（修改）
 - **`src/ui/MainWindow.h`**：
   - **修改原因**：`MainWindow` 声明在 `RapidNotes` 命名空间内，而 `main.cpp` 未使用 `using namespace RapidNotes;`，导致 MSVC 在编译 `main.cpp` 时报出 C2065“MainWindow 未声明的标识符”并引发连锁语法报错。本次在 `MainWindow.h` 底部增加全局类型别名导出 `using RapidNotes::MainWindow;`。
+
+
+### 2026-11-11 QuickWindow 接入中央大脑架构、批量 SSOT 与 MSVC 动态链接 (/MD) 运行时库修复
+
+#### 1. QuickWindow 接入 CoreEngine 中央大脑与彻底消灭伪批量循环写盘（重构 & 架构解耦）
+- **时间轴**：2026-11-11
+- **涉及文件**：
+  - `src/core/CoreEngine.h`
+  - `src/core/CoreEngine.cpp`
+  - `src/ui/QuickWindow.h`
+  - `src/ui/QuickWindow.cpp`
+- **修改原因与设计**：
+  1. **中央大脑脱节治理**：`QuickWindow` 此前在拖拽放置笔记至分类、收藏、回收站时，直接跨层穿透调用底层的 `DatabaseManager::instance()`，破坏了单向依赖流动与职责边界；
+  2. **消除伪批量循环单条写盘**：在条目拖拽放置逻辑中存在 `for (int id : ids)` 循环调用 `updateNoteState`，造成多次无效磁盘事务与广播风暴。本次在 `CoreEngine` 中扩充 `AppCommandType::MoveToCategory` 命令枚举与执行分支，调用 `DatabaseManager::instance().moveNotesToCategory` 原子批量移动并发布 `CentralEventHub` 的 `MetadataUpdated` 事件；
+  3. **收敛至 SSOT**：在 `QuickWindow.h` 中显式包含 `CoreEngine.h` 与 `CentralEventHub.h`，将拖入分类、未分类、回收站统一打包为 `AppCommand` 投递给 `CoreEngine` 统一调度；将拖入收藏直接收敛为 `DatabaseManager::instance().updateNoteStateBatch` 集合式 SQL（`WHERE id IN (...)`）单事务批处理并广播全局事件。
+
+#### 2. MSVC 动态链接与运行时库不匹配 (/MD) 彻底修复（构建治理）
+- **时间轴**：2026-11-11
+- **涉及文件**：
+  - `CMakeLists.txt`
+  - `CMakePresets.json`
+- **修改原因与设计**：
+  1. **消除 LNK2038 与 LNK2005 运行时库冲突**：此前 CMakeLists.txt 全局与 Target 级别强锁 `/MT` 静态运行时库，而官方标准 Qt6 SDK 为 `/MD` 动态构建，导致链接器报出严重的符号多重定义（libcpmt.lib vs msvcprt.lib）；本次将全局及 `RapidNotes`、`RapidNotesWatchdog` Target 属性统一规范为 `MultiThreadedDLL$<$<CONFIG:Debug>:Debug>`；
+  2. **拔除静态专用宏**：彻底移除静态 Qt 专属的 `qt_import_plugins(RapidNotes ...)` 调用，杜绝因静态插件初始化 obj 引发的二次符号冲突；
+  3. **路径与预设统一**：`CMakeLists.txt` 优先支持 `$ENV{QT_DIR}` 环境变量并默认指向官方动态版 `C:/Qt/6.10.2/msvc2022_64`，同步修正 `CMakePresets.json` 中的 `CMAKE_PREFIX_PATH` 为动态版路径，确保构建与固化运行层部署流程一致。
