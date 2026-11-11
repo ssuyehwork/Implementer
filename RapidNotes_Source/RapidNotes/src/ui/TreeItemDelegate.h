@@ -36,11 +36,10 @@ public:
         if (index.data(SectionHeaderRole).toBool()) {
             return QSize(option.rect.width(), 28);
         }
-        QSize sz = QStyledItemDelegate::sizeHint(option, index);
         const QAbstractItemView* view = qobject_cast<const QAbstractItemView*>(option.widget);
         int zoom = view ? view->iconSize().height() + 8 : 30;
-        sz.setHeight(RowLayoutEngine::calculateRowHeight(zoom));
-        return sz;
+        int h = RowLayoutEngine::calculateRowHeight(zoom);
+        return QSize(option.rect.width(), h);
     }
 
     void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override {

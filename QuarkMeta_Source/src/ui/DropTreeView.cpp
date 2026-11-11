@@ -37,6 +37,7 @@ DropTreeView::DropTreeView(QWidget* parent) : QTreeView(parent) {
     setHeader(new ContentHeaderView(Qt::Horizontal, this));
     setDragEnabled(true);
     setDropIndicatorShown(true);
+    setUniformRowHeights(true);
     setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
     setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
     setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
@@ -103,10 +104,15 @@ void DropTreeView::setModel(QAbstractItemModel* model) {
 void DropTreeView::updateGroupHeaderSpanning() {
     if (!model()) return;
     int total = model()->rowCount();
+    int headerCount = 0;
     for (int r = 0; r < total; ++r) {
         QModelIndex idx = model()->index(r, 0);
         if (idx.data(SectionHeaderRole).toBool()) {
-            setFirstColumnSpanned(r, QModelIndex(), true);
+            if (!isFirstColumnSpanned(r, QModelIndex())) {
+                setFirstColumnSpanned(r, QModelIndex(), true);
+            }
+            headerCount++;
+            if (headerCount >= 2) break; // 最多仅存在文件夹与文件两个标头，全部设置完毕后立即跳出
         }
     }
 }

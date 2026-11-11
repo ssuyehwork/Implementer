@@ -1505,5 +1505,9 @@ QuarkMeta 采用“侧车文件持久化 + 中心数据库索引”的读写分�
    - 严禁在 `onSourceRowsInserted` 和 `onSourceRowsRemoved` 中调用 `beginResetModel()` / `rebuildMapping()`；
    - 所有行插入严格使用 `beginInsertRows` / `endInsertRows`；
    - 维持数据流与代理映射的一致性与稳定性。
+3. **`DropTreeView` 与 `TreeItemDelegate` 树视图超高性能排版契约**：
+   - `DropTreeView` 必须显式开启 `setUniformRowHeights(true)`，避免 QTreeView 对数千行数据逐单元格调用 `sizeHint` 产生全量重算风暴；
+   - `DropTreeView::updateGroupHeaderSpanning` 仅在未跨列时调用 `setFirstColumnSpanned`，且只针对前置标头行生效，跳过数据主体避免清空全树尺寸缓存；
+   - `TreeItemDelegate::sizeHint` 直接基于 `RowLayoutEngine::calculateRowHeight(zoom)` 构造 `QSize` 返回，坚决杜绝调用 `QStyledItemDelegate::sizeHint` 昂贵底层排版计算。
 
 
