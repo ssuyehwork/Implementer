@@ -593,8 +593,6 @@ set(SOURCES
     src/ui/MarkedPanel.h
     src/ui/NavPanel.cpp
     src/ui/NavPanel.h
-    src/ui/QuarkApplication.cpp
-    src/ui/QuarkApplication.h
     src/ui/QuickLookGraphicsView.cpp
     src/ui/QuickLookGraphicsView.h
     src/ui/QuickLookMinimap.cpp

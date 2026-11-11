@@ -205,3 +205,14 @@
   1. **消除 LNK2038 与 LNK2005 运行时库冲突**：此前 CMakeLists.txt 全局与 Target 级别强锁 `/MT` 静态运行时库，而官方标准 Qt6 SDK 为 `/MD` 动态构建，导致链接器报出严重的符号多重定义（libcpmt.lib vs msvcprt.lib）；本次将全局及 `RapidNotes`、`RapidNotesWatchdog` Target 属性统一规范为 `MultiThreadedDLL$<$<CONFIG:Debug>:Debug>`；
   2. **拔除静态专用宏**：彻底移除静态 Qt 专属的 `qt_import_plugins(RapidNotes ...)` 调用，杜绝因静态插件初始化 obj 引发的二次符号冲突；
   3. **路径与预设统一**：`CMakeLists.txt` 优先支持 `$ENV{QT_DIR}` 环境变量并默认指向官方动态版 `C:/Qt/6.10.2/msvc2022_64`，同步修正 `CMakePresets.json` 中的 `CMAKE_PREFIX_PATH` 为动态版路径，确保构建与固化运行层部署流程一致。
+
+#### 3. 品牌与 Logo 资产归一化及死代码注销（品牌治理 & 构建清理）
+- **时间轴**：2026-11-11
+- **涉及文件**：
+  - `QuarkMeta.manifest`
+  - `QuarkMeta.rc`
+  - `CMakeLists.txt`
+- **修改原因与设计**：
+  1. **品牌资产主次对齐**：贯彻“以 RapidNotes 为主，QuarkMeta 为次”的核心设计理念，消除 Windows 清单中残留的 QuarkMeta 标识与描述；将 `QuarkMeta.manifest` 装配件名称统一更新为 `RapidNotes`，描述更新为 `RapidNotes Desktop Application`，确保任务管理器、UAC 提权窗口及系统属性呈现统一的 RapidNotes 品牌形象；
+  2. **修正资源清单引用说明**：将 `QuarkMeta.rc` 中的注释引用同步修正为 `RapidNotes.manifest`；
+  3. **注销孤儿死代码**：在 `CMakeLists.txt` 中物理注销未被任何模块引用的 `QuarkApplication.cpp` 与 `QuarkApplication.h` 构建条目，避免编译资源浪费与命名污染。
