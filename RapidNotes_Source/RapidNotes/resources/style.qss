@@ -3564,7 +3564,8 @@ QWidget#MarkedDragOverlay { background-color: rgba(0, 122, 255, 0.90); border: 2
 }
 
 #CategoryLockWidget_this_1 {
-    background: transparent;
+    background-color: #1E1E1E;
+    background: #1E1E1E;
 }
 
 QWidget#container { background: #1E1E1E; border-radius: 10px; border: 1px solid #333; }

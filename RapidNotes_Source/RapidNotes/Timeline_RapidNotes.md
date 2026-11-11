@@ -269,3 +269,17 @@
   2. 新建专职领域仓储 `RapidNotes::TodoRepository`，确立 `TodoItem` 实体契约，封装数据读写与变更通知；
   3. 在 `CMakeLists.txt` 中注册 `TodoRepository.h` 与 `TodoRepository.cpp` 构建单元；
   4. 在 `TodoCalendarWindow.h` 与 `TodoCalendarWindow.cpp` 中将全部 22 处 `DatabaseManager::instance()` 直连调用替换为 `TodoRepository::instance()`，消灭右键批量删除中的伪批量循环。
+
+### 2026-11-11: QuickWindow 密码锁定遮罩不透光与内容绝对安全隔离修复
+- **时间轴**：2026-11-11
+- **修改原因**：
+  1. 修复 QuickWindow 分类加锁时，遮罩层背景透明导致底层笔记条目与内容直接暴露的严重安全缺陷；
+  2. 废除 `style.qss` 中 `#CategoryLockWidget_this_1` 的 `background: transparent;` 配置，设为实体深色 `#1E1E1E`；
+  3. 在 `CategoryLockWidget.cpp` 中启用 `setAttribute(Qt::WA_StyledBackground, true);`，确保 QSS 样式能够 100% 作用于自定义 QWidget，建立绝对不透光遮罩屏障。
+- **涉及文件**：
+  - `RapidNotes_Source/RapidNotes/resources/style.qss`
+  - `RapidNotes_Source/RapidNotes/src/ui/CategoryLockWidget.cpp`
+  - `RapidNotes_Source/RapidNotes/Timeline_RapidNotes.md`
+- **修改内容**：
+  1. 修改 `style.qss`，将 `#CategoryLockWidget_this_1` 背景改为 `background-color: #1E1E1E; background: #1E1E1E;`；
+  2. 修改 `CategoryLockWidget.cpp`，在构造函数首行添加 `setAttribute(Qt::WA_StyledBackground, true);`。

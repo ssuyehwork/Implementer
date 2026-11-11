@@ -6,6 +6,8 @@
 #include <QEvent>
 
 CategoryLockWidget::CategoryLockWidget(QWidget* parent) : QWidget(parent) {
+    setAttribute(Qt::WA_StyledBackground, true);
+
     auto* mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->setAlignment(Qt::AlignCenter);
