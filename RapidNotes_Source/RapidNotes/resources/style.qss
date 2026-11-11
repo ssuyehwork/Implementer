@@ -2879,7 +2879,12 @@ QWidget#leftContent { background: #1E1E1E; border-top-left-radius: 10px; border-
     background: transparent; border: none;
 }
 
-QFrame#FilterWrapper { background-color: #1e1e1e; border: none; }
+QFrame#FilterWrapper,
+QFrame#QuickWindow_m_filterWrapper_8 {
+    background-color: #1e1e1e;
+    background: #1e1e1e;
+    border: none;
+}
 
 #QuickWindow_m_filterPanel_9 {
     background: transparent; border: none;

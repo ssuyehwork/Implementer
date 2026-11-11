@@ -345,6 +345,7 @@ void QuickWindow::initUI() {
 
     auto* container = new QWidget();
     container->setObjectName("QuickWindow_container");
+    container->setAttribute(Qt::WA_StyledBackground, true);
     container->setMouseTracking(true);
 
     auto* shadow = new QGraphicsDropShadowEffect(this);
@@ -359,6 +360,7 @@ void QuickWindow::initUI() {
 
     
     auto* leftContent = new QWidget();
+    leftContent->setAttribute(Qt::WA_StyledBackground, true);
     leftContent->setObjectName("leftContent");
     leftContent->setObjectName("QuickWindow_leftContent_4");
     leftContent->setMouseTracking(true);
@@ -634,6 +636,7 @@ void QuickWindow::initUI() {
     m_listStack->addWidget(m_lockWidget);
 
     m_filterWrapper = new QFrame();
+    m_filterWrapper->setAttribute(Qt::WA_StyledBackground, true);
     m_filterWrapper->setObjectName("FilterWrapper");
 
     m_filterWrapper->setMinimumWidth(163);
@@ -739,6 +742,7 @@ void QuickWindow::initUI() {
     QWidget* customToolbar = new QWidget(this);
 
     customToolbar->setObjectName("customToolbar");
+    customToolbar->setAttribute(Qt::WA_StyledBackground, true);
     customToolbar->setMouseTracking(true);
     customToolbar->setAttribute(Qt::WA_Hover);
     customToolbar->setFixedWidth(36);
@@ -2207,12 +2211,15 @@ void QuickWindow::toggleLayoutDirection() {
         m_btnNavDir->setIcon(IconHelper::getIcon(m_isLayoutReversed ? "nav_last" : "nav_first", "#aaaaaa"));
     }
 
-    QWidget* container = findChild<QWidget*>("container");
+    QWidget* container = findChild<QWidget*>("QuickWindow_container");
+    if (!container) container = findChild<QWidget*>("container");
     if (!container) return;
     QHBoxLayout* containerLayout = qobject_cast<QHBoxLayout*>(container->layout());
     if (!containerLayout) return;
 
-    QWidget* leftContent = findChild<QWidget*>("leftContent");
+    QWidget* leftContent = findChild<QWidget*>("QuickWindow_leftContent_4");
+    if (!leftContent) leftContent = findChild<QWidget*>("QuickWindow_leftContent_19");
+    if (!leftContent) leftContent = findChild<QWidget*>("leftContent");
     QWidget* customToolbar = findChild<QWidget*>("customToolbar");
 
     if (leftContent && customToolbar) {
