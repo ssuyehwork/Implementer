@@ -36,6 +36,7 @@ public:
     QList<TagGroup> getAllTagGroups() const;
     QStringList getAllTagNames() const;
     QStringList getAllMasterTags() const;
+    QList<QVariantMap> getRecentTagsWithCounts(int limit = 20) const;
 
     // 2. Lexicon dictionary CRUD
     bool addTag(const QString& tagName, int groupId = -1, const QString& colorHex = "");

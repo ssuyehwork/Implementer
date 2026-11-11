@@ -60,6 +60,9 @@ public:
     bool setCategoryIcon(int categoryId, const QString& iconKey);
     bool toggleCategoryPinned(int categoryId, bool isPinned);
 
+    // 笔记全量属性与元数据查询回显
+    QVariantMap getNoteById(int id);
+
     // 数据库路径获取
     static QString getDatabasePath();
 

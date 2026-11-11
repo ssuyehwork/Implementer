@@ -10,6 +10,9 @@
 #ifdef Q_OS_WIN
 #include <windows.h>
 #endif
+#include "../core/NoteIngestService.h"
+#include "../core/TagLexiconService.h"
+#include "../core/NoteRepository.h"
 #include "../core/DatabaseManager.h"
 #include "IconHelper.h"
 #include <QHBoxLayout>
@@ -371,7 +374,7 @@ void NoteEditWindow::setupLeftPanel(QVBoxLayout* layout) {
     connect(m_tagEdit, &ClickableLineEdit::doubleClicked, this, &NoteEditWindow::openTagSelector);
     
     // 智能补全标签
-    QStringList allTags = DatabaseManager::instance().getAllTags();
+    QStringList allTags = RapidNotes::TagLexiconService::instance().getAllTagNames();
     QCompleter* completer = new QCompleter(allTags, this);
     completer->setCaseSensitivity(Qt::CaseInsensitive);
     completer->setFilterMode(Qt::MatchContains);
@@ -683,12 +686,11 @@ void NoteEditWindow::saveNote() {
 
     (void)QThreadPool::globalInstance()->start([=]() {
         if (noteId == 0) {
-            DatabaseManager::instance().addNote(title, content, tagsList, color, catId, finalType, QByteArray(), "", "", remark);
+            RapidNotes::NoteIngestService::instance().ingestNote(title, content, tagsList, color, catId, finalType, QByteArray(), "", "", remark);
         } else {
             // [CRITICAL] 锁定：调用重构后的 updateNote 接口，全量同步所有属性，彻底解决属性破坏问题。
-            DatabaseManager::instance().updateNote(noteId, title, content, tagsList, color, catId, 
-                                                finalType, origBlob, origApp, origTitle, remark);
-            DatabaseManager::instance().recordAccess(noteId);
+            RapidNotes::NoteIngestService::instance().updateNote(noteId, title, content, tagsList, color, catId,
+                                                                finalType, origBlob, origApp, origTitle, remark);
         }
         
         // 只有当窗口依然存在时，才切回主线程通知刷新并关闭
@@ -718,8 +720,8 @@ void NoteEditWindow::openTagSelector() {
     for (QString& t : currentTags) t = t.trimmed();
 
     auto* selector = new AdvancedTagSelector(this);
-    auto recentTags = DatabaseManager::instance().getRecentTagsWithCounts(20);
-    auto allTags = DatabaseManager::instance().getAllTags();
+    auto recentTags = RapidNotes::TagLexiconService::instance().getRecentTagsWithCounts(20);
+    auto allTags = RapidNotes::TagLexiconService::instance().getAllTagNames();
     selector->setup(recentTags, allTags, currentTags);
 
     connect(selector, &AdvancedTagSelector::tagsConfirmed, [this](const QStringList& tags){
@@ -744,7 +746,7 @@ void NoteEditWindow::openExpandedTitleEditor() {
 }
 
 void NoteEditWindow::loadNoteData(int id) {
-    QVariantMap note = DatabaseManager::instance().getNoteById(id);
+    QVariantMap note = RapidNotes::NoteRepository::instance().getNoteById(id);
     if (!note.isEmpty()) {
         // [MODIFIED] 2026-03-xx 按照用户要求：加载时备份原始元数据，确保编辑保存时不破坏数据的“身世”。
         m_origItemType = note.value("item_type").toString();

@@ -283,3 +283,25 @@
 - **修改内容**：
   1. 修改 `style.qss`，将 `#CategoryLockWidget_this_1` 背景改为 `background-color: #1E1E1E; background: #1E1E1E;`；
   2. 修改 `CategoryLockWidget.cpp`，在构造函数首行添加 `setAttribute(Qt::WA_StyledBackground, true);`。
+
+### 2026-11-11: NoteEditWindow 笔记编辑入库解耦与 NoteIngestService / TagLexicon 统一通道重构
+- **时间轴**：2026-11-11
+- **修改原因**：
+  1. 彻底消灭 `NoteEditWindow.cpp` 中直接穿透调用底层 `DatabaseManager::instance()` 的 7 处坏味道；
+  2. 确立 SSOT 职责正交划分：元数据查询与回显归属 `NoteRepository`，标签词表与最近标签统计收敛至 `TagLexiconService`，笔记新建入库与更新归口至专职指挥中心 `NoteIngestService`。
+- **涉及文件**：
+  - `RapidNotes_Source/RapidNotes/src/core/NoteRepository.h`
+  - `RapidNotes_Source/RapidNotes/src/core/NoteRepository.cpp`
+  - `RapidNotes_Source/RapidNotes/src/core/TagLexiconService.h`
+  - `RapidNotes_Source/RapidNotes/src/core/TagLexiconService.cpp`
+  - `RapidNotes_Source/RapidNotes/src/core/NoteIngestService.h` [新建]
+  - `RapidNotes_Source/RapidNotes/src/core/NoteIngestService.cpp` [新建]
+  - `RapidNotes_Source/RapidNotes/src/ui/NoteEditWindow.cpp`
+  - `RapidNotes_Source/RapidNotes/CMakeLists.txt`
+  - `RapidNotes_Source/RapidNotes/Timeline_RapidNotes.md`
+- **修改内容**：
+  1. 在 `NoteRepository` 中声明并实现 `QVariantMap getNoteById(int id)`；
+  2. 在 `TagLexiconService` 中声明并实现 `QList<QVariantMap> getRecentTagsWithCounts(int limit)`；
+  3. 创建专职服务 `RapidNotes::NoteIngestService`，实现 `ingestNote` 与 `updateNote`，完成标签清洗规范化与单事务落库；
+  4. 在 `CMakeLists.txt` 中注册 `NoteIngestService.h` 与 `NoteIngestService.cpp` 构建单元；
+  5. 在 `NoteEditWindow.cpp` 中将全部 7 处 `DatabaseManager::instance()` 直连调用替换为对应领域服务，UI 直连彻底清零。

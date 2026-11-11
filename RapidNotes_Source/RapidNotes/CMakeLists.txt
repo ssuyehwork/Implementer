@@ -118,6 +118,8 @@ set(SOURCES
     src/core/NavigationService.cpp
     src/core/NavigationService.h
     src/core/OCRManager.cpp
+    src/core/NoteIngestService.cpp
+    src/core/NoteIngestService.h
     src/core/OCRManager.h
     src/core/PathSummary.cpp
     src/core/PathSummary.h

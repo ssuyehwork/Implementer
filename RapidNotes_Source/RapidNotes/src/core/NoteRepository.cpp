@@ -248,6 +248,10 @@ bool NoteRepository::toggleCategoryPinned(int categoryId, bool isPinned) {
     return q.exec();
 }
 
+QVariantMap NoteRepository::getNoteById(int id) {
+    return DatabaseManager::instance().getNoteById(id);
+}
+
 QString NoteRepository::getDatabasePath() {
     QSqlDatabase db = DatabaseManager::instance().database();
     return db.databaseName();

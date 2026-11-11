@@ -87,6 +87,10 @@ QList<TagGroup> TagLexiconService::getAllTagGroups() const {
     return results;
 }
 
+QList<QVariantMap> TagLexiconService::getRecentTagsWithCounts(int limit) const {
+    return DatabaseManager::instance().getRecentTagsWithCounts(limit);
+}
+
 QStringList TagLexiconService::getAllTagNames() const {
     return getAllMasterTags();
 }
