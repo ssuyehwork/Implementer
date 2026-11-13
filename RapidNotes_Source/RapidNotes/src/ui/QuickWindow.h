@@ -177,7 +177,6 @@ public:
     QVBoxLayout* m_mainLayout;
     QSplitter* m_splitter;
     QLabel* m_statusLabel;
-    QPushButton* m_btnMax;
     QPushButton* m_btnNavDir;
     QPushButton* m_btnAutoCat;
     QPushButton* m_btnToggleAll; // 2026-04-xx 按照用户要求：全面板联动折叠按钮

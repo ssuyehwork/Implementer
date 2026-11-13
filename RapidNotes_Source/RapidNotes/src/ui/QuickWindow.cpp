@@ -662,17 +662,6 @@ void QuickWindow::initUI() {
     btnClose->setObjectName("btnClose");
     connect(btnClose, &QPushButton::clicked, this, &QuickWindow::hide);
 
-    m_btnMax = createToolBtn("maximize", "#aaaaaa", "最大化");
-    m_btnMax->setProperty("tooltipText", "最大化"); m_btnMax->installEventFilter(this);
-    m_btnMax->setObjectName("btnMax");
-    connect(m_btnMax, &QPushButton::clicked, [this]() {
-        if (this->isMaximized()) {
-            this->showNormal();
-        } else {
-            this->showMaximized();
-        }
-    });
-
     
     QPushButton* btnMin = createToolBtn("minimize", "#aaaaaa", "最小化");
     btnMin->setProperty("tooltipText", "最小化"); btnMin->installEventFilter(this);
@@ -771,8 +760,6 @@ void QuickWindow::initUI() {
     connect(btnLock, &QPushButton::clicked, this, &QuickWindow::doGlobalLock);
 
     toolLayout->addWidget(btnClose, 0, Qt::AlignHCenter);
-    toolLayout->addSpacing(4);
-    toolLayout->addWidget(m_btnMax, 0, Qt::AlignHCenter);
     toolLayout->addSpacing(4);
     toolLayout->addWidget(btnMin, 0, Qt::AlignHCenter);
     toolLayout->addSpacing(4);
@@ -3282,16 +3269,8 @@ bool QuickWindow::event(QEvent* event) {
     } else if (event->type() == QEvent::WindowStateChange) {
         if (this->isMaximized()) {
             if (m_mainLayout) m_mainLayout->setContentsMargins(0, 0, 0, 0);
-            if (m_btnMax) {
-                m_btnMax->setIcon(IconHelper::getIcon("restore_window", "#aaaaaa"));
-                m_btnMax->setProperty("tooltipText", "还原");
-            }
         } else {
             if (m_mainLayout) m_mainLayout->setContentsMargins(12, 12, 12, 12);
-            if (m_btnMax) {
-                m_btnMax->setIcon(IconHelper::getIcon("maximize", "#aaaaaa"));
-                m_btnMax->setProperty("tooltipText", "最大化");
-            }
         }
     }
     return QWidget::event(event);
