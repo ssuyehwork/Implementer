@@ -18,6 +18,8 @@
 
 namespace RapidNotes {
 
+class FramelessWindowHelper;
+
 class QuickLookWindow : public QWidget {
     Q_OBJECT
 public:
@@ -45,6 +47,8 @@ protected:
     void resizeEvent(QResizeEvent* event) override;
     bool eventFilter(QObject* watched, QEvent* event) override;
     void contextMenuEvent(QContextMenuEvent* event) override;
+    // [归一化] 8 向拖拽缩放的原生命中测试统一转发 FramelessWindowHelper（SSOT）
+    bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override;
 
 private:
     QuickLookWindow();
@@ -87,6 +91,8 @@ private:
     QThreadPool m_previewThreadPool; // 专属线程池，只服务预览加载，不与批量提取共享
     std::atomic<uint64_t> m_previewGeneration{1};
     std::shared_ptr<CancellationToken> m_previewToken; // 当前预览的取消令牌（仅 UI 线程读写）
+    // [归一化] 8 向拖拽缩放统一走 FramelessWindowHelper（SSOT）
+    FramelessWindowHelper* m_framelessHelper = nullptr;
 };
 
 } // namespace RapidNotes

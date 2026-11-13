@@ -314,8 +314,6 @@ set(SOURCES
     src/ui/RecentNotesWindow.h
     src/ui/RenameCapableDelegate.cpp
     src/ui/RenameCapableDelegate.h
-    src/ui/ResizeHandle.cpp
-    src/ui/ResizeHandle.h
     src/ui/RowLayoutEngine.cpp
     src/ui/RowLayoutEngine.h
     src/ui/ScanStats.h

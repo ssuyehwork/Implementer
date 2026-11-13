@@ -29,6 +29,10 @@ public:
     bool handleNativeEvent(void* message, qintptr* result);
     static bool isInteractiveWidget(QWidget* child, QWidget* titleBar, QWidget* window);
 
+    // 扩展：运行期指定标题栏（基类统一接入后，子类按需启用原生拖拽/双击最大化）；
+    // 同步补注标题栏相关原生样式，保持与构造期传入 titleBar 完全等价
+    void setTitleBar(QWidget* titleBar) { m_titleBar = titleBar; applyNativeStyles(); }
+
 private:
     explicit FramelessWindowHelper(QWidget* window, QWidget* titleBar = nullptr,
                                    int resizeMargin = kBaseResizeMargin);

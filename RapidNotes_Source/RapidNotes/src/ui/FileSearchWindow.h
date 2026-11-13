@@ -10,7 +10,6 @@ class FileSearchWindow : public FramelessDialog {
 public:
     explicit FileSearchWindow(QWidget* parent = nullptr);
 protected:
-    void resizeEvent(QResizeEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
 private:
     FileSearchWidget* m_searchWidget;

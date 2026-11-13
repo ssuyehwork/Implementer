@@ -2,7 +2,6 @@
 #include "IconHelper.h"
 #include "StringUtils.h"
 #include "ToolTipOverlay.h"
-#include "ResizeHandle.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QComboBox>
@@ -92,8 +91,6 @@ TodoCalendarWindow::TodoCalendarWindow(QWidget* parent) : FramelessDialog("待�
     initUI();
     setMinimumSize(950, 700);
     
-    // [PROFESSIONAL] 集成窗口缩放手柄
-    new ResizeHandle(this, this);
     
     // 安装事件过滤器用于 Tooltip
     m_calendar->installEventFilter(this);

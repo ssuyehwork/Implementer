@@ -1,4 +1,5 @@
 #include "FramelessDialog.h"
+#include "FramelessWindowHelper.h"
 #include "UiHelper.h"
 #include <QMouseEvent>
 #include <QKeyEvent>
@@ -131,6 +132,10 @@ FramelessDialog::FramelessDialog(const QString& title, QWidget* parent)
 
     // 默认仅显示关闭按钮，全局自动隐匿所有无边框对话框的置顶功能
     setVisibleButtons(Close);
+
+    // [归一化] 8 向拖拽缩放统一接入 FramelessWindowHelper（SSOT），取代各子类 ResizeHandle 等私有实现。
+    // 与 QuickWindow 同理：必须在全部界面构件构造完成后接入
+    m_framelessHelper = FramelessWindowHelper::apply(this, nullptr);
 }
 
 void FramelessDialog::setVisibleButtons(int flags) {
@@ -244,6 +249,14 @@ void FramelessDialog::keyPressEvent(QKeyEvent* event) {
 
 bool FramelessDialog::eventFilter(QObject* watched, QEvent* event) {
     return QDialog::eventFilter(watched, event);
+}
+
+bool FramelessDialog::nativeEvent(const QByteArray& eventType, void* message, qintptr* result) {
+    // [归一化] WM_NCHITTEST/WM_NCCALCSIZE/WM_GETMINMAXINFO/WM_SETCURSOR 统一走 Helper（SSOT）
+    if (m_framelessHelper && m_framelessHelper->handleNativeEvent(message, result)) {
+        return true;
+    }
+    return QDialog::nativeEvent(eventType, message, result);
 }
 
 } // namespace RapidNotes

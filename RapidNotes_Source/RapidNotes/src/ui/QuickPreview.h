@@ -31,6 +31,7 @@
 #include "SearchLineEdit.h"
 #include <QSplitter>
 #include "IconHelper.h"
+#include "FramelessWindowHelper.h"
 #include "../core/ShortcutManager.h"
 #include "../core/DatabaseManager.h"
 #include <QMimeData>
@@ -361,6 +362,18 @@ private:
         setupShortcuts();
         updateShortcuts(); // 初始同步快捷键提示
         connect(&ShortcutManager::instance(), &ShortcutManager::shortcutsChanged, this, &QuickPreview::updateShortcuts);
+
+        // [归一化] 8 向拖拽缩放统一接入 FramelessWindowHelper（SSOT）；
+        // 热区 12px 与 mainLayout 的 12px 内容边距严格一致
+        m_framelessHelper = RapidNotes::FramelessWindowHelper::apply(this, nullptr, 12);
+    }
+
+    bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override {
+        // [归一化] 原生命中测试统一转发 FramelessWindowHelper（SSOT）
+        if (m_framelessHelper && m_framelessHelper->handleNativeEvent(message, result)) {
+            return true;
+        }
+        return QWidget::nativeEvent(eventType, message, result);
     }
 
 public:
@@ -661,6 +674,8 @@ private:
     QFrame* m_container;
     QList<QShortcut*> m_shortcuts;
     QWidget* m_titleBar;
+    // [归一化] 8 向拖拽缩放统一走 FramelessWindowHelper（SSOT）
+    RapidNotes::FramelessWindowHelper* m_framelessHelper = nullptr;
     QLabel* m_titleLabel;
     SearchLineEdit* m_searchEdit = nullptr;
     QLabel* m_searchCountLabel = nullptr;

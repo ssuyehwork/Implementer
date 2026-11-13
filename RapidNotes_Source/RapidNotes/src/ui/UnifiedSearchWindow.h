@@ -2,7 +2,6 @@
 #define UNIFIEDSEARCHWINDOW_H
 
 #include "FramelessDialog.h"
-#include "ResizeHandle.h"
 #include <QListWidget>
 #include <QLineEdit>
 #include <QPushButton>
@@ -148,7 +147,6 @@ public:
     friend class KeywordSearchWidget;
 
 protected:
-    void resizeEvent(QResizeEvent* event) override;
     bool eventFilter(QObject* watched, QEvent* event) override;
 
 private:
@@ -178,7 +176,6 @@ private:
     
     bool verifyExportPermission(); // 2026-03-20 增加导出前的统一身份验证逻辑
 
-    ResizeHandle* m_resizeHandle;
 };
 
 #endif // UNIFIEDSEARCHWINDOW_H

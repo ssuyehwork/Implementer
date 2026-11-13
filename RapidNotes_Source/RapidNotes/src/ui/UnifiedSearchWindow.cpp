@@ -499,7 +499,8 @@ void FileSearchContentWidget::addSearchHistoryEntry(const QString& text) {
 UnifiedSearchWindow::UnifiedSearchWindow(QWidget* parent) : FramelessDialog("查找文件与关键字", parent) {
     setObjectName("UnifiedSearchWindow"); resize(1200, 720); setupStyles(); initUI();
     loadFavorites(); loadCollection();
-    m_resizeHandle = new ResizeHandle(this, this); m_resizeHandle->raise();
+    // [归一化] 保留原 ResizeHandle 的 600x400 缩放下限（现由 Helper WM_GETMINMAXINFO 统一执行）
+    setMinimumSize(600, 400);
 }
 UnifiedSearchWindow::~UnifiedSearchWindow() {}
 
@@ -680,6 +681,5 @@ bool UnifiedSearchWindow::verifyExportPermission() {
     return PasswordVerifyDialog::verify();
 }
 
-void UnifiedSearchWindow::resizeEvent(QResizeEvent* event) { FramelessDialog::resizeEvent(event); if (m_resizeHandle) m_resizeHandle->move(width() - 20, height() - 20); }
 
 #include "UnifiedSearchWindow.moc"

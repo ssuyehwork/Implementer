@@ -17,9 +17,6 @@ public:
     ~IntegratedSearchWindow();
     void setCurrentTab(SearchType type);
 
-protected:
-    void resizeEvent(QResizeEvent* event) override;
-
 private slots:
     void onSidebarItemClicked(QListWidgetItem* item);
     void showSidebarContextMenu(const QPoint& pos);
@@ -41,7 +38,6 @@ private:
     KeywordSearchWidget* m_keywordSearchWidget;
     QListWidget* m_sidebar;
     QListWidget* m_collectionSidebar;
-    class ResizeHandle* m_resizeHandle;
 };
 
 #endif // INTEGRATEDSEARCHWINDOW_H

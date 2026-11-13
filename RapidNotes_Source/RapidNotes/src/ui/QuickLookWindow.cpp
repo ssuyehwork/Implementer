@@ -65,6 +65,9 @@ QuickLookWindow::QuickLookWindow() : QWidget(nullptr) {
     
     setupUi();
     installEventFilter(this);
+
+    // [归一化] 8 向拖拽缩放统一接入 FramelessWindowHelper（SSOT）
+    m_framelessHelper = FramelessWindowHelper::apply(this, nullptr);
 }
 
 QuickLookWindow::~QuickLookWindow() {}
@@ -609,6 +612,14 @@ void QuickLookWindow::findNext() {
     } else {
         clearSearchHighlights();
     }
+}
+
+bool QuickLookWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr* result) {
+    // [归一化] 8 向拖拽缩放的原生命中测试统一走 FramelessWindowHelper（SSOT）
+    if (m_framelessHelper && m_framelessHelper->handleNativeEvent(message, result)) {
+        return true;
+    }
+    return QWidget::nativeEvent(eventType, message, result);
 }
 
 bool QuickLookWindow::eventFilter(QObject* watched, QEvent* event) {

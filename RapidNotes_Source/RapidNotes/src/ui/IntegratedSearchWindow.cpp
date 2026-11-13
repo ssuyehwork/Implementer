@@ -2,7 +2,6 @@
 #include "FileSearchWidget.h"
 #include "KeywordSearchWidget.h"
 #include "IconHelper.h"
-#include "ResizeHandle.h"
 #include "ToolTipOverlay.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -27,7 +26,8 @@ IntegratedSearchWindow::IntegratedSearchWindow(QWidget* parent)
     initUI();
     loadFavorites();
     loadCollection();
-    m_resizeHandle = new ResizeHandle(this, this);
+    // [归一化] 保留原 ResizeHandle 的 600x400 缩放下限（现由 Helper WM_GETMINMAXINFO 统一执行）
+    setMinimumSize(600, 400);
 }
 
 IntegratedSearchWindow::~IntegratedSearchWindow() {}
@@ -106,10 +106,6 @@ void IntegratedSearchWindow::initUI() {
 }
 
 void IntegratedSearchWindow::setCurrentTab(SearchType type) { m_tabWidget->setCurrentIndex(static_cast<int>(type)); }
-void IntegratedSearchWindow::resizeEvent(QResizeEvent* event) {
-    FramelessDialog::resizeEvent(event);
-    if (m_resizeHandle) m_resizeHandle->move(width() - 20, height() - 20);
-}
 void IntegratedSearchWindow::onSidebarItemClicked(QListWidgetItem* item) {
     if (!item) return;
     QString p = item->data(Qt::UserRole).toString();

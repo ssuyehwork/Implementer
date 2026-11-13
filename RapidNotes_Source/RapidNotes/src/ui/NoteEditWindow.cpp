@@ -1,4 +1,5 @@
 #include "NoteEditWindow.h"
+#include "FramelessWindowHelper.h"
 #include "StringUtils.h"
 #include "../core/ItemType.h"
 #include "../core/TagCodec.h"
@@ -52,6 +53,10 @@ NoteEditWindow::NoteEditWindow(int noteId, QWidget* parent)
 #ifdef Q_OS_WIN
     StringUtils::applyTaskbarMinimizeStyle((void*)winId());
 #endif
+
+    // [归一化] 8 向拖拽缩放统一接入 FramelessWindowHelper（SSOT）；
+    // 热区 15px 必须与 windowLayout 的 15px 阴影留白严格一致（同 QuickWindow 教训）
+    m_framelessHelper = RapidNotes::FramelessWindowHelper::apply(this, nullptr, 15);
 
     setupShortcuts();
     connect(&ShortcutManager::instance(), &ShortcutManager::shortcutsChanged, this, &NoteEditWindow::updateShortcuts);
@@ -117,6 +122,14 @@ void NoteEditWindow::mouseMoveEvent(QMouseEvent* event) {
 
 void NoteEditWindow::mouseReleaseEvent(QMouseEvent* event) {
     m_dragPos = QPoint();
+}
+
+bool NoteEditWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr* result) {
+    // [归一化] 8 向拖拽缩放的原生命中测试统一走 FramelessWindowHelper（SSOT）
+    if (m_framelessHelper && m_framelessHelper->handleNativeEvent(message, result)) {
+        return true;
+    }
+    return QWidget::nativeEvent(eventType, message, result);
 }
 
 bool NoteEditWindow::eventFilter(QObject* watched, QEvent* event) {

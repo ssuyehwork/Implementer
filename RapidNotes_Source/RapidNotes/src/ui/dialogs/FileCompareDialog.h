@@ -88,7 +88,6 @@ public:
 protected:
     void closeEvent(QCloseEvent* event) override;
     void reject() override;
-    bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override;
     bool eventFilter(QObject* watched, QEvent* event) override;
 
 private:
@@ -108,7 +107,6 @@ private:
     RowIndexDelegate* m_indexDelegate = nullptr;
     QLabel* m_progressLabel = nullptr;
     QPushButton* m_closeButton = nullptr;
-    FramelessWindowHelper* m_framelessHelper = nullptr;
 };
 
 } // namespace RapidNotes

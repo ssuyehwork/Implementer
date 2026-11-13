@@ -14,6 +14,8 @@
 #include <QLabel>
 #include "Editor.h" 
 
+namespace RapidNotes { class FramelessWindowHelper; }
+
 class QShortcut;
 
 class NoteEditWindow : public QWidget {
@@ -32,6 +34,7 @@ signals:
 
 protected:
     bool eventFilter(QObject* watched, QEvent* event) override;
+    bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override;
     void keyPressEvent(QKeyEvent* event) override;
     void showEvent(QShowEvent* event) override;
     void paintEvent(QPaintEvent* event) override;
@@ -73,6 +76,8 @@ private:
     bool m_isStayOnTop = false;
     QRect m_normalGeometry;
     QPoint m_dragPos;
+    // [归一化] 8 向拖拽缩放统一走 FramelessWindowHelper（SSOT）
+    RapidNotes::FramelessWindowHelper* m_framelessHelper = nullptr;
     
     // UI 控件引用
     QWidget* m_titleBar;

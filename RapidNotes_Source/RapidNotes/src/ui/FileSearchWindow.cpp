@@ -1,6 +1,5 @@
 #include "FileSearchWindow.h"
 #include "FileSearchWidget.h"
-#include "ResizeHandle.h"
 #include <QVBoxLayout>
 #include <QKeyEvent>
 
@@ -10,10 +9,6 @@ FileSearchWindow::FileSearchWindow(QWidget* parent) : FramelessDialog("查找文
     auto* layout = new QVBoxLayout(m_contentArea);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->addWidget(m_searchWidget);
-}
-
-void FileSearchWindow::resizeEvent(QResizeEvent* event) {
-    FramelessDialog::resizeEvent(event);
 }
 
 void FileSearchWindow::keyPressEvent(QKeyEvent* event) {

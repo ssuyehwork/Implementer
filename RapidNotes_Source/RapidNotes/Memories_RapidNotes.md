@@ -721,3 +721,9 @@ QuarkMeta 原版面向本地磁盘物理文件系统（磁盘驱动器、物理�
 2. **三层契约架构**：①样式地基（WS_THICKFRAME 注入，基础设施层）→ ②命中测试（WM_NCHITTEST 边缘/交互控件/标题栏判定，基础设施层）→ ③拖拽执行（系统模态尺寸循环，OS 零代码）。应用代码严禁在 mouseMoveEvent 里手工计算缩放。
 3. **生命周期钩子取代 static 一次性开关**：`FramelessWindowHelper` 以 `QEvent::WinIdChange` 事件过滤器在句柄重建（如 setWindowFlags）后自动补注 WS_THICKFRAME；`QuickWindow::showEvent` 的样式注入改为每次幂等复检，物理消灭 `static bool` 单次开关。
 4. **归一化落地**：QuickWindow 删除自有 WM_NCHITTEST/WM_NCCALCSIZE 拷贝，`nativeEvent` 仅一行转发 `m_framelessHelper->handleNativeEvent()`；`FramelessWindowHelper::apply(this, nullptr)` 为无标题栏窗口接入范式（TagSelectorOverlay 先例）。
+
+### 25.5 全窗口缩放物理统一归一 (Unified Resize Physics)
+- 所有顶层窗口/弹窗的 8 向拖拽缩放物理逻辑（WM_NCHITTEST/WM_NCCALCSIZE/WM_GETMINMAXINFO/WM_SETCURSOR）**只能**存在于 `FramelessWindowHelper` 一处；
+- `FramelessDialog` 基类统一 `apply()` + `nativeEvent` 转发（覆盖 40+ 弹窗），子类通过 `setTitleBar()` 按需启用原生拖拽/双击最大化；
+- `ResizeHandle` 私有拖角小部件已物理删除（含 CMakeLists 条目），其 600x400 缩放下限改由 `setMinimumSize` + Helper WM_GETMINMAXINFO 承载；
+- NoteEditWindow(15px)/QuickPreview(12px)/QuickLookWindow(8px) 按各自可见边框内缩量传入热区宽度。

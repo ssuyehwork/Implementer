@@ -358,9 +358,10 @@ void FileCompareDialog::initUi() {
 
     layout->addLayout(bottomLayout);
 
-    // 3. 复用 FramelessWindowHelper 获得 8 向无边框拉伸与双击最大化
+    // 3. 归一化：8 向拉伸与双击最大化统一走基类 FramelessDialog 的 Helper（SSOT），
+    // 此处仅补充标题栏引用以启用原生拖拽/双击最大化
     QWidget* titleBar = m_container ? m_container->findChild<QWidget*>("FramelessTitleBar") : nullptr;
-    m_framelessHelper = FramelessWindowHelper::apply(this, titleBar);
+    if (m_framelessHelper) m_framelessHelper->setTitleBar(titleBar);
 
     resize(1240, 520);
     setMinimumSize(880, 360);
@@ -461,13 +462,6 @@ void FileCompareDialog::closeEvent(QCloseEvent* event) {
 void FileCompareDialog::reject() {
     cancelCalculation();
     FramelessDialog::reject();
-}
-
-bool FileCompareDialog::nativeEvent(const QByteArray& eventType, void* message, qintptr* result) {
-    if (m_framelessHelper && m_framelessHelper->handleNativeEvent(message, result)) {
-        return true;
-    }
-    return FramelessDialog::nativeEvent(eventType, message, result);
 }
 
 bool FileCompareDialog::eventFilter(QObject* watched, QEvent* event) {
