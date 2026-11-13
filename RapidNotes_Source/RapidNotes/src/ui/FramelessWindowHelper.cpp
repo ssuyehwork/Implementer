@@ -20,13 +20,14 @@
 
 namespace RapidNotes {
 
-FramelessWindowHelper* FramelessWindowHelper::apply(QWidget* window, QWidget* titleBar) {
+FramelessWindowHelper* FramelessWindowHelper::apply(QWidget* window, QWidget* titleBar, int resizeMargin) {
     if (!window) return nullptr;
-    return new FramelessWindowHelper(window, titleBar);
+    return new FramelessWindowHelper(window, titleBar, resizeMargin);
 }
 
-FramelessWindowHelper::FramelessWindowHelper(QWidget* window, QWidget* titleBar)
-    : QObject(window), m_window(window), m_titleBar(titleBar) {
+FramelessWindowHelper::FramelessWindowHelper(QWidget* window, QWidget* titleBar, int resizeMargin)
+    : QObject(window), m_window(window), m_titleBar(titleBar),
+      m_resizeMargin(resizeMargin > 0 ? resizeMargin : kBaseResizeMargin) {
 
     Qt::WindowFlags requiredFlags = m_window->windowFlags() | Qt::FramelessWindowHint | Qt::WindowMinMaxButtonsHint;
     if (m_window->windowFlags() != requiredFlags) {
@@ -159,7 +160,9 @@ bool FramelessWindowHelper::handleNativeEvent(void* message, qintptr* result) {
         bool isMaximizedOrFullScreen = isMax || m_window->isFullScreen();
 
         if (!isMaximizedOrFullScreen) {
-            const int m = kBaseResizeMargin;
+            // 热区宽度必须恰好覆盖窗口可见边缘（含圆角阴影外框的内缩量），
+            // 否则用户瞄准可见边框的落点会落入 HTCLIENT 区被 startSystemMove 抢走
+            const int m = m_resizeMargin;
             bool left = localPos.x() >= 0 && localPos.x() < m;
             bool right = localPos.x() >= width - m && localPos.x() < width;
             bool top = localPos.y() >= 0 && localPos.y() < m;

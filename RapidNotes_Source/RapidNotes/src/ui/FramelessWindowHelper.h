@@ -18,7 +18,11 @@ class FramelessWindowHelper : public QObject {
     Q_OBJECT
 
 public:
-    static FramelessWindowHelper* apply(QWidget* window, QWidget* titleBar = nullptr);
+    // 默认缩放热区宽度（px）；apply() 可按窗口可见边框内缩量覆盖，确保热区恰好覆盖可见边缘
+    static constexpr int kBaseResizeMargin = 8;
+
+    static FramelessWindowHelper* apply(QWidget* window, QWidget* titleBar = nullptr,
+                                        int resizeMargin = kBaseResizeMargin);
     static void setAlwaysOnTop(QWidget* window, bool onTop);
     static bool isAlwaysOnTop(QWidget* window);
 
@@ -26,7 +30,8 @@ public:
     static bool isInteractiveWidget(QWidget* child, QWidget* titleBar, QWidget* window);
 
 private:
-    explicit FramelessWindowHelper(QWidget* window, QWidget* titleBar = nullptr);
+    explicit FramelessWindowHelper(QWidget* window, QWidget* titleBar = nullptr,
+                                   int resizeMargin = kBaseResizeMargin);
     ~FramelessWindowHelper() override = default;
 
     // 注入原生窗口样式（WS_THICKFRAME 等），可在句柄重建后重复调用（幂等）
@@ -36,8 +41,7 @@ private:
 
     QPointer<QWidget> m_window;
     QPointer<QWidget> m_titleBar;
-
-    static constexpr int kBaseResizeMargin = 8;
+    int m_resizeMargin = kBaseResizeMargin;
 };
 
 } // namespace RapidNotes

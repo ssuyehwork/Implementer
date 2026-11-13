@@ -137,7 +137,10 @@ setAttribute(Qt::WA_TranslucentBackground);
     // 归一化：无边框缩放/命中测试/最小尺寸约束统一走 FramelessWindowHelper（SSOT），删除自有 WM_* 拷贝。
     // [CRITICAL] 必须在 initUI() 之后接入：Helper 会经 winId() 强制创建原生句柄并触发几何事件，
     // 若先于 initUI()，resizeEvent→saveState() 将访问未构造的 m_splitter 野指针导致闪退。
-    m_framelessHelper = RapidNotes::FramelessWindowHelper::apply(this, nullptr);
+    // 缩放热区传 12px：必须与 m_mainLayout 的 12px 内容边距（圆角卡片外框）严格一致，
+    // 热区若小于可见边框内缩量（如默认 8px），用户瞄准可见边缘的落点会落入 HTCLIENT 区，
+    // 被 mousePressEvent 的 startSystemMove() 抢走变成移动窗口而非缩放。
+    m_framelessHelper = RapidNotes::FramelessWindowHelper::apply(this, nullptr, 12);
 
     // [STABILITY] 原生样式延迟到 showEvent 处理
 
