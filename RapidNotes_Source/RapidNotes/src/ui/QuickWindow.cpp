@@ -131,10 +131,13 @@ setAttribute(Qt::WA_TranslucentBackground);
 
     m_mediator = new RapidNotes::QuickMediator(this, this);
     m_shortcutHandler = new RapidNotes::QuickShortcutHandler(this, this);
-    // 归一化：无边框缩放/命中测试/最小尺寸约束统一走 FramelessWindowHelper（SSOT），删除自有 WM_* 拷贝
-    m_framelessHelper = RapidNotes::FramelessWindowHelper::apply(this, nullptr);
 
     initUI();
+
+    // 归一化：无边框缩放/命中测试/最小尺寸约束统一走 FramelessWindowHelper（SSOT），删除自有 WM_* 拷贝。
+    // [CRITICAL] 必须在 initUI() 之后接入：Helper 会经 winId() 强制创建原生句柄并触发几何事件，
+    // 若先于 initUI()，resizeEvent→saveState() 将访问未构造的 m_splitter 野指针导致闪退。
+    m_framelessHelper = RapidNotes::FramelessWindowHelper::apply(this, nullptr);
 
     // [STABILITY] 原生样式延迟到 showEvent 处理
 
@@ -1055,6 +1058,9 @@ void QuickWindow::finishUnlock() {
 }
 
 void QuickWindow::saveState() {
+    // [STABILITY] 生命周期护栏：原生句柄创建引发的几何事件可能先于 initUI() 完成，
+    // 此时控件尚未构造，必须整体跳过，严禁触碰野指针
+    if (!m_splitter || !m_sidebarWrapper || !m_filterWrapper) return;
     QSettings settings("RapidNotes", "QuickWindow");
     settings.setValue("geometry", saveGeometry());
     settings.setValue("splitter", m_splitter->saveState());
@@ -1066,6 +1072,8 @@ void QuickWindow::saveState() {
 }
 
 void QuickWindow::restoreState() {
+    // [STABILITY] 同 saveState：控件未构造完成时禁止恢复
+    if (!m_splitter || !m_sidebarWrapper || !m_filterWrapper) return;
     QSettings settings("RapidNotes", "QuickWindow");
     if (settings.contains("geometry")) {
         restoreGeometry(settings.value("geometry").toByteArray());

@@ -175,16 +175,16 @@ public:
     
     QTimer* m_searchTimer;
     QTimer* m_refreshTimer;
-    QVBoxLayout* m_mainLayout;
-    QSplitter* m_splitter;
+    QVBoxLayout* m_mainLayout = nullptr;
+    QSplitter* m_splitter = nullptr;
     QLabel* m_statusLabel;
     QPushButton* m_btnNavDir;
     QPushButton* m_btnAutoCat;
     QPushButton* m_btnToggleAll; // 2026-04-xx 按照用户要求：全面板联动折叠按钮
     QStackedWidget* m_bottomStackedWidget;
-    QWidget* m_sidebarWrapper; // 2026-04-xx 按照用户要求：修正侧边栏显隐逻辑，操作外层容器
+    QWidget* m_sidebarWrapper = nullptr; // 2026-04-xx 按照用户要求：修正侧边栏显隐逻辑，操作外层容器
     QuickFilterPanel* m_filterPanel;
-    QWidget* m_filterWrapper;
+    QWidget* m_filterWrapper = nullptr;
     ClickableLineEdit* m_tagEdit;
     SearchLineEdit* m_catSearchEdit;
     QLineEdit* m_pageInput;
