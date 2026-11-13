@@ -33,8 +33,18 @@ FramelessWindowHelper::FramelessWindowHelper(QWidget* window, QWidget* titleBar)
         m_window->setWindowFlags(requiredFlags);
     }
 
+    applyNativeStyles();
+
+    // 生命周期钩子：句柄重建（setWindowFlags 等触发 WinIdChange）后自动补注 WS_THICKFRAME，
+    // 彻底消灭"只注一次"的 static 开关式隐患
+    m_window->installEventFilter(this);
+}
+
+void FramelessWindowHelper::applyNativeStyles() {
 #ifdef Q_OS_WIN
+    if (!m_window) return;
     HWND hwnd = reinterpret_cast<HWND>(m_window->winId());
+    if (!hwnd) return;
     DWORD style = GetWindowLong(hwnd, GWL_STYLE);
     // 只有真正带标题栏（传入了 titleBar）的窗口，才需要完整的系统窗口属性
     // 像 TagSelectorOverlay 这种 Qt::Tool 悬浮面板，不该被强行赋予标题栏/最大化/系统菜单语义
@@ -46,6 +56,13 @@ FramelessWindowHelper::FramelessWindowHelper(QWidget* window, QWidget* titleBar)
     SetWindowPos(hwnd, nullptr, 0, 0, 0, 0,
                  SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOACTIVATE);
 #endif
+}
+
+bool FramelessWindowHelper::eventFilter(QObject* watched, QEvent* event) {
+    if (watched == m_window && event->type() == QEvent::WinIdChange) {
+        applyNativeStyles();
+    }
+    return QObject::eventFilter(watched, event);
 }
 
 bool FramelessWindowHelper::isInteractiveWidget(QWidget* child, QWidget* titleBar, QWidget* window) {

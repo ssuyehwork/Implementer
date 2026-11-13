@@ -711,3 +711,13 @@ QuarkMeta 原版面向本地磁盘物理文件系统（磁盘驱动器、物理�
      - **源码层**：`RapidNotes_Source/RapidNotes` 纯净代码圣殿，零二进制污染；
      - **中间构建层**：`RapidNotes_Build/x64-release/` 作为临时编译消耗品目录；
      - **固化运行层**：`RapidNotes_Build/RapidNotes/` 免安装绿色沙盒，由 CMake 自动将 `RapidNotes.exe` 输出至该目录，并使用 `windeployqt.exe RapidNotes.exe` 部署一次依赖，日常编译仅覆盖单一 exe，实现即编即测。
+
+## 25. 无边框拖拽缩放归一化 (Frameless Resize Normalization)
+
+> 本章节记录用户的核心架构决策：手动拖拽调整窗口大小的逻辑必须归一化到 `FramelessWindowHelper` 单一真理源，任何窗口禁止另起炉灶手写 WM_* 拷贝。
+
+### 25.1 核心设计决策 (Core Philosophy)
+1. **WS_THICKFRAME 是拖拽缩放的物理开关**：Win32 窗口样式（GWL_STYLE）缺少 `WS_THICKFRAME` 时，系统会直接无视 `WM_NCHITTEST` 返回的 HTLEFT/HTRIGHT 等缩放指令——"样式相关"的根因即指此原生窗口样式，而非 QSS。
+2. **三层契约架构**：①样式地基（WS_THICKFRAME 注入，基础设施层）→ ②命中测试（WM_NCHITTEST 边缘/交互控件/标题栏判定，基础设施层）→ ③拖拽执行（系统模态尺寸循环，OS 零代码）。应用代码严禁在 mouseMoveEvent 里手工计算缩放。
+3. **生命周期钩子取代 static 一次性开关**：`FramelessWindowHelper` 以 `QEvent::WinIdChange` 事件过滤器在句柄重建（如 setWindowFlags）后自动补注 WS_THICKFRAME；`QuickWindow::showEvent` 的样式注入改为每次幂等复检，物理消灭 `static bool` 单次开关。
+4. **归一化落地**：QuickWindow 删除自有 WM_NCHITTEST/WM_NCCALCSIZE 拷贝，`nativeEvent` 仅一行转发 `m_framelessHelper->handleNativeEvent()`；`FramelessWindowHelper::apply(this, nullptr)` 为无标题栏窗口接入范式（TagSelectorOverlay 先例）。

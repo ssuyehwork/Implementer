@@ -18,6 +18,7 @@ using RapidNotes::DropTreeView;
 #include "controllers/QuickShortcutHandler.h"
 #include "controllers/QuickPasteDeliveryService.h"
 #include "controllers/QuickContextMenuBuilder.h"
+#include "FramelessWindowHelper.h"
 #include "../models/NoteModel.h"
 #include <QSortFilterProxyModel>
 #include <QTreeView>
@@ -108,7 +109,7 @@ using RapidNotes::DropTreeView;
 #pragma comment(lib, "dwmapi.lib")
 #endif
 
-#define RESIZE_MARGIN 10
+// [归一化 2026-11-13] 缩放边距常量已移除：命中测试统一由 FramelessWindowHelper::kBaseResizeMargin 承载
 
 QuickWindow::QuickWindow(QWidget* parent)
     : QWidget(parent, Qt::FramelessWindowHint)
@@ -130,6 +131,8 @@ setAttribute(Qt::WA_TranslucentBackground);
 
     m_mediator = new RapidNotes::QuickMediator(this, this);
     m_shortcutHandler = new RapidNotes::QuickShortcutHandler(this, this);
+    // 归一化：无边框缩放/命中测试/最小尺寸约束统一走 FramelessWindowHelper（SSOT），删除自有 WM_* 拷贝
+    m_framelessHelper = RapidNotes::FramelessWindowHelper::apply(this, nullptr);
 
     initUI();
 
@@ -3177,16 +3180,15 @@ void QuickWindow::showEvent(QShowEvent* event) {
     HWND myHwnd = (HWND)winId();
     
     // [STABILITY] 2026-04-18 延迟注入原生窗口属性，确保 DWM 环境已就绪
-    static bool nativeAttrsApplied = false;
-    if (!nativeAttrsApplied && myHwnd) {
+    // 2026-11-13 [归一化] 消灭 static 一次性开关：改为每次 showEvent 幂等复检，
+    // 句柄重建后自动补注（WS_THICKFRAME 主通道已由 FramelessWindowHelper 的 WinIdChange 钩子保障）
+    if (myHwnd) {
         // 1. Windows 11 原生圆角 (Attribute: 33, Value: 2)
         DWORD cornerPreference = 2; 
         DwmSetWindowAttribute(myHwnd, 33, &cornerPreference, sizeof(cornerPreference));
         
         // 2. 任务栏最小化支持样式
         StringUtils::applyTaskbarMinimizeStyle((void*)myHwnd);
-        
-        nativeAttrsApplied = true;
     }
 
     if (m_isStayOnTop) {
@@ -3211,52 +3213,12 @@ bool QuickWindow::nativeEvent(const QByteArray &eventType, void *message, qintpt
         return true;
     }
 
-    
-    if (msg->message == WM_NCCALCSIZE && msg->wParam) {
-        *result = 0;
+    // 归一化：WM_NCCALCSIZE / WM_NCHITTEST / WM_GETMINMAXINFO / WM_SETCURSOR
+    // 全部委托 FramelessWindowHelper（SSOT），严禁在此另起炉灶
+    if (m_framelessHelper && m_framelessHelper->handleNativeEvent(message, result)) {
         return true;
     }
 
-    if (msg->message == WM_NCHITTEST) {
-        
-        int x = GET_X_LPARAM(msg->lParam);
-        int y = GET_Y_LPARAM(msg->lParam);
-
-        
-        QPoint pos = mapFromGlobal(QPoint(x, y));
-        int margin = RESIZE_MARGIN;
-        int w = width();
-        int h = height();
-
-        bool left = pos.x() < margin;
-        bool right = pos.x() > w - margin;
-        bool top = pos.y() < margin;
-        bool bottom = pos.y() > h - margin;
-
-        qintptr hit = HTNOWHERE;
-        if (top && left) hit = HTTOPLEFT;
-        else if (top && right) hit = HTTOPRIGHT;
-        else if (bottom && left) hit = HTBOTTOMLEFT;
-        else if (bottom && right) hit = HTBOTTOMRIGHT;
-        else if (top) hit = HTTOP;
-        else if (bottom) hit = HTBOTTOM;
-        else if (left) hit = HTLEFT;
-        else if (right) hit = HTRIGHT;
-
-        if (hit != HTNOWHERE) {
-
-            
-            
-            QWidget* child = childAt(pos);
-            if (qobject_cast<QPushButton*>(child)) {
-                return false;
-            }
-            *result = hit;
-            return true;
-        }
-
-        return QWidget::nativeEvent(eventType, message, result);
-    }
     return QWidget::nativeEvent(eventType, message, result);
 }
 #endif

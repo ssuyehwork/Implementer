@@ -6,6 +6,7 @@
 #include <QObject>
 #include <QWidget>
 #include <QPointer>
+#include <QEvent>
 
 namespace RapidNotes {
 
@@ -27,6 +28,11 @@ public:
 private:
     explicit FramelessWindowHelper(QWidget* window, QWidget* titleBar = nullptr);
     ~FramelessWindowHelper() override = default;
+
+    // 注入原生窗口样式（WS_THICKFRAME 等），可在句柄重建后重复调用（幂等）
+    void applyNativeStyles();
+    // 生命周期钩子：WinIdChange（句柄重建）时自动补注 WS_THICKFRAME，取代一次性 static 开关
+    bool eventFilter(QObject* watched, QEvent* event) override;
 
     QPointer<QWidget> m_window;
     QPointer<QWidget> m_titleBar;
