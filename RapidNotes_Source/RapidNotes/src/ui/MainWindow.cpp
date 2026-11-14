@@ -291,6 +291,7 @@ void MainWindow::setupStatusBar(QWidget* parentWidget) {
     m_btnToggleFilter   = createStatusBtn("隐藏筛选器", "切换筛选器面板 (显示/隐藏)");
     m_btnToggleMeta     = createStatusBtn("隐藏元数据面板", "切换元数据面板 (显示/隐藏)");
     m_btnContentPanel   = createStatusBtn("内容面板", "单独内容面板 (Tab 沉浸模式)");
+    m_btnToggleFavorite = createStatusBtn("隐藏收藏栏", "切换收藏栏 (显示/隐藏)");
     m_btnToggleNav      = createStatusBtn("隐藏目录导航", "切换目录导航 (显示/隐藏)");
     m_btnPresetLayout   = createStatusBtn("显示收藏栏+内容面板+筛选器", "三栏预设 (右键可切换导航/收藏栏)");
     m_btnResetLayout    = createStatusBtn("重置分栏", "重置分栏");
@@ -355,6 +356,16 @@ void MainWindow::setupStatusBar(QWidget* parentWidget) {
         m_panelLayoutManager->setPanelVisible("content", true);
         m_panelLayoutManager->setPanelVisible("meta", false);
         m_panelLayoutManager->setPanelVisible("filter", false);
+        updateStatusBarButtonHighlights();
+    });
+
+    connect(m_btnToggleFavorite, &QPushButton::clicked, this, [this]() {
+        if (!m_panelLayoutManager) return;
+        m_panelLayoutManager->setPanelVisible("nav", true);
+        m_panelLayoutManager->setPanelVisible("favorite", false);
+        m_panelLayoutManager->setPanelVisible("content", true);
+        m_panelLayoutManager->setPanelVisible("meta", true);
+        m_panelLayoutManager->setPanelVisible("filter", true);
         updateStatusBarButtonHighlights();
     });
 
@@ -444,6 +455,7 @@ void MainWindow::setupStatusBar(QWidget* parentWidget) {
     statusL->addWidget(m_btnResetLayout);
     statusL->addWidget(m_btnPresetLayout);
     statusL->addWidget(m_btnToggleNav);
+    statusL->addWidget(m_btnToggleFavorite);
     statusL->addWidget(m_btnContentPanel);
     statusL->addWidget(m_btnToggleMeta);
     statusL->addWidget(m_btnToggleFilter);
@@ -476,6 +488,7 @@ void MainWindow::updateStatusBarButtonHighlights() {
     QSignalBlocker b1(m_btnToggleFilter);
     QSignalBlocker b2(m_btnToggleMeta);
     QSignalBlocker b3(m_btnContentPanel);
+    QSignalBlocker b4(m_btnToggleFavorite);
     QSignalBlocker b5(m_btnToggleNav);
     QSignalBlocker b6(m_btnPresetLayout);
     QSignalBlocker b7(m_btnResetLayout);
@@ -500,6 +513,7 @@ void MainWindow::updateStatusBarButtonHighlights() {
     if (m_btnToggleFilter)   m_btnToggleFilter->setChecked(false);
     if (m_btnToggleMeta)     m_btnToggleMeta->setChecked(false);
     if (m_btnContentPanel)   m_btnContentPanel->setChecked(false);
+    if (m_btnToggleFavorite) m_btnToggleFavorite->setChecked(false);
     if (m_btnToggleNav)      m_btnToggleNav->setChecked(false);
     if (m_btnPresetLayout)   m_btnPresetLayout->setChecked(false);
     if (m_btnResetLayout)    m_btnResetLayout->setChecked(false);
@@ -512,6 +526,8 @@ void MainWindow::updateStatusBarButtonHighlights() {
         if (m_btnToggleFilter) m_btnToggleFilter->setChecked(true);
     } else if (navVis && favVis && !metaVis && filterVis) {
         if (m_btnToggleMeta) m_btnToggleMeta->setChecked(true);
+    } else if (navVis && !favVis && metaVis && filterVis) {
+        if (m_btnToggleFavorite) m_btnToggleFavorite->setChecked(true);
     } else if (!navVis && favVis && metaVis && filterVis) {
         if (m_btnToggleNav) m_btnToggleNav->setChecked(true);
     } else if (((favVis && !navVis) || (navVis && !favVis)) && !metaVis && filterVis) {

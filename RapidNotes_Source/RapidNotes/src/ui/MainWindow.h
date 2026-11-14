@@ -107,6 +107,7 @@ private:
     QPushButton* m_btnToggleFilter = nullptr;
     QPushButton* m_btnToggleMeta = nullptr;
     QPushButton* m_btnContentPanel = nullptr;
+    QPushButton* m_btnToggleFavorite = nullptr;
     QPushButton* m_btnToggleNav = nullptr;
     QPushButton* m_btnPresetLayout = nullptr;
     QPushButton* m_btnResetLayout = nullptr;
