@@ -28,7 +28,7 @@ bool TrashService::moveToTrash(const QStringList& paths, QWidget* parentWidget) 
     }
     if (validPaths.isEmpty()) return false;
 
-    // 捕获受影响项目的完整收藏、库与标记关联快照
+    // 捕获受影响项目的完整库与标记关联快照
     AssetAssociationSnapshot assocSnapshot = AssociationCascadeService::instance().findCascadeAssociations(validPaths);
 
     bool ok = OperationSnapshotEngine::instance().executeWithSnapshot(
@@ -53,7 +53,7 @@ bool TrashService::moveToTrash(const QStringList& paths, QWidget* parentWidget) 
                     DiskTrashService::restoreFromDiskTrash(trashId, trashPath);
                 }
             }
-            // 物理还原后，恢复收藏夹、库分类挂载与标记关联
+            // 物理还原后，恢复库分类挂载与标记关联
             AssociationCascadeService::instance().restoreAssociations(assocSnapshot);
             MetadataManager::instance().notifyUI(MetadataManager::RefreshLevel::FullRebuild);
             return true;

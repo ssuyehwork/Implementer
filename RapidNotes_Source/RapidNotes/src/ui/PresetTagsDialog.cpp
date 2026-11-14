@@ -1,7 +1,5 @@
 #include "PresetTagsDialog.h"
 #include "UiHelper.h"
-#include "../meta/FavoriteDao.h"
-#include "../meta/FavoriteService.h"
 #include "../meta/LibraryDao.h"
 #include "../meta/MetadataManager.h"
 #include "../core/CoreEngine.h"
@@ -20,8 +18,8 @@
 
 namespace RapidNotes {
 
-PresetTagsDialog::PresetTagsDialog(int categoryId, QWidget* parent, bool isLibrary)
-    : FramelessDialog("设置自动标签", parent), m_categoryId(categoryId), m_isLibrary(isLibrary) {
+PresetTagsDialog::PresetTagsDialog(int categoryId, QWidget* parent)
+    : FramelessDialog("设置自动标签", parent), m_categoryId(categoryId) {
     setFixedWidth(420);
     setWindowFlags(windowFlags() & ~Qt::WindowMaximizeButtonHint);
 
@@ -79,23 +77,11 @@ void PresetTagsDialog::initUi() {
 }
 
 void PresetTagsDialog::loadTags() {
-    if (m_isLibrary) {
-        LibraryCategoryRecord rec = LibraryDao::getCategoryById(m_categoryId);
-        if (rec.id == m_categoryId) {
-            m_categoryName = rec.name;
-            m_presetTags = rec.presetTags;
-            m_initialPresetTags = rec.presetTags;
-        }
-    } else {
-        auto list = FavoriteDao::getAllFavorites();
-        for (const auto& rec : list) {
-            if (rec.id == m_categoryId) {
-                m_categoryName = rec.name;
-                m_presetTags = rec.presetTags;
-                m_initialPresetTags = rec.presetTags;
-                break;
-            }
-        }
+    LibraryCategoryRecord rec = LibraryDao::getCategoryById(m_categoryId);
+    if (rec.id == m_categoryId) {
+        m_categoryName = rec.name;
+        m_presetTags = rec.presetTags;
+        m_initialPresetTags = rec.presetTags;
     }
     m_folderNameEdit->setText(m_categoryName);
     m_tagContainer->setTags(m_presetTags);
@@ -117,25 +103,21 @@ bool PresetTagsDialog::event(QEvent* event) {
 
 void PresetTagsDialog::onSaveClicked() {
     // 独占落盘：非阻塞异步提交，点击“保存设置”后对话框立刻关闭，所有数据库与 Sidecar 写入在后台执行
-    if (m_isLibrary) {
-        PresetTagService::instance().saveLibraryPresetTags(
-            m_categoryId,
-            m_presetTags,
-            m_initialPresetTags,
-            [](int newlyAddedCount, int associatedPathsCount) {
-                if (newlyAddedCount > 0 && associatedPathsCount > 0) {
-                    ToolTipOverlay::instance()->showText(
-                        QCursor::pos(),
-                        QString("已自动追溯将 %1 个新预设标签绑定至既有 %2 个项目").arg(newlyAddedCount).arg(associatedPathsCount),
-                        2000,
-                        QColor("#2ecc71")
-                    );
-                }
+    PresetTagService::instance().saveLibraryPresetTags(
+        m_categoryId,
+        m_presetTags,
+        m_initialPresetTags,
+        [](int newlyAddedCount, int associatedPathsCount) {
+            if (newlyAddedCount > 0 && associatedPathsCount > 0) {
+                ToolTipOverlay::instance()->showText(
+                    QCursor::pos(),
+                    QString("已自动追溯将 %1 个新预设标签绑定至既有 %2 个项目").arg(newlyAddedCount).arg(associatedPathsCount),
+                    2000,
+                    QColor("#2ecc71")
+                );
             }
-        );
-    } else {
-        FavoriteDao::updatePresetTags(m_categoryId, m_presetTags);
-    }
+        }
+    );
     accept();
 }
 

@@ -4,8 +4,6 @@
 #include "ToolTipOverlay.h"
 #include "StyleLibrary.h"
 #include "../core/NavigationHistoryService.h"
-#include "../meta/FavoriteDao.h"
-#include "../meta/FavoriteService.h"
 #include "../meta/LibraryService.h"
 #include "../meta/MarkedFolderService.h"
 #include "../core/ClipboardService.h"
@@ -184,7 +182,6 @@ AddressBar::AddressBar(QWidget* parent) : QWidget(parent) {
 
             // 4. 标记 / 收藏夹 / 库
             MarkedFolderService::instance().buildMarkAction(&menu, nativePath, this);
-            FavoriteService::instance().buildFavoriteAction(&menu, nativePath, this);
             LibraryService::instance().buildLibraryAction(&menu, QStringList{nativePath}, this);
 
             menu.addSeparator();

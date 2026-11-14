@@ -10,7 +10,6 @@
 namespace RapidNotes {
 
 class NavPanel;
-class FavoritePanel;
 class SidebarContainerWidget;
 class ContentPanel;
 class MetaPanel;

@@ -33,8 +33,6 @@ signals:
     void directorySelected(const QString& path);
     void requestLocateFile(const QString& path);
     void requestOpenTrash();
-    void requestAddFavorite(const QString& path);
-    void requestRemoveFavorite(const QString& path);
 
 private:
     void initUi();

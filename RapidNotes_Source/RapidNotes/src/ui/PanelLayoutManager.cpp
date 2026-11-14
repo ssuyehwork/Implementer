@@ -1,7 +1,6 @@
 #include "PanelLayoutManager.h"
 #include "NavPanel.h"
 #include "SidebarContainerWidget.h"
-#include "FavoritePanel.h"
 #include "ContentPanel.h"
 #include "MetaPanel.h"
 #include "FilterPanel.h"

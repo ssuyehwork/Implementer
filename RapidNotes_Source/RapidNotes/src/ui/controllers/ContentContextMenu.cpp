@@ -9,7 +9,6 @@
 #include "../StyleLibrary.h"
 #include "../ToolTipOverlay.h"
 #include "../ColorPicker.h"
-#include "../FavoritePanel.h"
 #include "../FramelessDialog.h"
 #include "../dialogs/FramelessInputDialog.h"
 #include "../dialogs/CreateFolderWithItemsDialog.h"
@@ -29,8 +28,6 @@
 #include <QTimer>
 #include "../../core/CoreEngine.h"
 #include "../../meta/MetadataManager.h"
-#include "../../meta/FavoriteDao.h"
-#include "../../meta/FavoriteService.h"
 #include "../../meta/MarkedFolderService.h"
 #include "../../meta/LibraryService.h"
 #include "ContextMenuFactory.h"
@@ -192,7 +189,6 @@ void ContentContextMenu::showMenu(QAbstractItemView* view, const QPoint& pos) {
             if (selPathsDrive.isEmpty() && !path.isEmpty()) selPathsDrive << path;
 
             MarkedFolderService::instance().buildMarkAction(&menu, selPathsDrive, m_panel);
-            FavoriteService::instance().buildFavoriteAction(&menu, path, m_panel);
             LibraryService::instance().buildLibraryAction(&menu, selPathsDrive, m_panel);
 
             int driveItemCount = selPathsDrive.size() > 0 ? static_cast<int>(selPathsDrive.size()) : 1;
@@ -321,7 +317,6 @@ void ContentContextMenu::showMenu(QAbstractItemView* view, const QPoint& pos) {
             if (selPathsItem.isEmpty() && !path.isEmpty()) selPathsItem << path;
 
             MarkedFolderService::instance().buildMarkAction(&menu, selPathsItem, m_panel);
-            FavoriteService::instance().buildFavoriteAction(&menu, path, m_panel);
             LibraryService::instance().buildLibraryAction(&menu, selPathsItem, m_panel);
 
             int selItemCount = selPathsItem.size() > 0 ? static_cast<int>(selPathsItem.size()) : 1;
@@ -965,20 +960,6 @@ void ContentContextMenu::showMenu(QAbstractItemView* view, const QPoint& pos) {
         case ContentPanel::ActionSecureDelete:
             PermanentDeleteService::instance().execute(m_panel->getSelectedPaths(), m_panel);
             break;
-        case ContentPanel::ActionAddToFavorites: {
-            QStringList selectedPaths = m_panel->getSelectedPaths();
-            if (selectedPaths.isEmpty() && !path.isEmpty()) {
-                selectedPaths << path;
-            }
-
-            if (!selectedPaths.isEmpty()) {
-                AppCommand cmd;
-                cmd.type = AppCommandType::ToggleFavorite;
-                cmd.targetPaths = selectedPaths;
-                CoreEngine::instance().executeCommand(cmd);
-            }
-            break;
-        }
         case ContentPanel::ActionCopyName: {
             QModelIndexList indexes = m_panel->getSelectedIndexes();
             QStringList targetPaths;

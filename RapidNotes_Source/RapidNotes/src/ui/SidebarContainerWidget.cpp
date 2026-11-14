@@ -82,7 +82,6 @@ void SidebarContainerWidget::initUi() {
     m_tabBar->setDrawBase(false);
     m_tabBar->setUsesScrollButtons(false);
     m_tabBar->setIconSize(QSize(16, 16));
-    m_tabBar->addTab(UiHelper::getIcon("Favorites.svg", "#888888", 16), "收藏夹");
     m_tabBar->addTab(UiHelper::getIcon("Search-in-library", "#888888", 16), "库");
     m_tabBar->addTab(UiHelper::getIcon("Destination.svg", "#888888", 16), "标记");
     m_tabBar->setCursor(Qt::PointingHandCursor);
@@ -92,11 +91,9 @@ void SidebarContainerWidget::initUi() {
     m_mainLayout->addWidget(header);
 
     m_stackedWidget = new QStackedWidget(this);
-    m_favoritePanel = new FavoritePanel(this);
     m_libraryPanel = new LibraryPanel(this);
     m_markedPanel = new MarkedPanel(this);
 
-    m_stackedWidget->addWidget(m_favoritePanel);
     m_stackedWidget->addWidget(m_libraryPanel);
     m_stackedWidget->addWidget(m_markedPanel);
 
@@ -137,9 +134,6 @@ void SidebarContainerWidget::initUi() {
 
     connect(m_filterEdit, &QLineEdit::textChanged, this, [this](const QString& text) {
         QString kw = text.trimmed();
-        if (m_favoritePanel) {
-            m_favoritePanel->filterTreeNodes(kw);
-        }
         if (m_libraryPanel) {
             if (m_libraryPanel->delegate()) {
                 m_libraryPanel->delegate()->setFilterKeyword(kw);
@@ -158,14 +152,13 @@ void SidebarContainerWidget::initUi() {
 
     connect(m_tabBar, &QTabBar::currentChanged, this, [this](int index) {
         m_stackedWidget->setCurrentIndex(index);
-        if (index == 1 && m_libraryPanel) {
+        if (index == 0 && m_libraryPanel) {
             m_libraryPanel->loadLibrary();
         }
         if (m_filterEdit && !m_filterEdit->text().trimmed().isEmpty()) {
             QString kw = m_filterEdit->text().trimmed();
-            if (index == 0 && m_favoritePanel) m_favoritePanel->filterTreeNodes(kw);
-            if (index == 1 && m_libraryPanel) m_libraryPanel->filterTreeNodes(kw);
-            if (index == 2 && m_markedPanel) m_markedPanel->filterTreeNodes(kw);
+            if (index == 0 && m_libraryPanel) m_libraryPanel->filterTreeNodes(kw);
+            if (index == 1 && m_markedPanel) m_markedPanel->filterTreeNodes(kw);
         }
         AppConfig::instance().setValue("Sidebar/CurrentTabIndex", index);
         AppConfig::instance().sync();

@@ -1,6 +1,5 @@
 #include "PanelMediator.h"
 #include "NavPanel.h"
-#include "FavoritePanel.h"
 #include "LibraryPanel.h"
 #include "MarkedPanel.h"
 #include "../meta/HistoryService.h"
@@ -33,8 +32,6 @@
 #include "../core/AppConfig.h"
 #include "../util/ShellHelper.h"
 #include "../meta/MetadataManager.h"
-#include "../meta/FavoriteDao.h"
-#include "../meta/FavoriteService.h"
 #include "../meta/LibraryDao.h"
 #include "../meta/SmartFolderDao.h"
 #include "UiHelper.h"
@@ -56,7 +53,6 @@ PanelMediator* PanelMediator::instance() {
 PanelMediator::PanelMediator(const PanelMediatorComponents& components, QObject* parent)
     : QObject(parent),
       m_navPanel(components.navPanel),
-      m_favoritePanel(components.favoritePanel),
       m_libraryPanel(components.libraryPanel),
       m_markedPanel(components.markedPanel),
       m_contentPanel(components.contentPanel),
@@ -85,7 +81,6 @@ void PanelMediator::setupConnections() {
             m_titleBar->tabBar()->openInNewTab(url);
         }
     });
-    FavoritePanel* favoritePanel = m_favoritePanel;
     LibraryPanel* libraryPanel = m_libraryPanel;
     MarkedPanel* markedPanel = m_markedPanel;
     ContentPanel* contentPanel = m_contentPanel;
@@ -178,12 +173,6 @@ void PanelMediator::setupConnections() {
                     cmd.targetPaths = {url};
                     cmd.params["color"] = hexColor;
                     CoreEngine::instance().executeCommand(cmd);
-                }
-            });
-
-            connect(titleBar->tabBar(), &TabBarWidget::tabIconChanged, this, [](int /*index*/, const QString& url, const QString& iconKey) {
-                if (!url.isEmpty()) {
-                    FavoriteDao::updateFavorite(url, iconKey, "");
                 }
             });
 
@@ -385,36 +374,6 @@ void PanelMediator::setupConnections() {
             NavigationService::instance().navigateTo("trash://");
         });
 
-        if (favoritePanel) {
-            connect(navPanel, &NavPanel::requestAddFavorite, favoritePanel, [favoritePanel](const QString& path) {
-                if (FavoriteService::instance().isFavorite(path)) {
-                    ToolTipOverlay::instance()->showToast("该文件夹已在收藏夹中，请勿重复添加", 2000, QColor("#e81123"));
-                } else {
-                    favoritePanel->addFavoriteItem(path);
-                    favoritePanel->saveFavorites();
-                    ToolTipOverlay::instance()->showToast("已成功添加至收藏夹", 1500, QColor("#2ecc71"));
-                }
-            });
-            connect(navPanel, &NavPanel::requestRemoveFavorite, favoritePanel, [favoritePanel](const QString& path) {
-                favoritePanel->removeFavoriteItem(path);
-                favoritePanel->saveFavorites();
-                ToolTipOverlay::instance()->showToast("已从收藏夹移除", 1500, QColor("#e74c3c"));
-            });
-        }
-    }
-
-    if (favoritePanel) {
-        connect(favoritePanel, &FavoritePanel::directorySelected, &NavigationService::instance(), [](const QString& path, bool recursive) {
-            NavigationService::instance().navigateTo(path, true, recursive);
-        });
-
-        connect(favoritePanel, &FavoritePanel::requestLocateFile, this, [this, contentPanel](const QString& path) {
-            ContentPanel* target = (m_activeContentPanel && m_activeContentPanel->isVisible()) ? m_activeContentPanel.data() : contentPanel;
-            if (target) {
-                target->setPendingSelectPath(path, false);
-            }
-            NavigationService::instance().navigateTo(QFileInfo(path).absolutePath());
-        });
     }
 
         if (markedPanel) {
@@ -496,20 +455,6 @@ void PanelMediator::setupConnections() {
         }
 
 
-        if (favoritePanel) {
-            connect(contentPanel, &ContentPanel::requestAddFavorite, favoritePanel, [favoritePanel](const QStringList& paths) {
-                for (const QString& p : paths) {
-                    favoritePanel->addFavoriteItem(p);
-                }
-                favoritePanel->saveFavorites();
-            });
-            connect(contentPanel, &ContentPanel::requestRemoveFavorite, favoritePanel, [favoritePanel](const QStringList& paths) {
-                for (const QString& p : paths) {
-                    favoritePanel->removeFavoriteItem(p);
-                }
-                favoritePanel->saveFavorites();
-            });
-        }
     }
 
     connect(&VolumeOnlineManager::instance(), &VolumeOnlineManager::volumeStateChanged, this,
@@ -760,7 +705,7 @@ void PanelMediator::setupConnections() {
     };
 
     auto wireContentPanel = std::make_shared<std::function<void(ContentPanel*)>>();
-    *wireContentPanel = [this, addressBar, favoritePanel, metaPanel, updateMetaPanelFromPanel, wireContentPanel](ContentPanel* panel) {
+    *wireContentPanel = [this, addressBar, metaPanel, updateMetaPanelFromPanel, wireContentPanel](ContentPanel* panel) {
         if (!panel) return;
 
         // 1. 文件双击/空格/回车/右键菜单统一文件激活动作
@@ -783,40 +728,7 @@ void PanelMediator::setupConnections() {
             QuickLookWindow::instance().preview(path);
         });
 
-        // 2. 收藏夹请求
-        if (favoritePanel) {
-            connect(panel, &ContentPanel::requestAddFavorite, favoritePanel, [favoritePanel](const QStringList& paths) {
-                int addedCount = 0;
-                int duplicateCount = 0;
-                for (const QString& p : paths) {
-                    if (FavoriteService::instance().isFavorite(p)) {
-                        duplicateCount++;
-                    } else {
-                        favoritePanel->addFavoriteItem(p);
-                        addedCount++;
-                    }
-                }
-                if (addedCount > 0) {
-                    favoritePanel->saveFavorites();
-                    if (duplicateCount == 0) {
-                        ToolTipOverlay::instance()->showToast("已成功添加至收藏夹", 1500, QColor("#2ecc71"));
-                    } else {
-                        ToolTipOverlay::instance()->showToast(QString("已添加 %1 个项目 (其余 %2 个已在收藏夹中)").arg(addedCount).arg(duplicateCount), 2000, QColor("#3498db"));
-                    }
-                } else if (duplicateCount > 0) {
-                    ToolTipOverlay::instance()->showToast("该文件夹已在收藏夹中，请勿重复添加", 2000, QColor("#e81123"));
-                }
-            });
-            connect(panel, &ContentPanel::requestRemoveFavorite, favoritePanel, [favoritePanel](const QStringList& paths) {
-                for (const QString& p : paths) {
-                    favoritePanel->removeFavoriteItem(p);
-                }
-                favoritePanel->saveFavorites();
-                ToolTipOverlay::instance()->showToast("已从收藏夹移除", 1500, QColor("#e74c3c"));
-            });
-        }
-
-        // 3. 状态栏与焦点响应 (仅当信息来自当前激活窗格时才刷到底栏)
+        // 2. 状态栏与焦点响应 (仅当信息来自当前激活窗格时才刷到底栏)
         connect(panel, &ContentPanel::statusBarMessageReady, this, [this, panel](const QString& message) {
             if (m_activeContentPanel == panel || (!m_activeContentPanel && panel == m_contentPanel.data())) {
                 emit statusMessageRequested(message);
@@ -1146,24 +1058,6 @@ void PanelMediator::setupConnections() {
             }
         });
 
-        if (favoritePanel) {
-            connect(addressBar, &AddressBar::requestAddFavorite, favoritePanel, [favoritePanel](const QString& path) {
-                if (favoritePanel->containsPath(path)) {
-                    favoritePanel->removeFavoriteItem(path);
-                    favoritePanel->saveFavorites();
-                    ToolTipOverlay::instance()->showToast("已从收藏夹移除", 1500, QColor("#e74c3c"));
-                } else {
-                    favoritePanel->addFavoriteItem(path);
-                    favoritePanel->saveFavorites();
-                    ToolTipOverlay::instance()->showToast("已成功添加至收藏夹", 1500, QColor("#2ecc71"));
-                }
-            });
-            connect(addressBar, &AddressBar::requestRemoveFavorite, favoritePanel, [favoritePanel](const QString& path) {
-                favoritePanel->removeFavoriteItem(path);
-                favoritePanel->saveFavorites();
-                ToolTipOverlay::instance()->showToast("已从收藏夹移除", 1500, QColor("#e74c3c"));
-            });
-        }
     }
 
     // 6. 响应元数据面板解耦信号 -> 驱动 CoreEngine 与当前激活 ContentPanel 同步

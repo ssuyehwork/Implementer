@@ -26,8 +26,6 @@ public:
 signals:
     void pathChanged(const QString& path);
     void refreshRequested();
-    void requestAddFavorite(const QString& path);
-    void requestRemoveFavorite(const QString& path);
 
 private slots:
     void onBreadcrumbBlankClicked();

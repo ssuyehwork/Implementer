@@ -12,7 +12,7 @@ namespace RapidNotes {
 class PresetTagsDialog : public FramelessDialog {
     Q_OBJECT
 public:
-    explicit PresetTagsDialog(int categoryId, QWidget* parent = nullptr, bool isLibrary = false);
+    explicit PresetTagsDialog(int categoryId, QWidget* parent = nullptr);
     ~PresetTagsDialog() override = default;
 
 protected:
@@ -27,7 +27,6 @@ private:
     void loadTags();
 
     int m_categoryId;
-    bool m_isLibrary = false;
     QString m_categoryName;
     QStringList m_presetTags;
     QStringList m_initialPresetTags;

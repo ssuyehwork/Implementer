@@ -29,7 +29,6 @@ class TitleBarWidget;
 class SettingsBarWidget;
 class NavBarWidget;
 class NavPanel;
-class FavoritePanel;
 class SidebarContainerWidget;
 class ContentPanel;
 class MetaPanel;
@@ -90,7 +89,6 @@ private:
     // 5 大核心面板与 Splitter
     NavPanel* m_navPanel = nullptr;
     SidebarContainerWidget* m_sidebarContainer = nullptr;
-    FavoritePanel* m_favoritePanel = nullptr;
     ContentPanel* m_contentPanel = nullptr;
     MetaPanel* m_metaPanel = nullptr;
     FilterPanel* m_filterPanel = nullptr;
@@ -109,7 +107,6 @@ private:
     QPushButton* m_btnToggleFilter = nullptr;
     QPushButton* m_btnToggleMeta = nullptr;
     QPushButton* m_btnContentPanel = nullptr;
-    QPushButton* m_btnToggleFavorite = nullptr;
     QPushButton* m_btnToggleNav = nullptr;
     QPushButton* m_btnPresetLayout = nullptr;
     QPushButton* m_btnResetLayout = nullptr;

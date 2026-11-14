@@ -1,6 +1,5 @@
 #include "AssociationCascadeService.h"
 #include "../core/DatabaseManager.h"
-#include "FavoriteService.h"
 #include "LibraryService.h"
 #include "LibrarySyncService.h"
 #include "MarkedFolderService.h"
@@ -44,54 +43,6 @@ AssetAssociationSnapshot AssociationCascadeService::findCascadeAssociations(cons
         QString pFwd = escapeLikePattern(tFwd) + "/%";
         QString pBak = escapeLikePattern(tBak) + "\\%";
 
-        // 1. 查询收藏夹中匹配项
-        const char* sqlFav = "SELECT id, parent_id, node_type, path, name, icon_key, color_hex, sort_order, preset_tags, is_auto_recursive, created_at "
-                             "FROM favorites "
-                             "WHERE path = ? COLLATE NOCASE OR path = ? COLLATE NOCASE "
-                             "   OR path LIKE ? ESCAPE '^' COLLATE NOCASE OR path LIKE ? ESCAPE '^' COLLATE NOCASE;";
-        sqlite3_stmt* stmtFav = nullptr;
-        if (sqlite3_prepare_v2(db, sqlFav, -1, &stmtFav, nullptr) == SQLITE_OK) {
-            std::string sFwd = tFwd.toStdString();
-            std::string sBak = tBak.toStdString();
-            std::string sPFwd = pFwd.toStdString();
-            std::string sPBak = pBak.toStdString();
-
-            sqlite3_bind_text(stmtFav, 1, sFwd.c_str(), -1, SQLITE_TRANSIENT);
-            sqlite3_bind_text(stmtFav, 2, sBak.c_str(), -1, SQLITE_TRANSIENT);
-            sqlite3_bind_text(stmtFav, 3, sPFwd.c_str(), -1, SQLITE_TRANSIENT);
-            sqlite3_bind_text(stmtFav, 4, sPBak.c_str(), -1, SQLITE_TRANSIENT);
-
-            while (sqlite3_step(stmtFav) == SQLITE_ROW) {
-                FavoriteRecord rec;
-                rec.id = sqlite3_column_int(stmtFav, 0);
-                rec.parentId = sqlite3_column_int(stmtFav, 1);
-                rec.nodeType = static_cast<FavoriteNodeType>(sqlite3_column_int(stmtFav, 2));
-                const char* p = reinterpret_cast<const char*>(sqlite3_column_text(stmtFav, 3));
-                rec.path = p ? QString::fromUtf8(p) : QString();
-                const char* n = reinterpret_cast<const char*>(sqlite3_column_text(stmtFav, 4));
-                rec.name = n ? QString::fromUtf8(n) : QString();
-                const char* ic = reinterpret_cast<const char*>(sqlite3_column_text(stmtFav, 5));
-                rec.iconKey = ic ? QString::fromUtf8(ic) : "folder_filled";
-                const char* clr = reinterpret_cast<const char*>(sqlite3_column_text(stmtFav, 6));
-                rec.colorHex = clr ? QString::fromUtf8(clr) : "#888888";
-                rec.sortOrder = sqlite3_column_int(stmtFav, 7);
-                const char* tags = reinterpret_cast<const char*>(sqlite3_column_text(stmtFav, 8));
-                rec.presetTags = tags ? QString::fromUtf8(tags).split(',', Qt::SkipEmptyParts) : QStringList();
-                rec.isAutoRecursive = (sqlite3_column_int(stmtFav, 9) != 0);
-
-                bool alreadyAdded = false;
-                for (const auto& existing : snapshot.favorites) {
-                    if (existing.id == rec.id) {
-                        alreadyAdded = true;
-                        break;
-                    }
-                }
-                if (!alreadyAdded) {
-                    snapshot.favorites.append(rec);
-                }
-            }
-            sqlite3_finalize(stmtFav);
-        }
 
         // 2. 查询库中匹配项
         const char* sqlLib = "SELECT category_id, path FROM library_category_paths "
@@ -177,7 +128,6 @@ bool AssociationCascadeService::cleanCascadeAssociations(const QStringList& targ
     sqlite3* db = DatabaseManager::instance().getGlobalDb();
     if (!db) return false;
 
-    bool favChanged = false;
     bool libChanged = false;
     bool markChanged = false;
     QStringList removedLibPaths;
@@ -187,12 +137,6 @@ bool AssociationCascadeService::cleanCascadeAssociations(const QStringList& targ
     {
         std::lock_guard<std::mutex> lock(DatabaseManager::instance().getGlobalMutex());
         SqlTransaction trans(db);
-
-        const char* sqlDelFav = "DELETE FROM favorites "
-                                "WHERE path = ? COLLATE NOCASE OR path = ? COLLATE NOCASE "
-                                "   OR path LIKE ? ESCAPE '^' COLLATE NOCASE OR path LIKE ? ESCAPE '^' COLLATE NOCASE;";
-        sqlite3_stmt* stmtDelFav = nullptr;
-        sqlite3_prepare_v2(db, sqlDelFav, -1, &stmtDelFav, nullptr);
 
         const char* sqlDelLibCat = "DELETE FROM library_category_paths "
                                    "WHERE path = ? COLLATE NOCASE OR path = ? COLLATE NOCASE "
@@ -228,16 +172,6 @@ bool AssociationCascadeService::cleanCascadeAssociations(const QStringList& targ
             std::string sPFwd = pFwd.toStdString();
             std::string sPBak = pBak.toStdString();
 
-            if (stmtDelFav) {
-                sqlite3_bind_text(stmtDelFav, 1, sFwd.c_str(), -1, SQLITE_TRANSIENT);
-                sqlite3_bind_text(stmtDelFav, 2, sBak.c_str(), -1, SQLITE_TRANSIENT);
-                sqlite3_bind_text(stmtDelFav, 3, sPFwd.c_str(), -1, SQLITE_TRANSIENT);
-                sqlite3_bind_text(stmtDelFav, 4, sPBak.c_str(), -1, SQLITE_TRANSIENT);
-                sqlite3_step(stmtDelFav);
-                if (sqlite3_changes(db) > 0) favChanged = true;
-                sqlite3_reset(stmtDelFav);
-            }
-
             if (stmtDelLibCat) {
                 sqlite3_bind_text(stmtDelLibCat, 1, sFwd.c_str(), -1, SQLITE_TRANSIENT);
                 sqlite3_bind_text(stmtDelLibCat, 2, sBak.c_str(), -1, SQLITE_TRANSIENT);
@@ -269,7 +203,6 @@ bool AssociationCascadeService::cleanCascadeAssociations(const QStringList& targ
             removedLibPaths.append(clean);
         }
 
-        if (stmtDelFav) sqlite3_finalize(stmtDelFav);
         if (stmtDelLibCat) sqlite3_finalize(stmtDelLibCat);
         if (stmtDelLibItems) sqlite3_finalize(stmtDelLibItems);
         if (stmtDelMark) sqlite3_finalize(stmtDelMark);
@@ -280,9 +213,6 @@ bool AssociationCascadeService::cleanCascadeAssociations(const QStringList& targ
 
     // 🟢 在锁外发射信号与调度外部服务，彻底杜绝同线程重入死锁
     if (ok) {
-        if (favChanged) {
-            emit FavoriteService::instance().favoritesReloaded();
-        }
         if (libChanged) {
             LibrarySyncService::instance().removePaths(removedLibPaths);
             emit LibraryService::instance().libraryChanged();
@@ -309,38 +239,7 @@ bool AssociationCascadeService::restoreAssociations(const AssetAssociationSnapsh
         std::lock_guard<std::mutex> lock(DatabaseManager::instance().getGlobalMutex());
         SqlTransaction trans(db);
 
-        // 1. 恢复收藏夹节点
-        if (!snapshot.favorites.isEmpty()) {
-            const char* sql = "INSERT OR REPLACE INTO favorites (id, parent_id, node_type, path, name, icon_key, color_hex, sort_order, preset_tags, is_auto_recursive, created_at) "
-                              "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
-            sqlite3_stmt* stmt = nullptr;
-            if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) == SQLITE_OK) {
-                for (const auto& fav : snapshot.favorites) {
-                    sqlite3_bind_int(stmt, 1, fav.id);
-                    sqlite3_bind_int(stmt, 2, fav.parentId);
-                    sqlite3_bind_int(stmt, 3, static_cast<int>(fav.nodeType));
-                    std::string pathStd = fav.path.toStdString();
-                    sqlite3_bind_text(stmt, 4, pathStd.c_str(), -1, SQLITE_TRANSIENT);
-                    std::string nameStd = fav.name.toStdString();
-                    sqlite3_bind_text(stmt, 5, nameStd.c_str(), -1, SQLITE_TRANSIENT);
-                    std::string iconStd = fav.iconKey.toStdString();
-                    sqlite3_bind_text(stmt, 6, iconStd.c_str(), -1, SQLITE_TRANSIENT);
-                    std::string colorStd = fav.colorHex.toStdString();
-                    sqlite3_bind_text(stmt, 7, colorStd.c_str(), -1, SQLITE_TRANSIENT);
-                    sqlite3_bind_int(stmt, 8, fav.sortOrder);
-                    std::string tagsStd = fav.presetTags.join(",").toStdString();
-                    sqlite3_bind_text(stmt, 9, tagsStd.c_str(), -1, SQLITE_TRANSIENT);
-                    sqlite3_bind_int(stmt, 10, fav.isAutoRecursive ? 1 : 0);
-                    sqlite3_bind_int64(stmt, 11, QDateTime::currentMSecsSinceEpoch());
-
-                    sqlite3_step(stmt);
-                    sqlite3_reset(stmt);
-                }
-                sqlite3_finalize(stmt);
-            }
-        }
-
-        // 2. 恢复库分类关系
+        // 恢复库分类关系
         if (!snapshot.libraryEntries.isEmpty()) {
             const char* sql = "INSERT OR IGNORE INTO library_category_paths (category_id, path) VALUES (?, ?);";
             sqlite3_stmt* stmt = nullptr;
@@ -387,9 +286,6 @@ bool AssociationCascadeService::restoreAssociations(const AssetAssociationSnapsh
 
     // 🟢 在锁外发射信号与调度外部服务，彻底杜绝同线程重入死锁
     if (ok) {
-        if (!snapshot.favorites.isEmpty()) {
-            emit FavoriteService::instance().favoritesReloaded();
-        }
         if (!snapshot.libraryEntries.isEmpty()) {
             LibrarySyncService::instance().syncPaths(pathsToSync);
             emit LibraryService::instance().libraryChanged();

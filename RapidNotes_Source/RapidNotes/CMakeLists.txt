@@ -111,8 +111,6 @@ set(SOURCES
     src/core/MessageCaptureHandler.cpp
     src/core/MessageCaptureHandler.h
     src/core/ModelContract.h
-    src/meta/FavoriteDao.h
-    src/meta/FavoriteService.h
     src/meta/LibrarySyncService.h
     src/meta/LibraryDao.h
     src/meta/LibraryService.cpp
@@ -464,8 +462,6 @@ set(SOURCES
     src/meta/DuplicateDetectorService.h
     src/meta/ExtensionColorDao.cpp
     src/meta/ExtensionColorDao.h
-    src/meta/FavoriteDao.cpp
-    src/meta/FavoriteService.cpp
     src/meta/FileOperationHelper.h
     src/meta/HistoryDao.cpp
     src/meta/HistoryDao.h
@@ -566,8 +562,6 @@ set(SOURCES
     src/ui/DuplicateConflictDialog.cpp
     src/ui/DuplicateConflictDialog.h
     src/ui/ElidedTextUtility.h
-    src/ui/FavoritePanel.cpp
-    src/ui/FavoritePanel.h
     src/ui/FileCollisionDialog.cpp
     src/ui/FileCollisionDialog.h
     src/ui/FileSizeGroup.cpp

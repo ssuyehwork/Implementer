@@ -7,7 +7,6 @@
 namespace RapidNotes {
 
 class NavPanel;
-class FavoritePanel;
 class LibraryPanel;
 class MarkedPanel;
 class ContentPanel;
@@ -25,7 +24,6 @@ class PaneActivationTracker;
  */
 struct PanelMediatorComponents {
     NavPanel* navPanel = nullptr;
-    FavoritePanel* favoritePanel = nullptr;
     LibraryPanel* libraryPanel = nullptr;
     MarkedPanel* markedPanel = nullptr;
     ContentPanel* contentPanel = nullptr;
@@ -71,7 +69,6 @@ signals:
 
 private:
     QPointer<NavPanel> m_navPanel;
-    QPointer<FavoritePanel> m_favoritePanel;
     QPointer<LibraryPanel> m_libraryPanel;
     QPointer<MarkedPanel> m_markedPanel;
     QPointer<ContentPanel> m_contentPanel;

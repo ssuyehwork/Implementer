@@ -4,7 +4,6 @@
 #include <QStringList>
 #include <QVector>
 #include <QList>
-#include "FavoriteDao.h"
 #include "MarkedFolderDao.h"
 
 namespace RapidNotes {
@@ -17,12 +16,11 @@ struct LibraryCategoryPathEntry {
 
 // 聚合业务关联快照
 struct AssetAssociationSnapshot {
-    QList<FavoriteRecord> favorites;
     QVector<LibraryCategoryPathEntry> libraryEntries;
     QList<MarkedFolderRecord> markedFolders;
 
     bool isEmpty() const {
-        return favorites.isEmpty() && libraryEntries.isEmpty() && markedFolders.isEmpty();
+        return libraryEntries.isEmpty() && markedFolders.isEmpty();
     }
 };
 
@@ -34,12 +32,12 @@ public:
     static AssociationCascadeService& instance();
 
     /**
-     * @brief 查找给定路径列表及其子路径涉及的所有收藏、库和标记记录
+     * @brief 查找给定路径列表及其子路径涉及的所有库和标记记录
      */
     AssetAssociationSnapshot findCascadeAssociations(const QStringList& targetPaths);
 
     /**
-     * @brief 级联清理给定路径及其子路径在收藏夹、库、标记中的关联
+     * @brief 级联清理给定路径及其子路径在库、标记中的关联
      */
     bool cleanCascadeAssociations(const QStringList& targetPaths);
 

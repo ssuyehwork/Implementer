@@ -1174,7 +1174,7 @@ void LibraryPanel::onCategoryContextMenu(const QPoint& pos) {
 
     QAction* presetTagAct = menu.addAction(UiHelper::getIcon("tag_filled", QColor("#EEEEEE")), "设置预设标签");
     connect(presetTagAct, &QAction::triggered, this, [this, nodeId]() {
-        PresetTagsDialog dlg(nodeId, this, true);
+        PresetTagsDialog dlg(nodeId, this);
         dlg.exec();
     });
 

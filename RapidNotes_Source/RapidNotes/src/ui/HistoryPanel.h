@@ -5,7 +5,6 @@
 #include <QVBoxLayout>
 #include <QMenu>
 #include <QIcon>
-#include "FavoritePanel.h"
 
 namespace RapidNotes {
 
