@@ -1,5 +1,50 @@
 # Memories_RapidNotes.md - RapidNotes 顶层架构设计理念与历史记忆真理源 (SSOT)
 
+以下是交接提示词，可以整段粘贴给下一个对话：
+
+---
+
+**项目背景**
+我在做 Qt/C++ 应用 RapidNotes（懒人笔记）。它是原 RapidNotes（管理笔记）和 QuarkMeta（管理文件/文件夹）合并后的独立版本。我不懂代码，只看结果，不需要过程性的大段解释。
+
+**核心意图（最重要）**
+1. 合并后的 RapidNotes，管理能力远不如 QuarkMeta。除了双击行为不同，管理方面必须遵循 QuarkMeta 版本。QuarkMeta 基本已具备完整接口（SSOT），QuickWindow 仍停留在职责过载、打补丁、违背 SSOT 的状态。
+2. 做法是以旧文件为底，把"管理文件/文件夹"的逻辑改成"管理笔记"（对象是笔记 ID，不再有路径），其余设计保持原样。
+3. 只有拆分过大的文件时才允许新增代码文件。禁止另起炉灶、自己新建一套机制。
+4. 所有写操作统一经过中央大脑（`CoreEngine::executeCommand`）。界面层不得直接写数据库，不得自建第二份缓存。
+5. 数据库的输入输出（查询、写入、索引）都必须支持批量，禁止用"笨拙且极度浪费计算资源"的手法，也禁止打补丁。
+
+**工作规则**
+- 任何代码文件的修改，必须先得到我的批准。我只是提问（如"为什么"）不等于批准，此时只解释原因并给方案。
+- 需要读文件时，直接按 `CMakeLists.txt` 列出文件名向我索要，多个文件用逗号分隔，不要让我自己翻找。
+- 分析必须从全局审视，禁止猜测，必须直接审查具体实现代码。
+- 发现打补丁、职责过载、违背 SSOT，要第一时间主动提示，并给出详细方案。
+- 禁止恭维和废话；问什么范围就答什么范围。
+
+**已完成**（已发给我 20 个文件，我还没编译，下一步请我反馈结果）
+- 数据库：笔记表新增 `url` 字段；标签统一为 `tags` 加 `note_tags` 关联表；新增索引；批量接口改成 500 个 ID 一批的集合化 SQL；新增 `getNotesByIds`。
+- 颜色语义：`notes.color` 现在是派生的底色（回收站灰 > 收藏绿 > 分类色），手动颜色标记只存 `color_label`；筛选面板的颜色筛选改按 `color_label`。
+- 搜索：FTS5 三字符索引（含正文），少于 3 个字符退回模糊匹配；四处搜索共用 `appendKeywordFilter`。
+- `DatabaseManager.cpp` 已按职责拆成 9 个文件，外加 `DatabaseManagerInternal.h`；`CMakeLists.txt` 已登记。
+- `CoreEngine` 新增分类、回收站类命令，并接入撤销/重做；`QuickMediator` 新增对应的 `request*` 方法；`QuickWindow` 里约 40 处直接写数据库的地方已改走大脑，并加了 Ctrl+Z / Ctrl+Y（仅列表有焦点时生效）。
+
+**需要纠正的错误（下一步先做这个）**
+- 撤销功能我自己新增了 `UndoableCommand.h`，这是错的。你原有的框架是 `UndoManager.h`、`ActionCommand.h`、`BasicCommands.h`，后者引用了 `commands/` 下管理文件的旧命令。
+- 正确做法：向我索要 `commands/` 下的 `RenameCommand.h`、`MoveCommand.h`、`MetadataCommand.h`、`SecureDeleteCommand.h`、`ShellProtectionCommand.h`（及对应 `.cpp`），照旧写法把"文件"改成"笔记"。
+  - `MetadataCommand` 改成笔记元数据（星级、颜色标记、标签、备注、链接、置顶、收藏）。
+  - `RenameCommand` 改成改笔记标题。
+  - `MoveCommand` 改成移动到分类。
+  - `SecureDeleteCommand` 改成软删除和恢复。
+  - `ShellProtectionCommand` 与文件系统相关，笔记用不上，请先告诉我怎么处理，不要自己动。
+- 然后让 `CoreEngine.cpp` 创建这些旧命令，删除 `UndoableCommand.h`，并去掉 `CMakeLists.txt` 里对应那一行。
+
+**后续待办（需我批准后再做）**
+- `QuickWindow` 里仍直接写数据库的地方：手动排序（`moveNote`、`moveNotesToRow`、`reorderNotes`）、`recordAccess`、分类密码操作，以及几个实际走不到的"调解员为空就直接写库"的备用分支。
+- `MainWindow` 的文件改笔记：左侧磁盘列表应显示笔记数据，不再显示硬盘；数量显示 0 但库里实际有 447 条；移除收藏夹面板。
+- 样式问题已搁置：对照 `dark_style.md` 补全全局规则，修复很多界面背景透明；`QuickWindow` 无法拖拽调整大小，疑因透明窗口边缘区域完全透明而点击穿透，需要查证。
+
+---
+
 > 本文档由 Jules（资深 C++/Qt 软件架构师与协同工程师）根据用户的最高设计意图、严格共识与《RapidNotes-1.md》排查报告权威整理编写，作为 RapidNotes 全局架构重构、代码规范、五大红线与所有实施方案的唯一真理源 (SSOT)。
 
 ---
@@ -711,3 +756,13 @@ QuarkMeta 原版面向本地磁盘物理文件系统（磁盘驱动器、物理�
      - **源码层**：`RapidNotes_Source/RapidNotes` 纯净代码圣殿，零二进制污染；
      - **中间构建层**：`RapidNotes_Build/x64-release/` 作为临时编译消耗品目录；
      - **固化运行层**：`RapidNotes_Build/RapidNotes/` 免安装绿色沙盒，由 CMake 自动将 `RapidNotes.exe` 输出至该目录，并使用 `windeployqt.exe RapidNotes.exe` 部署一次依赖，日常编译仅覆盖单一 exe，实现即编即测。
+
+UndoManager 应该纳入
+
+笔记的星级、颜色标记、标签（设置、添加、移除）、备注、链接、置顶、收藏、改标题。
+笔记移动到分类。
+笔记移入回收站、从回收站恢复。
+分类的新建、改名、置顶、软删除、恢复、改色、预设标签、排序模式、移动和排序。我上一版没做分类改色、预设标签、排序和移动，原因是要先记录旧值，更费事，不是因为不该做。如果旧命令框架里有对应位置，建议补上。
+
+// ===================|===================
+
