@@ -126,8 +126,8 @@ namespace SvgIcons {
             <path d="m2 13 5 5"/>
             <path d="M22 20a2 2 0 1 1-4 0c0-1.6 1.7-2.4 2-4 .3 1.6 2 2.4 2 4Z" fill="currentColor" stroke="none"/>
         </svg>)svg"},
-        {"switch_on", R"svg(<svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="7" fill="white" /><rect x="3.5" y="6.5" width="17" height="11" rx="5.5" fill="currentColor" /><circle cx="15" cy="12" r="3.5" fill="white" /></svg>)svg"},
-        {"switch_off", R"svg(<svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="7" fill="white" /><rect x="3.5" y="6.5" width="17" height="11" rx="5.5" fill="currentColor" /><circle cx="9" cy="12" r="3.5" fill="white" /></svg>)svg"},
+        {"switch_on", R"svg(<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="5" width="22" height="14" rx="7" ry="7"/><circle cx="16" cy="12" r="3" fill="currentColor"/></svg>)svg"},
+        {"switch_off", R"svg(<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="5" width="22" height="14" rx="7" ry="7"/><circle cx="8" cy="12" r="3"/></svg>)svg"},
         {"arrow_up", R"svg(<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 5 L4 19 L20 19 Z"/></svg>)svg"},
         {"arrow_down", R"svg(<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 10 12 15 17 10"/></svg>)svg"},
         {"filter_funnel", R"svg(<svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="18" height="3.5" rx="1.5"/><path d="M4 8.5 L10 15.5 V21 L14 18 V15.5 L20 8.5 Z"/></svg>)svg"},
