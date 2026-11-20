@@ -145,7 +145,9 @@ QMenu* ContextMenuFactory::buildIconPickerMenu(QMenu* parentMenu,
         "holiday_juice_tourism_svgrepo_com_svg", "holiday_tourism_travel_3_svgrepo_com_svg", "info_filled_svg",
         "kaixin101_logotype_of_a_smiling_star_svgrepo_com_svg", "Linked_1_svg", "psd_2_svg",
         "pumpkin_halloween_svgrepo_com_svg", "RapidNotes_1_svg", "sea_snail_svg",
-        "time_planning_svgrepo_com_svg", "turtle_svg"
+        "time_planning_svgrepo_com_svg", "turtle_svg",
+        "home_filled", "star_filled", "tag_filled", "bookmark_filled",
+        "gift_filled", "calendar_filled", "trash_filled", "download"
     };
 
     QColor catColor = QColor(colorHex);
@@ -168,7 +170,7 @@ QMenu* ContextMenuFactory::buildIconPickerMenu(QMenu* parentMenu,
         });
 
         col++;
-        if (col >= 5) { col = 0; row++; }
+        if (col >= 10) { col = 0; row++; }
     }
 
     pickerWidget->setLayout(pickerLayout);
