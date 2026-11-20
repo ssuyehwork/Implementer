@@ -104,6 +104,18 @@ private:
     ContentPanel* m_panel = nullptr;
 };
 
+// QAbstractScrollArea::setViewportMargins 是 protected 成员，外部类无法直接调用。
+// 在派生类作用域内取其成员指针后调用，符合标准且无需修改 DropTreeView。
+class ViewportMarginHelper : public QTreeView {
+public:
+    static void setMargins(QTreeView* view, int left, int top, int right, int bottom) {
+        if (!view) return;
+        using Setter = void (QAbstractScrollArea::*)(int, int, int, int);
+        static const Setter setter = &ViewportMarginHelper::setViewportMargins;
+        (view->*setter)(left, top, right, bottom);
+    }
+};
+
 } // namespace
 
 QTreeView* ContentPanel::treeView() const {
@@ -381,7 +393,7 @@ void ContentPanel::updateAlphabetIndexBarGeometry() {
             jv->setRightReservedWidth(0);
         }
         if (m_treeView) {
-            m_treeView->setViewportMargins(0, 0, 0, 0);
+            ViewportMarginHelper::setMargins(m_treeView, 0, 0, 0, 0);
         }
         return;
     }
@@ -391,7 +403,7 @@ void ContentPanel::updateAlphabetIndexBarGeometry() {
         jv->setRightReservedWidth(20);
     }
     if (m_treeView) {
-        m_treeView->setViewportMargins(0, 0, 20, 0);
+        ViewportMarginHelper::setMargins(m_treeView, 0, 0, 20, 0);
     }
 
     const int count = m_alphabetButtons.size();
@@ -420,7 +432,7 @@ void ContentPanel::updateAlphabetIndexBar() {
             jv->setRightReservedWidth(0);
         }
         if (m_treeView) {
-            m_treeView->setViewportMargins(0, 0, 0, 0);
+            ViewportMarginHelper::setMargins(m_treeView, 0, 0, 0, 0);
         }
         return;
     }
@@ -479,7 +491,7 @@ void ContentPanel::updateAlphabetIndexBar() {
             jv->setRightReservedWidth(0);
         }
         if (m_treeView) {
-            m_treeView->setViewportMargins(0, 0, 0, 0);
+            ViewportMarginHelper::setMargins(m_treeView, 0, 0, 0, 0);
         }
         return;
     }
