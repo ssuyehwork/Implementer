@@ -478,7 +478,7 @@ void JustifiedView::doLayout() {
         return;
     }
 
-    const int margin = 10; // 卡片与视图边距间距 = 10px（统一间距参数）
+    const int margin = 6;
     const int spacing = 5;
     
     // 🚀【绝对几何隔离】：可用排版宽度精准扣除滚动条与右侧保留安全边距（m_rightReservedWidth）
@@ -512,11 +512,8 @@ void JustifiedView::doLayout() {
                 int headerH = 28;
                 bool isFolderHeader = (idx.data(SectionKindRole).toInt() == 1);
                 m_geometries[i] = { QRect(margin, currentY, containerWidth, headerH), i, true, idx.data(SectionHeaderTextRole).toString(), idx.data(SectionCollapsedRole).toBool(), isFolderHeader };
-                currentY += headerH;
+                currentY += headerH + spacing;
                 i++;
-                if (i < count) {
-                    currentY += spacing;
-                }
                 continue;
             }
 
@@ -554,11 +551,8 @@ void JustifiedView::doLayout() {
                 int headerH = 28;
                 bool isFolderHeader = (idx.data(SectionKindRole).toInt() == 1);
                 m_geometries[i] = { QRect(margin, currentY, containerWidth, headerH), i, true, idx.data(SectionHeaderTextRole).toString(), idx.data(SectionCollapsedRole).toBool(), isFolderHeader };
-                currentY += headerH;
+                currentY += headerH + spacing;
                 i++;
-                if (i < count) {
-                    currentY += spacing;
-                }
                 continue;
             }
 
@@ -626,15 +620,12 @@ void JustifiedView::doLayout() {
                 m_geometries[itemIdx] = { QRect(currentX, currentY, itemWidth, actualHeight + extraHeight), itemIdx, false, QString(), false };
                 currentX += itemWidth + spacing;
             }
-            currentY += actualHeight + extraHeight;
-            if (i < count) {
-                currentY += spacing;
-            }
+            currentY += actualHeight + extraHeight + spacing;
         }
     }
 
     int oldHeight = m_totalHeight;
-    m_totalHeight = currentY + margin; // 底部同样保留 10px 卡片与视图边距
+    m_totalHeight = currentY;
     updateGeometries();
     viewport()->update();
 

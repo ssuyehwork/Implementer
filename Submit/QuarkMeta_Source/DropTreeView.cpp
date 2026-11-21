@@ -537,24 +537,6 @@ void DropTreeView::resizeEvent(QResizeEvent* event) {
     applyColumnPolicies();
 }
 
-void DropTreeView::setRightReserve(int reserve) {
-    const int bounded = qMax(0, reserve);
-    if (m_rightReserve == bounded) return;
-    m_rightReserve = bounded;
-    updateGeometries();
-}
-
-void DropTreeView::updateGeometries() {
-    // QTreeView::updateGeometries() 会把视口边距重置为 (0, 表头高度, 0, 0)，
-    // 这里随后补齐右侧预留与底部边距，确保 AlphabetIndexBar 与视图之间持续保持 10px 间距，
-    // 不会被表头/布局刷新清零（避免内容时而侵入索引条、时而又被切割线截断）。
-    QTreeView::updateGeometries();
-    const QMargins m = viewportMargins();
-    if (m.left() != 0 || m.right() != m_rightReserve || m.bottom() != m_bottomMargin) {
-        setViewportMargins(0, m.top(), m_rightReserve, m_bottomMargin);
-    }
-}
-
 void DropTreeView::keyboardSearch(const QString& search) {
     if (!model() || search.trimmed().isEmpty()) return;
 
