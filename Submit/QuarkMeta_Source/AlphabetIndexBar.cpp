@@ -16,20 +16,6 @@
 
 namespace QuarkMeta {
 
-namespace {
-
-class ViewportMarginAccessor : public QTreeView {
-public:
-    static void setRightMargin(QTreeView* view, int rightMargin) {
-        if (!view) return;
-        using Setter = void (QAbstractScrollArea::*)(int, int, int, int);
-        static const Setter setter = &ViewportMarginAccessor::setViewportMargins;
-        (view->*setter)(0, 0, rightMargin, 0);
-    }
-};
-
-} // namespace
-
 AlphabetIndexBar::AlphabetIndexBar(ContentPanel* panel)
     : QObject(panel), m_panel(panel) {
 }
@@ -59,7 +45,7 @@ void AlphabetIndexBar::clearViewRightReserve() {
         jv->setRightReservedWidth(0);
     }
     if (m_panel->m_treeView) {
-        ViewportMarginAccessor::setRightMargin(m_panel->m_treeView, 0);
+        m_panel->m_treeView->setRightReserve(0);
     }
 }
 
@@ -117,8 +103,9 @@ void AlphabetIndexBar::update() {
             button->setStyleSheet(
                 "QPushButton { color: #B8B8B8; background: transparent; border: none; "
                 "border-radius: 3px; font-size: 10px; padding: 0px; }"
-                "QPushButton:hover, QPushButton[active=\"true\"] { color: #FFFFFF; "
-                "background: #3A3A3A; }");
+                "QPushButton:hover { color: #FFFFFF; background: transparent; }"
+                "QPushButton[active=\"true\"] { color: #ff551c; font-weight: bold; "
+                "background: transparent; }");
             connect(button, &QPushButton::clicked, this, [this, key]() {
                 jumpToAlphabetKey(key);
             });
@@ -175,13 +162,15 @@ void AlphabetIndexBar::updateGeometry() {
     const int x = m_panel->m_viewStack->width() - scrollBarW - barToScrollGap - width;
     const int y = qMax(0, (m_panel->m_viewStack->height() - height) / 2);
 
-    // 视图右侧预留总宽度 = 滚动条 + 10px(索引条与滚动条间距) + 索引条宽度 + 10px(视图右边距与索引条间距)
-    const int reservedRightW = scrollBarW + barToScrollGap + width + viewToBarGap;
+    // 视图右侧预留宽度 = 10px(索引条与滚动条间距) + 索引条宽度 + 10px(视图右边距与索引条间距)。
+    // 滚动条宽度已由视图侧单独扣除（JustifiedView 排版扣除 scrollBarW，QTreeView 视口自带滚动条占位），
+    // 此处绝不重复计入 scrollBarW，否则视图与 AlphabetIndexBar 的 10px 间距会被破坏。
+    const int reservedRightW = barToScrollGap + width + viewToBarGap;
     if (auto* jv = qobject_cast<JustifiedView*>(m_panel->m_gridView)) {
         jv->setRightReservedWidth(reservedRightW);
     }
     if (m_panel->m_treeView) {
-        ViewportMarginAccessor::setRightMargin(m_panel->m_treeView, reservedRightW);
+        m_panel->m_treeView->setRightReserve(reservedRightW);
     }
 
     m_bar->setGeometry(x, y, width, height);
