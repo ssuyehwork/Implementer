@@ -13,7 +13,7 @@ struct RowLayout {
 
 class RowLayoutEngine {
 public:
-    static constexpr int kLeftMargin = 6;      // 左外边距 6px
+    static constexpr int kLeftMargin = 10;     // 左外边距 10px（卡片与视图边距间距 = 10px）
     static constexpr int kVerticalPadding = 3; // 上下边距 3px
     static constexpr int kSpacing = 8;         // 卡片与文字间距 8px
     static constexpr int kMinRowHeight = 30;   // 最小行高 30px
