@@ -1678,8 +1678,8 @@ QWidget#ContentHeaderWidget {
 
 /* 内容面板右侧动态字母快速索引导航条 */
 QWidget#AlphabetIndexBar {
-    background-color: #1E1E1E;
-    border-left: 1px solid #2D2D2D;
+    background-color: transparent;
+    border: none;
 }
 
 QPushButton#AlphabetIndexBtn {
