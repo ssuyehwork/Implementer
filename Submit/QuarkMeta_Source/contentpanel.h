@@ -24,6 +24,8 @@
 
 namespace QuarkMeta {
 
+class AlphabetIndexBar;
+class EmptyStateOverlay;
 class DropTreeView;
 class JustifiedView;
 class ContentKeyHandler;
@@ -254,14 +256,14 @@ protected:
     void wheelEvent(QWheelEvent* event) override;
 
 private:
-    static QString classifyIndexKey(const QString& itemName);
+    friend class AlphabetIndexBar;
+
     void initUi();
     void initGridView();
     void initListView();
     void initAlphabetIndexBar();
     void updateAlphabetIndexBar();
     void updateAlphabetIndexBarGeometry();
-    void jumpToAlphabetKey(const QString& key);
     void updateGridSize();
     void updateStatusBarStats(int cachedSelectedCount = -1);
     void initEmptyFilterOverlay();
@@ -298,12 +300,7 @@ private:
     QVBoxLayout* m_mainLayout = nullptr;
     class ContentHeaderWidget* m_headerWidget = nullptr;
 
-    // 悬浮字母索引条（Overlay 浮层组件）
-    QWidget* m_alphabetIndexBar = nullptr;
-    QVBoxLayout* m_alphabetIndexLayout = nullptr;
-    QHash<QString, QPushButton*> m_alphabetButtons;
-    QHash<QString, int> m_alphabetCycleCursor;
-    QString m_activeAlphabetKey;
+    AlphabetIndexBar* m_alphabetIndexController = nullptr;
 
     ContentPaneSplitManager* m_splitManager = nullptr;
 
@@ -318,7 +315,7 @@ private:
     SectionProxyModel* m_sectionModel = nullptr;
 
     QStackedWidget* m_viewStack = nullptr;
-    QWidget* m_emptyFilterOverlay = nullptr;
+    EmptyStateOverlay* m_emptyFilterOverlay = nullptr;
     QLabel* m_emptyFilterTitleLabel = nullptr;
     QLabel* m_emptyFilterSubLabel = nullptr;
     QPushButton* m_emptyFilterResetBtn = nullptr;

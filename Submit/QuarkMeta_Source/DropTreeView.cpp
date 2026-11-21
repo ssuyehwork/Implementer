@@ -1,0 +1,638 @@
+#if __has_include("DropTreeView.h")
+#include "DropTreeView.h"
+#elif __has_include("src/ui/DropTreeView.h")
+#include "src/ui/DropTreeView.h"
+#else
+#error "DropTreeView.h was not found; verify that src/ui/DropTreeView.h is included in the project."
+#endif
+#include "ViewDragDropHelper.h"
+#include "models/SectionProxyModel.h"
+#include "../core/ModelContract.h"
+#include "ContentPanel.h"
+#include <QPainter>
+#include <QDragEnterEvent>
+#include <QDragMoveEvent>
+#include <QDragLeaveEvent>
+#include <QDropEvent>
+#include <QAbstractProxyModel>
+#include <QScrollBar>
+#include <QStringList>
+#include <QFileInfo>
+#include <QDrag>
+#include <QMimeData>
+#include <QUrl>
+#include <QApplication>
+#include <QElapsedTimer>
+#include <algorithm>
+#include "Logger.h"
+
+namespace QuarkMeta {
+
+// 声明式规则表：单一真理来源 (Single Source of Truth)
+static const std::vector<ColumnPolicy> kFileListColumnPolicies = {
+    { FileListColumn::Name,         0,   QHeaderView::Fixed, false },
+    { FileListColumn::Status,       40,  QHeaderView::Fixed, true  },
+    { FileListColumn::Rating,       100, QHeaderView::Fixed, false },
+    { FileListColumn::Dimension,    100, QHeaderView::Fixed, false },
+    { FileListColumn::Type,         60,  QHeaderView::Fixed, false },
+    { FileListColumn::Size,         80,  QHeaderView::Fixed, false },
+    { FileListColumn::CreatedDate,  130, QHeaderView::Fixed, false },
+    { FileListColumn::ModifiedDate, 130, QHeaderView::Fixed, false },
+};
+
+DropTreeView::DropTreeView(QWidget* parent) : QTreeView(parent) {
+    setHeader(new ContentHeaderView(Qt::Horizontal, this));
+    setDragEnabled(true);
+    setDropIndicatorShown(true);
+    setUniformRowHeights(false);
+    setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+    setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
+    setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    m_eventFilter = DragDropEventFilter::install(this);
+
+    // 🚀【强力锁定 QPalette】：强制设定暗色 Base 与 AlternateBase，防止原生 Windows 调色板在交替行露白
+    QPalette pal = palette();
+    pal.setColor(QPalette::Base, QColor("#1E1E1E"));
+    pal.setColor(QPalette::AlternateBase, QColor("#252526"));
+    pal.setColor(QPalette::Text, QColor("#EEEEEE"));
+    pal.setColor(QPalette::WindowText, QColor("#EEEEEE"));
+    setPalette(pal);
+    if (viewport()) {
+        viewport()->setPalette(pal);
+    }
+
+    m_edgeScrollTimer = new QTimer(this);
+    connect(m_edgeScrollTimer, &QTimer::timeout, this, [this]() {
+        if (m_edgeScrollDelta != 0 && verticalScrollBar()) {
+            verticalScrollBar()->setValue(verticalScrollBar()->value() + m_edgeScrollDelta);
+        }
+    });
+}
+
+void DropTreeView::setZoomLevel(int zoomLevel) {
+    int bounded = qBound(30, zoomLevel, 230);
+    if (m_zoomLevel == bounded) return;
+    m_zoomLevel = bounded;
+
+    int iconSz = qMax(16, m_zoomLevel - 8);
+    setIconSize(QSize(iconSz, iconSz));
+
+    if (auto* h = qobject_cast<ContentHeaderView*>(header())) {
+        h->setZoomLevel(m_zoomLevel);
+    }
+
+    if (itemDelegate()) {
+        emit itemDelegate()->sizeHintChanged(QModelIndex());
+    }
+    doItemsLayout();
+    if (viewport()) {
+        viewport()->update();
+    }
+}
+
+void DropTreeView::setInternalReorderEnabled(bool enabled) {
+    m_internalReorderEnabled = enabled;
+}
+
+void DropTreeView::setInternalDragValidator(std::function<bool(const QModelIndex&)> canDragNode) {
+    m_internalDragValidator = canDragNode;
+}
+
+void DropTreeView::setInternalDropValidator(std::function<bool(const QList<QPersistentModelIndex>&, const QModelIndex&, InternalDropZone)> canDrop) {
+    m_internalDropValidator = canDrop;
+}
+
+void DropTreeView::setExternalDropPositioning(bool enabled) {
+    m_externalDropPositioning = enabled;
+    if (m_eventFilter) {
+        m_eventFilter->setPassThroughUrlDrags(enabled);
+    }
+}
+
+void DropTreeView::setDropZoneResolver(std::function<InternalDropZone(const QModelIndex& target, InternalDropZone rawZone, bool inUpperHalf)> resolver) {
+    m_dropZoneResolver = resolver;
+}
+
+void DropTreeView::setModel(QAbstractItemModel* model) {
+    if (this->model()) {
+        disconnect(this->model(), &QAbstractItemModel::modelReset, this, &DropTreeView::updateGroupHeaderSpanning);
+        disconnect(this->model(), &QAbstractItemModel::layoutChanged, this, &DropTreeView::updateGroupHeaderSpanning);
+        disconnect(this->model(), &QAbstractItemModel::rowsInserted, this, &DropTreeView::updateGroupHeaderSpanning);
+        disconnect(this->model(), &QAbstractItemModel::rowsRemoved, this, &DropTreeView::updateGroupHeaderSpanning);
+    }
+    QTreeView::setModel(model);
+    if (model) {
+        connect(model, &QAbstractItemModel::modelReset, this, &DropTreeView::updateGroupHeaderSpanning);
+        connect(model, &QAbstractItemModel::layoutChanged, this, &DropTreeView::updateGroupHeaderSpanning);
+        connect(model, &QAbstractItemModel::rowsInserted, this, &DropTreeView::updateGroupHeaderSpanning);
+        connect(model, &QAbstractItemModel::rowsRemoved, this, &DropTreeView::updateGroupHeaderSpanning);
+        updateGroupHeaderSpanning();
+    }
+}
+
+void DropTreeView::updateGroupHeaderSpanning() {
+    if (!model()) return;
+    int total = model()->rowCount();
+
+    // Filtering can move section headers onto rows previously occupied by items.
+    // Clear stale spans first, otherwise those items lose all columns after Name.
+    for (int r = 0; r < total; ++r) {
+        if (isFirstColumnSpanned(r, QModelIndex())) {
+            setFirstColumnSpanned(r, QModelIndex(), false);
+        }
+    }
+
+    int headerCount = 0;
+    for (int r = 0; r < total; ++r) {
+        QModelIndex idx = model()->index(r, 0);
+        if (idx.data(SectionHeaderRole).toBool()) {
+            setFirstColumnSpanned(r, QModelIndex(), true);
+            headerCount++;
+            if (headerCount >= 2) break; // 最多仅存在文件夹与文件两个标头，全部设置完毕后立即跳出
+        }
+    }
+}
+
+void DropTreeView::mousePressEvent(QMouseEvent* event) {
+    QModelIndex idx = indexAt(event->pos());
+    if (idx.isValid() && idx.data(SectionHeaderRole).toBool()) {
+        if (event->button() == Qt::LeftButton) {
+            bool inInteractiveBounds = true;
+            if (idx.data(SectionKindRole).toInt() == 1) {
+                QRect rect = visualRect(idx);
+                QFont font("Microsoft YaHei", 10, QFont::Bold);
+                QFontMetrics fm(font);
+                int leftX = rect.left() + 10;
+                int textW = fm.horizontalAdvance(idx.data(SectionHeaderTextRole).toString());
+                int interactiveMaxX = leftX + textW + 30; // 文本宽度 + 箭头图标 + 容差 Padding
+                if (event->pos().x() < leftX || event->pos().x() > interactiveMaxX) {
+                    inInteractiveBounds = false;
+                }
+            }
+
+            if (inInteractiveBounds) {
+                if (idx.data(SectionKindRole).toInt() == 1) {
+                    SectionProxyModel* secModel = nullptr;
+                    QAbstractItemModel* cur = model();
+                    while (cur) {
+                        secModel = qobject_cast<SectionProxyModel*>(cur);
+                        if (secModel) break;
+                        auto* proxy = qobject_cast<QAbstractProxyModel*>(cur);
+                        if (proxy) cur = proxy->sourceModel();
+                        else break;
+                    }
+                    if (secModel) {
+                        secModel->setFolderCollapsed(!secModel->isFolderCollapsed());
+                    }
+                }
+                event->accept();
+                return;
+            }
+        }
+    }
+    QTreeView::mousePressEvent(event);
+}
+
+void DropTreeView::startDrag(Qt::DropActions supportedActions) {
+    if (!m_internalReorderEnabled) {
+        ViewDragDropHelper::executeStartDrag(this, supportedActions);
+        return;
+    }
+
+    if (!selectionModel()) return;
+
+    QModelIndexList selected = selectionModel()->selectedIndexes();
+    if (selected.isEmpty()) return;
+
+    // 只取第 0 列，去重
+    QList<QModelIndex> col0Indexes;
+    for (const QModelIndex& idx : selected) {
+        if (idx.column() == 0 && !col0Indexes.contains(idx)) {
+            col0Indexes.append(idx);
+        }
+    }
+    if (col0Indexes.isEmpty()) return;
+
+    // 若某条目的祖先也在选中里，则只保留祖先
+    QList<QModelIndex> filteredIndexes;
+    for (const QModelIndex& idx : col0Indexes) {
+        bool ancestorSelected = false;
+        QModelIndex p = idx.parent();
+        while (p.isValid()) {
+            if (col0Indexes.contains(p)) {
+                ancestorSelected = true;
+                break;
+            }
+            p = p.parent();
+        }
+        if (!ancestorSelected) {
+            filteredIndexes.append(idx);
+        }
+    }
+
+    // 逐个用 canDragNode 校验，任何一个不通过则不开始拖拽
+    if (m_internalDragValidator) {
+        for (const QModelIndex& idx : filteredIndexes) {
+            if (!m_internalDragValidator(idx)) {
+                return;
+            }
+        }
+    }
+
+    m_internalDragSources.clear();
+    QList<QUrl> urls;
+    for (const QModelIndex& idx : filteredIndexes) {
+        m_internalDragSources.append(QPersistentModelIndex(idx));
+
+        QString path = idx.data(PathRole).toString();
+        if (path.isEmpty()) {
+            path = idx.data(Qt::UserRole + 1).toString();
+        }
+        if (!path.isEmpty() && QFileInfo::exists(path)) {
+            urls.append(QUrl::fromLocalFile(path));
+        }
+    }
+
+    QMimeData* mimeData = new QMimeData();
+    mimeData->setData("application/x-quarkmeta-tree-nodes", QByteArray("1"));
+    if (!urls.isEmpty()) {
+        mimeData->setUrls(urls);
+    }
+
+    QDrag* drag = new QDrag(this);
+    drag->setMimeData(mimeData);
+
+    QPixmap pixmap(1, 1);
+    pixmap.fill(Qt::transparent);
+    drag->setPixmap(pixmap);
+    drag->setHotSpot(QPoint(0, 0));
+
+    drag->exec(supportedActions | Qt::CopyAction | Qt::MoveAction, Qt::MoveAction);
+
+    // 拖拽结束后清理
+    m_internalDragSources.clear();
+    clearInternalDropIndicator();
+    stopEdgeScroll();
+}
+
+InternalDropZone DropTreeView::calculateDropZone(const QPoint& pos, QModelIndex& outTargetIndex) const {
+    outTargetIndex = indexAt(pos);
+    if (!outTargetIndex.isValid()) {
+        return InternalDropZone::Blank;
+    }
+
+    QRect rect = visualRect(outTargetIndex);
+    int top25 = rect.top() + rect.height() * 0.25;
+    int bottom25 = rect.bottom() - rect.height() * 0.25;
+
+    InternalDropZone rawZone = InternalDropZone::OnItem;
+    if (pos.y() < top25) {
+        rawZone = InternalDropZone::Above;
+    } else if (pos.y() > bottom25) {
+        rawZone = InternalDropZone::Below;
+    } else {
+        rawZone = InternalDropZone::OnItem;
+    }
+
+    if (m_dropZoneResolver) {
+        bool inUpperHalf = (pos.y() < rect.center().y());
+        return m_dropZoneResolver(outTargetIndex, rawZone, inUpperHalf);
+    }
+
+    return rawZone;
+}
+
+bool DropTreeView::updateDropFeedback(const QPoint& pos, const std::function<bool(const QModelIndex&, InternalDropZone)>& validator, QModelIndex& outTargetIdx, InternalDropZone& outZone) {
+    updateEdgeScroll(pos);
+
+    outZone = calculateDropZone(pos, outTargetIdx);
+    bool valid = validator ? validator(outTargetIdx, outZone) : true;
+
+    if (valid) {
+        m_showIndicator = true;
+        m_indicatorIndex = outTargetIdx;
+        m_indicatorZone = outZone;
+
+        if (outZone == InternalDropZone::OnItem && outTargetIdx.isValid()) {
+            ViewDragDropHelper::setHoverTarget(this, outTargetIdx);
+        } else {
+            ViewDragDropHelper::clearHover(this);
+        }
+
+        if (viewport()) viewport()->update();
+        return true;
+    } else {
+        clearInternalDropIndicator();
+        return false;
+    }
+}
+
+void DropTreeView::clearInternalDropIndicator() {
+    m_showIndicator = false;
+    m_indicatorIndex = QModelIndex();
+    m_indicatorZone = InternalDropZone::Blank;
+    ViewDragDropHelper::clearHover(this);
+    if (viewport()) viewport()->update();
+}
+
+void DropTreeView::updateEdgeScroll(const QPoint& pos) {
+    if (!viewport()) return;
+    int vpHeight = viewport()->height();
+    int margin = 24;
+
+    if (pos.y() < margin) {
+        m_edgeScrollDelta = -10;
+        if (!m_edgeScrollTimer->isActive()) m_edgeScrollTimer->start(30);
+    } else if (pos.y() > vpHeight - margin) {
+        m_edgeScrollDelta = 10;
+        if (!m_edgeScrollTimer->isActive()) m_edgeScrollTimer->start(30);
+    } else {
+        stopEdgeScroll();
+    }
+}
+
+void DropTreeView::stopEdgeScroll() {
+    m_edgeScrollDelta = 0;
+    if (m_edgeScrollTimer && m_edgeScrollTimer->isActive()) {
+        m_edgeScrollTimer->stop();
+    }
+}
+
+bool DropTreeView::isExternalUrlDrag(const QMimeData* mime) const {
+    if (!mime) return false;
+    if (mime->hasFormat("application/x-quarkmeta-tree-nodes")) return false;
+    if (!mime->hasUrls()) return false;
+    for (const QUrl& url : mime->urls()) {
+        if (!url.toLocalFile().isEmpty()) return true;
+    }
+    return false;
+}
+
+QStringList DropTreeView::extractLocalPaths(const QMimeData* mime) const {
+    QStringList paths;
+    if (!mime || !mime->hasUrls()) return paths;
+    for (const QUrl& url : mime->urls()) {
+        QString local = QDir::toNativeSeparators(url.toLocalFile());
+        if (!local.isEmpty()) {
+            paths.append(local);
+        }
+    }
+    return paths;
+}
+
+void DropTreeView::dragEnterEvent(QDragEnterEvent* event) {
+    if (m_internalReorderEnabled && event->mimeData() && event->mimeData()->hasFormat("application/x-quarkmeta-tree-nodes")) {
+        event->acceptProposedAction();
+        return;
+    }
+
+    if (m_externalDropPositioning && isExternalUrlDrag(event->mimeData())) {
+        event->acceptProposedAction();
+        return;
+    }
+
+    QTreeView::dragEnterEvent(event);
+}
+
+void DropTreeView::dragMoveEvent(QDragMoveEvent* event) {
+    if (m_internalReorderEnabled && event->mimeData() && event->mimeData()->hasFormat("application/x-quarkmeta-tree-nodes")) {
+        // 校验 sources 是否含有失效索引
+        for (const QPersistentModelIndex& pidx : m_internalDragSources) {
+            if (!pidx.isValid()) {
+                clearInternalDropIndicator();
+                stopEdgeScroll();
+                event->ignore();
+                return;
+            }
+        }
+
+        QModelIndex targetIdx;
+        InternalDropZone zone = InternalDropZone::Blank;
+        auto validator = [this](const QModelIndex& tIdx, InternalDropZone z) {
+            return m_internalDropValidator ? m_internalDropValidator(m_internalDragSources, tIdx, z) : true;
+        };
+
+        if (updateDropFeedback(event->position().toPoint(), validator, targetIdx, zone)) {
+            event->acceptProposedAction();
+        } else {
+            event->ignore();
+        }
+        return;
+    }
+
+    if (m_externalDropPositioning && isExternalUrlDrag(event->mimeData())) {
+        QModelIndex targetIdx;
+        InternalDropZone zone = InternalDropZone::Blank;
+        // 外部拖入不需要放置校验，恒为有效
+        if (updateDropFeedback(event->position().toPoint(), nullptr, targetIdx, zone)) {
+            event->acceptProposedAction();
+        } else {
+            event->ignore();
+        }
+        return;
+    }
+
+    QTreeView::dragMoveEvent(event);
+}
+
+void DropTreeView::dragLeaveEvent(QDragLeaveEvent* event) {
+    if (m_internalReorderEnabled || m_externalDropPositioning) {
+        clearInternalDropIndicator();
+        stopEdgeScroll();
+    }
+    QTreeView::dragLeaveEvent(event);
+}
+
+void DropTreeView::dropEvent(QDropEvent* event) {
+    if (m_internalReorderEnabled && event->mimeData() && event->mimeData()->hasFormat("application/x-quarkmeta-tree-nodes")) {
+        stopEdgeScroll();
+
+        QModelIndex targetIdx;
+        InternalDropZone zone = calculateDropZone(event->position().toPoint(), targetIdx);
+
+        bool valid = true;
+        if (m_internalDropValidator) {
+            valid = m_internalDropValidator(m_internalDragSources, targetIdx, zone);
+        }
+
+        if (valid) {
+            emit internalMoveRequested(m_internalDragSources, targetIdx, zone);
+            event->acceptProposedAction();
+        } else {
+            event->ignore();
+        }
+
+        clearInternalDropIndicator();
+        return;
+    }
+
+    if (m_externalDropPositioning && isExternalUrlDrag(event->mimeData())) {
+        stopEdgeScroll();
+
+        QModelIndex targetIdx;
+        InternalDropZone zone = calculateDropZone(event->position().toPoint(), targetIdx);
+        QStringList paths = extractLocalPaths(event->mimeData());
+
+        if (!paths.isEmpty()) {
+            emit pathsDroppedAt(paths, targetIdx, zone, event->dropAction());
+            event->acceptProposedAction();
+        } else {
+            event->ignore();
+        }
+
+        clearInternalDropIndicator();
+        return;
+    }
+
+    QTreeView::dropEvent(event);
+}
+
+void DropTreeView::applyColumnPolicies() {
+    if (m_isApplyingPolicies) return;
+    m_isApplyingPolicies = true;
+
+    QHeaderView* hdr = header();
+    if (!hdr) {
+        m_isApplyingPolicies = false;
+        return;
+    }
+
+    hdr->setMinimumSectionSize(0);
+
+    int totalVisibleFixedWidth = 0;
+    for (const auto& policy : kFileListColumnPolicies) {
+        if (policy.alwaysHidden) continue;
+        if (policy.column != FileListColumn::Name) {
+            totalVisibleFixedWidth += policy.fixedWidth;
+        }
+    }
+
+    int availWidth = viewport() ? viewport()->width() : width();
+    int minPaneW = ContentPanel::kMinPaneWidth;
+    int calculatedNameWidth = std::max(minPaneW, availWidth - totalVisibleFixedWidth);
+
+    for (const auto& policy : kFileListColumnPolicies) {
+        int colIdx = static_cast<int>(policy.column);
+        if (policy.alwaysHidden) {
+            setColumnHidden(colIdx, true);
+            continue;
+        }
+
+        setColumnHidden(colIdx, false);
+        hdr->setSectionResizeMode(colIdx, QHeaderView::Fixed);
+
+        if (policy.column == FileListColumn::Name) {
+            hdr->resizeSection(colIdx, calculatedNameWidth);
+        } else {
+            hdr->resizeSection(colIdx, policy.fixedWidth);
+        }
+    }
+
+    m_isApplyingPolicies = false;
+}
+
+void DropTreeView::resizeEvent(QResizeEvent* event) {
+    QTreeView::resizeEvent(event);
+    applyColumnPolicies();
+}
+
+void DropTreeView::keyboardSearch(const QString& search) {
+    if (!model() || search.trimmed().isEmpty()) return;
+
+    static QElapsedTimer s_searchTimer;
+    static QString s_searchBuffer;
+
+    if (!s_searchTimer.isValid() || s_searchTimer.elapsed() > QApplication::keyboardInputInterval()) {
+        s_searchBuffer.clear();
+    }
+    s_searchTimer.restart();
+    s_searchBuffer += search;
+
+    const int rows = model()->rowCount();
+    if (rows <= 0) return;
+
+    const int nameCol = static_cast<int>(FileListColumn::Name);
+    int startRow = currentIndex().isValid() ? currentIndex().row() : 0;
+
+    // 单字符重复按键时循环跳到下一个同首字母条目；多字符连续输入时从当前行起做前缀匹配
+    const bool isRepeatedSingleChar = (s_searchBuffer.size() > 1 &&
+        s_searchBuffer.count(s_searchBuffer.at(0)) == s_searchBuffer.size());
+    const QString query = isRepeatedSingleChar ? s_searchBuffer.left(1) : s_searchBuffer;
+    if (isRepeatedSingleChar && currentIndex().isValid()) {
+        startRow = (currentIndex().row() + 1) % rows;
+    }
+
+    auto findMatch = [&](const QString& prefix, int beginRow) -> QModelIndex {
+        for (int offset = 0; offset < rows; ++offset) {
+            int r = (beginRow + offset) % rows;
+            QModelIndex idx = model()->index(r, nameCol);
+            if (!idx.isValid() || idx.data(SectionHeaderRole).toBool()) continue;
+            const QString text = idx.data(Qt::DisplayRole).toString();
+            if (text.startsWith(prefix, Qt::CaseInsensitive)) {
+                return idx;
+            }
+        }
+        return QModelIndex();
+    };
+
+    QModelIndex matched = findMatch(query, startRow);
+    if (!matched.isValid() && query.size() > 1) {
+        s_searchBuffer = search;
+        matched = findMatch(s_searchBuffer, currentIndex().isValid() ? (currentIndex().row() + 1) % rows : 0);
+    }
+
+    if (matched.isValid()) {
+        setCurrentIndex(matched);
+        if (selectionModel()) {
+            selectionModel()->select(matched, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+        }
+        scrollTo(matched, QAbstractItemView::EnsureVisible);
+    }
+}
+
+void DropTreeView::paintEvent(QPaintEvent* event) {
+    QTreeView::paintEvent(event);
+
+    if (m_showIndicator && m_indicatorZone != InternalDropZone::OnItem) {
+        QPainter painter(viewport());
+        painter.save();
+        painter.setRenderHint(QPainter::Antialiasing, false);
+
+        QPen pen(QColor("#3498db"), 2);
+        painter.setPen(pen);
+
+        int vpWidth = viewport()->width();
+
+        if (m_indicatorZone == InternalDropZone::Above && m_indicatorIndex.isValid()) {
+            QRect rect = visualRect(m_indicatorIndex);
+            painter.drawLine(0, rect.top(), vpWidth, rect.top());
+        } else if (m_indicatorZone == InternalDropZone::Below && m_indicatorIndex.isValid()) {
+            QRect rect = visualRect(m_indicatorIndex);
+            painter.drawLine(0, rect.bottom(), vpWidth, rect.bottom());
+        } else if (m_indicatorZone == InternalDropZone::Blank) {
+            int lastY = 0;
+            if (model() && model()->rowCount() > 0) {
+                QModelIndex lastIdx = model()->index(model()->rowCount() - 1, 0);
+                if (lastIdx.isValid()) {
+                    lastY = visualRect(lastIdx).bottom();
+                }
+            }
+            if (lastY <= 0) lastY = 2;
+            painter.drawLine(0, lastY, vpWidth, lastY);
+        }
+
+        painter.restore();
+    }
+
+    if (!m_emptyHint.isEmpty() && model() && model()->rowCount() == 0) {
+        QPainter painter(viewport());
+        painter.save();
+        painter.setPen(QColor("#888888"));
+        painter.setFont(QFont("Microsoft YaHei", 12));
+        painter.drawText(viewport()->rect(), Qt::AlignCenter, m_emptyHint);
+        painter.restore();
+    }
+}
+
+} // namespace QuarkMeta

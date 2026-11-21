@@ -2,6 +2,8 @@
 #define NOMINMAX
 #endif
 #include "ContentPanel.h"
+#include "AlphabetIndexBar.h"
+#include "EmptyStateOverlay.h"
 #include <QtConcurrent/QtConcurrent>
 #include "models/SectionProxyModel.h"
 #include "ContentHeaderWidget.h"
@@ -217,20 +219,6 @@ ContentPanel::ContentPanel(QWidget* parent) : QFrame(parent) {
     }
 }
 
-QString ContentPanel::classifyIndexKey(const QString& itemName) {
-    const QString trimmed = itemName.trimmed();
-    for (int i = 0; i < trimmed.size(); ++i) {
-        const QChar ch = trimmed.at(i);
-        if (ch.isLetter() && ch.unicode() < 128) {
-            return QString(ch.toUpper());
-        }
-        if (ch.isLetterOrNumber()) {
-            return QStringLiteral("#");
-        }
-    }
-    return trimmed.isEmpty() ? QString() : QStringLiteral("#");
-}
-
 void ContentPanel::initUi() {
     // ── 顶部 Header 区域（顶格停靠，绝不产生纵向空洞） ──
     m_headerWidget = new ContentHeaderWidget(this);
@@ -357,252 +345,23 @@ void ContentPanel::initUi() {
 }
 
 void ContentPanel::initAlphabetIndexBar() {
-    if (m_alphabetIndexBar) return;
-
-    m_alphabetIndexBar = new QWidget(m_viewStack);
-    m_alphabetIndexBar->setObjectName("AlphabetIndexBar");
-    m_alphabetIndexBar->setAttribute(Qt::WA_StyledBackground, false);
-    m_alphabetIndexBar->setAttribute(Qt::WA_TransparentForMouseEvents, false);
-    m_alphabetIndexBar->setStyleSheet("background: transparent; border: none;");
-
-    m_alphabetIndexLayout = new QVBoxLayout(m_alphabetIndexBar);
-    m_alphabetIndexLayout->setContentsMargins(0, 0, 0, 0);
-    m_alphabetIndexLayout->setSpacing(1);
-    m_alphabetIndexLayout->setAlignment(Qt::AlignCenter);
-
-    m_alphabetIndexBar->hide();
+    if (!m_alphabetIndexController) {
+        m_alphabetIndexController = new AlphabetIndexBar(this);
+    }
+    m_alphabetIndexController->setRightMargin(AlphabetIndexBar::kSpacingPx);
+    m_alphabetIndexController->initialize();
 }
 
 void ContentPanel::updateAlphabetIndexBarGeometry() {
-    if (!m_alphabetIndexBar || !m_viewStack || m_alphabetButtons.isEmpty() || m_currentViewMode == ColumnView) {
-        if (m_alphabetIndexBar) m_alphabetIndexBar->hide();
-        // 恢复全部三种视图的右侧保留边距为 0
-        if (auto* jv = qobject_cast<JustifiedView*>(m_gridView)) {
-            jv->setRightReservedWidth(0);
-        }
-        if (m_treeView) {
-            m_treeView->setViewportMargins(0, 0, 0, 0);
-        }
-        return;
+    if (m_alphabetIndexController) {
+        m_alphabetIndexController->updateGeometry();
     }
-
-    // 🚀【全视图物理隔离：网格、自适应与列表视图统一预留 20px 右侧专属通道】
-    if (auto* jv = qobject_cast<JustifiedView*>(m_gridView)) {
-        jv->setRightReservedWidth(20);
-    }
-    if (m_treeView) {
-        m_treeView->setViewportMargins(0, 0, 20, 0);
-    }
-
-    const int count = m_alphabetButtons.size();
-    const int btnH = 15;
-    const int spacing = 1;
-    const int barW = 18;
-    const int barH = count * btnH + (count - 1) * spacing + 4;
-
-    // 🚀【精准锚定在预留的 20px 安全通道内】：卡片在 width - 20px 处自然截断，字母条浮动在最右侧 19px 处，100% 杜绝重叠覆盖
-    const int targetX = m_viewStack->width() - barW - 1;
-    const int targetY = qMax(4, (m_viewStack->height() - barH) / 2);
-
-    m_alphabetIndexBar->setGeometry(targetX, targetY, barW, barH);
-    m_alphabetIndexBar->show();
-    m_alphabetIndexBar->raise();
 }
 
 void ContentPanel::updateAlphabetIndexBar() {
-    if (!m_alphabetIndexBar || !m_alphabetIndexLayout) return;
-
-    if (m_currentViewMode == ColumnView) {
-        m_activeAlphabetKey.clear();
-        m_alphabetCycleCursor.clear();
-        m_alphabetIndexBar->hide();
-        if (auto* jv = qobject_cast<JustifiedView*>(m_gridView)) {
-            jv->setRightReservedWidth(0);
-        }
-        if (m_treeView) {
-            m_treeView->setViewportMargins(0, 0, 0, 0);
-        }
-        return;
+    if (m_alphabetIndexController) {
+        m_alphabetIndexController->update();
     }
-
-    QAbstractItemModel* viewModel = nullptr;
-    if (m_sectionModel) {
-        viewModel = m_sectionModel;
-    } else if (m_proxyModel) {
-        viewModel = m_proxyModel;
-    } else {
-        viewModel = m_model;
-    }
-
-    if (!viewModel) {
-        m_activeAlphabetKey.clear();
-        m_alphabetCycleCursor.clear();
-        m_alphabetIndexBar->hide();
-        return;
-    }
-
-    QSet<QString> presentKeys;
-    const int rows = viewModel->rowCount();
-    for (int r = 0; r < rows; ++r) {
-        QModelIndex idx = viewModel->index(r, 0);
-        if (!idx.isValid() || idx.data(SectionHeaderRole).toBool()) continue;
-
-        QString name = idx.data(Qt::DisplayRole).toString();
-        if (name.isEmpty()) {
-            const QString path = idx.data(PathRole).toString();
-            if (!path.isEmpty()) {
-                name = QFileInfo(path).fileName();
-            }
-        }
-        const QString key = classifyIndexKey(name);
-        if (!key.isEmpty()) {
-            presentKeys.insert(key);
-        }
-    }
-
-    QStringList orderedKeys;
-    for (char ch = 'A'; ch <= 'Z'; ++ch) {
-        const QString letter(QChar::fromLatin1(ch));
-        if (presentKeys.contains(letter)) {
-            orderedKeys.append(letter);
-        }
-    }
-    if (presentKeys.contains(QStringLiteral("#"))) {
-        orderedKeys.append(QStringLiteral("#"));
-    }
-
-    if (orderedKeys.isEmpty()) {
-        m_activeAlphabetKey.clear();
-        m_alphabetCycleCursor.clear();
-        m_alphabetIndexBar->hide();
-        if (auto* jv = qobject_cast<JustifiedView*>(m_gridView)) {
-            jv->setRightReservedWidth(0);
-        }
-        if (m_treeView) {
-            m_treeView->setViewportMargins(0, 0, 0, 0);
-        }
-        return;
-    }
-
-    if (!m_activeAlphabetKey.isEmpty() && !orderedKeys.contains(m_activeAlphabetKey)) {
-        m_activeAlphabetKey.clear();
-    }
-
-    for (auto it = m_alphabetCycleCursor.begin(); it != m_alphabetCycleCursor.end(); ) {
-        if (!orderedKeys.contains(it.key())) {
-            it = m_alphabetCycleCursor.erase(it);
-        } else {
-            ++it;
-        }
-    }
-
-    while (QLayoutItem* item = m_alphabetIndexLayout->takeAt(0)) {
-        if (QWidget* w = item->widget()) {
-            w->deleteLater();
-        }
-        delete item;
-    }
-    m_alphabetButtons.clear();
-
-    for (const QString& key : orderedKeys) {
-        auto* btn = new QPushButton(key, m_alphabetIndexBar);
-        btn->setObjectName("AlphabetIndexBtn");
-        btn->setFixedSize(16, 15);
-        btn->setFocusPolicy(Qt::NoFocus);
-        btn->setCursor(Qt::PointingHandCursor);
-
-        // 🚀【彻底去除任何背景色】：普通字母为 #888888，激活/选中字母呈现 #ff551c，背景绝对透明
-        const bool isActive = (key == m_activeAlphabetKey);
-        btn->setProperty("active", isActive);
-        btn->setStyleSheet(QString(
-            "QPushButton#AlphabetIndexBtn { background: transparent; border: none; outline: none; color: %1; font-size: %2px; font-weight: %3; padding: 0px; margin: 0px; }"
-            "QPushButton#AlphabetIndexBtn:hover { color: #ff551c; background: transparent; border: none; }"
-        ).arg(isActive ? "#ff551c" : "#888888")
-         .arg(isActive ? 12 : 11)
-         .arg(isActive ? "bold" : "normal"));
-
-        connect(btn, &QPushButton::clicked, this, [this, key]() {
-            jumpToAlphabetKey(key);
-        });
-        m_alphabetIndexLayout->addWidget(btn, 0, Qt::AlignHCenter);
-        m_alphabetButtons.insert(key, btn);
-    }
-
-    updateAlphabetIndexBarGeometry();
-}
-
-void ContentPanel::jumpToAlphabetKey(const QString& key) {
-    if (key.isEmpty() || m_currentViewMode == ColumnView) return;
-
-    QAbstractItemView* view = activeItemView();
-    QAbstractItemModel* viewModel = view ? view->model() : nullptr;
-    if (!view || !viewModel) return;
-
-    QList<QModelIndex> matchingIndexes;
-    const int rows = viewModel->rowCount();
-    for (int r = 0; r < rows; ++r) {
-        QModelIndex idx = viewModel->index(r, 0);
-        if (!idx.isValid() || idx.data(SectionHeaderRole).toBool()) continue;
-
-        QString name = idx.data(Qt::DisplayRole).toString();
-        if (name.isEmpty()) {
-            const QString path = idx.data(PathRole).toString();
-            if (!path.isEmpty()) {
-                name = QFileInfo(path).fileName();
-            }
-        }
-        if (classifyIndexKey(name) == key) {
-            matchingIndexes.append(idx);
-        }
-    }
-
-    if (matchingIndexes.isEmpty()) return;
-
-    int nextCursor = 0;
-    if (m_activeAlphabetKey == key && m_alphabetCycleCursor.contains(key)) {
-        nextCursor = (m_alphabetCycleCursor.value(key) + 1) % matchingIndexes.size();
-    } else {
-        QModelIndex curIdx = view->currentIndex();
-        if (curIdx.isValid() && !curIdx.data(SectionHeaderRole).toBool()) {
-            QString curName = curIdx.data(Qt::DisplayRole).toString();
-            if (curName.isEmpty()) {
-                const QString curPath = curIdx.data(PathRole).toString();
-                if (!curPath.isEmpty()) curName = QFileInfo(curPath).fileName();
-            }
-            if (classifyIndexKey(curName) == key) {
-                for (int i = 0; i < matchingIndexes.size(); ++i) {
-                    if (matchingIndexes.at(i).row() == curIdx.row()) {
-                        nextCursor = (i + 1) % matchingIndexes.size();
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    m_activeAlphabetKey = key;
-    m_alphabetCycleCursor[key] = nextCursor;
-
-    for (auto it = m_alphabetButtons.begin(); it != m_alphabetButtons.end(); ++it) {
-        if (QPushButton* btn = it.value()) {
-            const bool isActive = (it.key() == m_activeAlphabetKey);
-            btn->setProperty("active", isActive);
-            btn->setStyleSheet(QString(
-                "QPushButton#AlphabetIndexBtn { background: transparent; border: none; outline: none; color: %1; font-size: %2px; font-weight: %3; padding: 0px; margin: 0px; }"
-                "QPushButton#AlphabetIndexBtn:hover { color: #ff551c; background: transparent; border: none; }"
-            ).arg(isActive ? "#ff551c" : "#888888")
-             .arg(isActive ? 12 : 11)
-             .arg(isActive ? "bold" : "normal"));
-        }
-    }
-
-    const QModelIndex targetIdx = matchingIndexes.at(nextCursor);
-    setActivePane(true);
-    view->setCurrentIndex(targetIdx);
-    if (view->selectionModel()) {
-        view->selectionModel()->select(targetIdx, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
-    }
-    view->scrollTo(targetIdx, QAbstractItemView::PositionAtTop);
 }
 
 void ContentPanel::initGridView() {
@@ -1606,95 +1365,25 @@ void ContentPanel::updateStatusBarStats(int cachedSelectedCount) {
 void ContentPanel::initEmptyFilterOverlay() {
     if (m_emptyFilterOverlay || !m_viewStack) return;
 
-    m_emptyFilterOverlay = new QWidget(m_viewStack);
-    m_emptyFilterOverlay->setObjectName("EmptyFilterOverlay");
-    m_emptyFilterOverlay->setAttribute(Qt::WA_StyledBackground, true);
-
-    QVBoxLayout* layout = new QVBoxLayout(m_emptyFilterOverlay);
-    layout->setContentsMargins(20, 20, 20, 20);
-    layout->setSpacing(12);
-    layout->setAlignment(Qt::AlignCenter);
-
-    QLabel* iconLabel = new QLabel(m_emptyFilterOverlay);
-    iconLabel->setPixmap(UiHelper::getIcon("filter", QColor("#888888"), 48).pixmap(48, 48));
-    iconLabel->setAlignment(Qt::AlignCenter);
-    layout->addWidget(iconLabel);
-
-    m_emptyFilterTitleLabel = new QLabel(m_emptyFilterOverlay);
-    m_emptyFilterTitleLabel->setObjectName("EmptyFilterTitleLabel");
-    m_emptyFilterTitleLabel->setAlignment(Qt::AlignCenter);
-    layout->addWidget(m_emptyFilterTitleLabel);
-
-    m_emptyFilterSubLabel = new QLabel("未显示内容是因为筛选器或搜索过滤了结果", m_emptyFilterOverlay);
-    m_emptyFilterSubLabel->setObjectName("EmptyFilterSubLabel");
-    m_emptyFilterSubLabel->setAlignment(Qt::AlignCenter);
-    layout->addWidget(m_emptyFilterSubLabel);
-
-    m_emptyFilterResetBtn = new QPushButton("重置筛选与搜索 或 后退 (Ctrl + Space)", m_emptyFilterOverlay);
-    m_emptyFilterResetBtn->setObjectName("EmptyFilterResetBtn");
-    m_emptyFilterResetBtn->setFocusPolicy(Qt::NoFocus);
-    m_emptyFilterResetBtn->setCursor(Qt::PointingHandCursor);
-    m_emptyFilterResetBtn->setFixedHeight(32);
-    m_emptyFilterResetBtn->setMinimumWidth(160);
-    connect(m_emptyFilterResetBtn, &QPushButton::clicked, this, [this]() {
+    m_emptyFilterOverlay = new EmptyStateOverlay(m_viewStack, [this]() {
         search("");
         emit filterResetRequested();
     });
-    layout->addWidget(m_emptyFilterResetBtn, 0, Qt::AlignCenter);
-
     m_emptyFilterOverlay->installEventFilter(this);
     const auto overlayChildren = m_emptyFilterOverlay->findChildren<QWidget*>();
     for (QWidget* child : overlayChildren) {
         child->installEventFilter(this);
     }
-
-    m_emptyFilterOverlay->hide();
 }
 
 void ContentPanel::updateEmptyStateOverlay(int visibleCount, int fullCount, int hiddenCount) {
     if (!m_emptyFilterOverlay) return;
 
+    m_emptyFilterOverlay->updateState(visibleCount, fullCount, hiddenCount);
+
     JustifiedView* jv = qobject_cast<JustifiedView*>(m_gridView);
-
-    if (visibleCount == 0) {
-        if (fullCount > 0) {
-            if (m_emptyFilterTitleLabel) {
-                m_emptyFilterTitleLabel->setText(QString("当前共有 %1 个项目，已过滤隐藏 %2 个项目").arg(fullCount).arg(hiddenCount));
-            }
-            if (m_emptyFilterSubLabel) {
-                m_emptyFilterSubLabel->setText("未显示内容是因为筛选器或搜索过滤了结果");
-                m_emptyFilterSubLabel->show();
-            }
-            if (m_emptyFilterResetBtn) {
-                m_emptyFilterResetBtn->setText("重置筛选与搜索 或 后退 (Ctrl + Space)");
-                m_emptyFilterResetBtn->adjustSize();
-            }
-        } else {
-            if (m_emptyFilterTitleLabel) {
-                m_emptyFilterTitleLabel->setText("该文件夹为空");
-            }
-            if (m_emptyFilterSubLabel) {
-                m_emptyFilterSubLabel->hide();
-            }
-            if (m_emptyFilterResetBtn) {
-                m_emptyFilterResetBtn->setText("后退 (Ctrl + Space)");
-                m_emptyFilterResetBtn->adjustSize();
-            }
-        }
-
-        m_emptyFilterOverlay->setGeometry(m_viewStack->rect());
-        m_emptyFilterOverlay->show();
-        m_emptyFilterOverlay->raise();
-
-        if (jv) {
-            jv->setShowEmptyHint(false);
-        }
-    } else {
-        m_emptyFilterOverlay->hide();
-
-        if (jv) {
-            jv->setShowEmptyHint(true);
-        }
+    if (jv) {
+        jv->setShowEmptyHint(visibleCount != 0);
     }
 }
 
