@@ -49,12 +49,8 @@ protected:
 
         painter->save();
         painter->fillRect(rect, QColor("#252525"));
-        // 仅在列与列之间绘制分割线；末列右侧不再绘制冗余分割线
-        // （否则会在内容区右缘 / AlphabetIndexBar 左侧出现一条多余的切割线）
-        if (!isLastVisibleSection(logicalIndex)) {
-            painter->setPen(QColor("#333333"));
-            painter->drawLine(rect.topRight(), rect.bottomRight());
-        }
+        painter->setPen(QColor("#333333"));
+        painter->drawLine(rect.topRight(), rect.bottomRight());
 
         QString title = model() ? model()->headerData(logicalIndex, orientation(), Qt::DisplayRole).toString() : QString();
         bool isSorted = (sortIndicatorSection() == logicalIndex && logicalIndex >= 0);
@@ -95,15 +91,6 @@ protected:
     }
 
 private:
-    bool isLastVisibleSection(int logicalIndex) const {
-        const int myVisual = visualIndex(logicalIndex);
-        for (int i = 0; i < count(); ++i) {
-            if (i == logicalIndex || isSectionHidden(i)) continue;
-            if (visualIndex(i) > myVisual) return false;
-        }
-        return true;
-    }
-
     static void drawSortArrow(QPainter* painter, int x, int centerY, Qt::SortOrder order, const QColor& color) {
         painter->save();
         painter->setRenderHint(QPainter::Antialiasing, true);
