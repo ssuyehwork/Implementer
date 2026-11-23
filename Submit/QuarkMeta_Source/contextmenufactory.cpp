@@ -114,30 +114,47 @@ QMenu* ContextMenuFactory::buildIconPickerMenu(QMenu* parentMenu,
     pickerLayout->setContentsMargins(6, 6, 6, 6);
     pickerLayout->setSpacing(6);
 
-    static const QList<QPair<QString, QString>> builtInIcons = {
-        {"默认文件夹", "folder_filled"}, {"照片媒体", "image_filled"}, {"相册图片", "image_picture"},
-        {"时钟历史", "clock_filled"}, {"星标收藏", "star_filled"}, {"实心星标", "star_001"},
-        {"空心星标", "star_002"}, {"爱心常用", "heart_filled"}, {"附加文档", "document_attach"},
-        {"网络球体", "globe_filled"}, {"主页主路径", "home_filled"}, {"标签标记", "tag_filled"},
-        {"书签指示", "bookmark_filled"}, {"视频影视", "video_filled"}, {"摄影相机", "camera_filled"},
-        {"盾牌防护", "shield_filled"}, {"物理硬盘", "hard_drive"}, {"云端同步", "cloud_filled"},
-        {"闪电极速", "zap_filled"}, {"魔法火花", "sparkles_filled"}, {"旗帜标记", "flag_filled"},
-        {"旗帜标示", "flag"}, {"礼物珍藏", "gift_filled"}, {"奖星勋章", "award_filled"},
-        {"回收废弃", "trash_filled"}, {"邮件通信", "mail_filled"}, {"电话联系", "phone_filled"},
-        {"日历日程", "calendar_filled"}, {"今日任务", "today_filled"}, {"数据表格", "table_filled"},
-        {"磁盘保存", "save_filled"}, {"附件剪辑", "paperclip"}, {"归档文件", "archive"},
-        {"OneNote笔记", "onenote"}, {"下载中心", "download"}, {"全部数据", "all_data"},
-        {"托管文件夹", "folder_managed"}, {"托管文件", "file_managed"}, {"ZIP压缩包", "zip"},
-        {"下载图标", "download-svgrepo-com"}, {"云端下载", "cloud_download"}, {"Word文档", "file_word"},
-        {"棕榈树", "palm_tree"}, {"代码文件夹", "folder-code-svgrepo-com"}, {"下载盒", "archive-svgrepo-com"}
+    static const QStringList builtInIcons = {
+        "toolbox", "file_managed", "folder_managed",
+        "Favorite_filled", "camera", "heart_filled",
+        "thumbs_up", "thumbs_down", "share",
+        "flag", "mail", "at_sign",
+        "cloud_upload", "cloud_download", "server",
+        "hard_drive", "video", "music",
+        "shield_check", "paperclip", "clock_history",
+        "bicycle", "thumbs_up_filled", "thumbs_down_filled",
+        "folder_filled", "share_filled", "prohibit",
+        "archive-svgrepo-com.svg", "document-attach-outline.svg", "image-picture-svgrepo-com.svg",
+        "microsoftonenote-svgrepo-com.svg", "alarm-clock-filled-svgrepo-com.svg", "corel-draw-svgrepo-com.svg",
+        "dbs-hadoop-svgrepo-com.svg", "shield-svgrepo-com.svg", "suitcase1-svgrepo-com.svg",
+        "unarchive-svgrepo-com.svg", "usb-svgrepo-com.svg", "zipped-svgrepo-com.svg",
+        "uncategorized-2", "Folder-add.svg", "Favorites.svg",
+        "Destination.svg", "smart-folder-1.svg", "Database-1.svg",
+        "Export-1.svg", "Monitoring-1.svg", "path-3.svg",
+        "save-thumbnails-1.svg", "Data_Classification_svg", "path_2_svg",
+        "save_thumbnails_2_svg", "fire_svgrepo_com_svg", "Folder_path_svg",
+        "ice_cream_cone_svg", "ice_cream_cup_svg", "Linked_svg",
+        "Linked_3_svg", "Linked_4_svg", "Linked_5_svg",
+        "air_balloon_holiday_tourism_svgrepo_com_svg", "alligator_pear_avocado_avocado_pear_svgrepo_com_svg", "ananas_fruit_pineapple_svgrepo_com_svg",
+        "archive_svgrepo_com_svg", "banana_bananas_bunch_svgrepo_com_svg", "beach_svg",
+        "bean_beans_kidney_svgrepo_com_svg", "branch_fruit_olive_svgrepo_com_svg", "bus_holiday_tourism_2_svgrepo_com_svg",
+        "coconut_holiday_tourism_svgrepo_com_svg", "eiffel_holiday_tourism_svgrepo_com_svg", "elephant_svg",
+        "EXT_svg", "File_path_svg", "folder_special_svg",
+        "fragaria_fruit_strawberry_svgrepo_com_svg", "fresh_tomato_tomatoes_svgrepo_com_svg", "fruit_grape_grapes_svgrepo_com_svg",
+        "gantanhao_svg", "gantanhao_1_svg", "gantanhao_2_svg",
+        "holiday_juice_tourism_svgrepo_com_svg", "holiday_tourism_travel_3_svgrepo_com_svg", "info_filled_svg",
+        "kaixin101_logotype_of_a_smiling_star_svgrepo_com_svg", "Linked_1_svg", "psd_2_svg",
+        "pumpkin_halloween_svgrepo_com_svg", "RapidNotes_1_svg", "sea_snail_svg",
+        "time_planning_svgrepo_com_svg", "turtle_svg",
+        "home_filled", "star_filled", "tag_filled", "bookmark_filled",
+        "gift_filled", "calendar_filled", "trash_filled", "download"
     };
 
     QColor catColor = QColor(colorHex);
     int row = 0, col = 0;
     QList<QPair<QPushButton*, QString>> iconButtons;
 
-    for (const auto& pair : builtInIcons) {
-        QString key = pair.second;
+    for (const QString& key : builtInIcons) {
         QPushButton* btn = new QPushButton(pickerWidget);
         btn->setFixedSize(28, 28);
         btn->setCursor(Qt::PointingHandCursor);
@@ -153,7 +170,7 @@ QMenu* ContextMenuFactory::buildIconPickerMenu(QMenu* parentMenu,
         });
 
         col++;
-        if (col >= 5) { col = 0; row++; }
+        if (col >= 10) { col = 0; row++; }
     }
 
     pickerWidget->setLayout(pickerLayout);

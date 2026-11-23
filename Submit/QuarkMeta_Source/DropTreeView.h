@@ -126,6 +126,7 @@ public:
     int rowHeight(const QModelIndex& index) const { return QTreeView::rowHeight(index); }
     void setEmptyHint(const QString& hint) { m_emptyHint = hint; }
     void setBottomMargin(int bottom) { m_bottomMargin = bottom; updateGeometries(); }
+    void setRightReserve(int reserve);
 
     void setZoomLevel(int zoomLevel);
     int zoomLevel() const { return m_zoomLevel; }
@@ -160,6 +161,7 @@ protected:
     void keyboardSearch(const QString& search) override;
     void paintEvent(QPaintEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
+    void updateGeometries() override;
     void mousePressEvent(QMouseEvent* event) override;
 
 private:
@@ -178,6 +180,7 @@ private:
     QModelIndex m_hoverIndex;
     QString m_emptyHint;
     int m_bottomMargin = 0;
+    int m_rightReserve = 0;
     bool m_isApplyingPolicies = false;
 
     // 过滤控制
